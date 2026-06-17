@@ -1,0 +1,11 @@
+[[contracts]]
+fqn = "identity::IdentityRegistry"
+
+[[contracts]]
+fqn = "escrow::Escrow"
+
+[[contracts]]
+fqn = "reputation::ReputationEngine"
+
+[[contracts]]
+fqn = "odra_modules::cep18_token::Cep18"
