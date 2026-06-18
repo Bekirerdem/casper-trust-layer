@@ -33,7 +33,9 @@ export async function readOdraValue(
     // CLValue encoding for List<U8>: 4-byte LE length prefix followed by payload.
     const clHex: string = res.rawJSON?.stored_value?.CLValue?.bytes;
     if (typeof clHex !== "string" || clHex.length === 0) {
-      // Fallback: try the SDK-parsed path via clValue.bytes() method
+      // Fallback: clValue.bytes() returns the full CLValue byte encoding for List<U8>,
+      // which is a 4-byte LE u32 length prefix followed by the payload — same layout
+      // as the rawJSON hex path above, so we slice(4) identically.
       const clBytes = res.storedValue.clValue?.bytes();
       if (!clBytes || clBytes.length < 4) return null;
       return clBytes.slice(4);
@@ -43,19 +45,11 @@ export async function readOdraValue(
     // Strip 4-byte LE u32 length prefix that Odra prepends to every List<U8>
     return full.slice(4);
   } catch (e: any) {
-    const code: number | undefined = (e as any)?.code;
-    const msg = String(e?.message ?? e);
-    // -32003 = QueryFailed (key absent — Odra type-defaults are unset keys)
-    if (
-      code === -32003 ||
-      msg.includes("Query failed") ||
-      msg.includes("not found") ||
-      msg.includes("Not Found") ||
-      msg.includes("DICTIONARY_NOT_FOUND") ||
-      msg.includes("does not exist")
-    ) {
-      return null; // type-default: key absent is OK
-    }
+    // -32003 is the JSON-RPC spec code for QueryFailed — the only stable, SDK-version-
+    // independent signal that the key is simply absent (Odra stores type-defaults as
+    // missing keys).  All other errors (transport, auth, etc.) must propagate so they
+    // are not silently swallowed as "zero reputation".
+    if ((e as any)?.code === -32003) return null;
     throw e;
   }
 }
