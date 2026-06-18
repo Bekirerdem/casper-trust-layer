@@ -86,13 +86,15 @@ describe("buildRegister (offline)", () => {
 
   it("attached_value equals bondMotes", () => {
     const av = argValue(tx, "attached_value");
-    // CLValueUInt512 stores value in ui512.val (BigNumber) or similar
+    // CLValueUInt512: ui512.value is a BigNumber (ethers-style); convert via .toString()
     expect(av?.ui512).toBeDefined();
+    expect(BigInt(av.ui512.value.toString())).toBe(bondMotes);
   });
 
-  it("amount equals attached_value (same object structure)", () => {
+  it("amount equals bondMotes (same numeric value as attached_value)", () => {
     const amtArg = argValue(tx, "amount");
     expect(amtArg?.ui512).toBeDefined();
+    expect(BigInt(amtArg.ui512.value.toString())).toBe(bondMotes);
   });
 
   it("package_hash arg is a CLKey", () => {
@@ -322,5 +324,41 @@ describe("buildAttestSettlement (offline)", () => {
       const approvals = inner?.approvals ?? [];
       expect(approvals.length).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  it("submitWorkTx is signed by the PROVIDER key", () => {
+    // approvals[0].signer.toHex() returns the prefixed hex public key used to sign
+    const inner = (plan.submitWorkTx as any).transactionV1 ?? (plan.submitWorkTx as any);
+    const signer = (inner.approvals ?? [])[0]?.signer;
+    expect(signer).toBeDefined();
+    expect(signer.toHex()).toBe(providerKey.publicKey.toHex());
+  });
+
+  it("approveTx is signed by the CLIENT key", () => {
+    const inner = (plan.approveTx as any).transactionV1 ?? (plan.approveTx as any);
+    const signer = (inner.approvals ?? [])[0]?.signer;
+    expect(signer).toBeDefined();
+    expect(signer.toHex()).toBe(clientKey.publicKey.toHex());
+  });
+
+  it("createJobTx is signed by the CLIENT key", () => {
+    const inner = (plan.createJobTx as any).transactionV1 ?? (plan.createJobTx as any);
+    const signer = (inner.approvals ?? [])[0]?.signer;
+    expect(signer).toBeDefined();
+    expect(signer.toHex()).toBe(clientKey.publicKey.toHex());
+  });
+
+  it("approveJobTx is signed by the CLIENT key", () => {
+    const inner = (plan.approveJobTx as any).transactionV1 ?? (plan.approveJobTx as any);
+    const signer = (inner.approvals ?? [])[0]?.signer;
+    expect(signer).toBeDefined();
+    expect(signer.toHex()).toBe(clientKey.publicKey.toHex());
+  });
+
+  it("submitWorkTx signer differs from CLIENT key (provider != client)", () => {
+    // Sanity check: the provider and client keys are different throwaway keys
+    const inner = (plan.submitWorkTx as any).transactionV1 ?? (plan.submitWorkTx as any);
+    const signer = (inner.approvals ?? [])[0]?.signer;
+    expect(signer.toHex()).not.toBe(clientKey.publicKey.toHex());
   });
 });
