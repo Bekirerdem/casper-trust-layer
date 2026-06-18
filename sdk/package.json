@@ -21,7 +21,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@make-software/casper-x402": "latest",
+    "@make-software/casper-x402": "^0.1.0",
     "@x402/fetch": "^2.15.0",
     "blakejs": "^1.2.1",
     "casper-js-sdk": "5.0.12"

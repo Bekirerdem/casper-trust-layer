@@ -94,6 +94,7 @@ export interface X402TrustClient extends TrustClient {
  * exercised end-to-end in the dashboard/demo task.
  */
 export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response> {
+  if (!c.signer) throw new Error("pay() requires a signer-bearing client; build it as { ...createTrustClient(overrides), signer }");
   // Step 1: gate
   await gateByTrust(
     (id, o) => checkTrust(c, id, o),

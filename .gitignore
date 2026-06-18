@@ -2,6 +2,7 @@
 target/
 **/target/
 *.wasm
+!sdk/assets/*.wasm
 wasm/
 # rustc internal-compiler-error crash dumps
 rustc-ice-*.txt

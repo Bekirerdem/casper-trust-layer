@@ -20,6 +20,6 @@ export interface TrustResult {
   trusted: boolean;
   score: bigint;
   jobsCompleted: bigint;
-  status: string;
+  status: Agent["status"] | "None";
   bond: bigint;
 }
