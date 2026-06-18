@@ -1,0 +1,21 @@
+last_updated = "2026-06-17T14:01:04Z"
+
+[[contracts]]
+name = "IdentityRegistry"
+package_name = "IdentityRegistry"
+package_hash = "hash-3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc"
+
+[[contracts]]
+name = "ReputationEngine"
+package_name = "ReputationEngine"
+package_hash = "hash-d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb"
+
+[[contracts]]
+name = "Cep18"
+package_name = "Cep18"
+package_hash = "hash-f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6"
+
+[[contracts]]
+name = "Escrow"
+package_name = "Escrow"
+package_hash = "hash-fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c"
