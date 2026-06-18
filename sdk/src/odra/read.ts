@@ -45,11 +45,11 @@ export async function readOdraValue(
     // Strip 4-byte LE u32 length prefix that Odra prepends to every List<U8>
     return full.slice(4);
   } catch (e: any) {
-    // -32003 is the JSON-RPC spec code for QueryFailed — the only stable, SDK-version-
-    // independent signal that the key is simply absent (Odra stores type-defaults as
-    // missing keys).  All other errors (transport, auth, etc.) must propagate so they
-    // are not silently swallowed as "zero reputation".
-    if ((e as any)?.code === -32003) return null;
+    // getDictionaryItemByIdentifier wraps the JSON-RPC error: the -32003 (QueryFailed)
+    // code is on e.statusCode / e.sourceErr.code, NOT e.code. -32003 = the key is simply
+    // absent (Odra stores type-defaults as missing keys); any other error must propagate.
+    const code = e?.code ?? e?.statusCode ?? e?.sourceErr?.code;
+    if (code === -32003) return null;
     throw e;
   }
 }
