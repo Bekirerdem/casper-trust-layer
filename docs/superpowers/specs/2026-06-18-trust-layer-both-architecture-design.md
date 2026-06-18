@@ -23,9 +23,11 @@ identity) is **no longer empty** — it is contested but shallow:
 
 Two facts shape the plan:
 1. **40/40 BUIDLs ship a demo video.** It is mandatory and universal — ours is the highest-priority gap.
-2. **No x402 TypeScript client exists for Casper.** Every `x402-casper` / `@x402/casper` npm name 404s;
-   Casper shipped only a server-side Facilitator + MCP. The ~9 x402-payment BUIDLs each hand-roll the
-   same handshake. This is an open ecosystem gap we can own.
+2. **The empty space is trust, not x402.** An official x402 TS client already exists
+   (`@make-software/casper-x402` — client, signer, hosted Facilitator), so we do **not** build a
+   competing client; we **wrap** it and add the layer no one has on Casper: settled-payment trust.
+   The trust competitors (cred402, credmesh) live on **Base, not Casper** — Casper's trust layer is
+   the open gap. (Earlier drafts assumed no x402 client existed; research 2026-06-18 refuted that.)
 
 ## 2. The decision
 
@@ -75,32 +77,33 @@ for v1.** Multi-writer support is a v2 item gated on a **proof-of-burn** settlem
    │   (always route through the REAL escrow — burn must fire)
 ┌──┴───────────────────────────────────────────────────────────┐
 │  OFF-CHAIN (this spec — TypeScript)                           │
-│  casper-x402         x402 client + trust read + registry      │
+│  casper-trust        trust read + x402 gating + registry      │
 │  apps/web            Next.js read dashboard + hero demo flow  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ### Components (each independently understandable + testable)
 
-**A. `casper-x402` — the TypeScript package** (the adoption wedge)
+**A. `casper-trust` — the TypeScript package** (the trust wedge)
 
-> Package name resolved (§10): `casper-x402`, unscoped. The widest entry point in an empty
-> ecosystem (no Casper x402 client exists; ~9 BUIDLs hand-roll the handshake). x402 is the
-> traffic driver; the `trust` module is the differentiator a payer discovers through the same
-> import. The product brand "Casper Agent Trust Layer" lives on in the repo + README.
+> Package name resolved (§10): `casper-trust`, unscoped. The genuinely empty space on Casper is
+> trust (an official x402 client already exists; trust competitors are on Base). We do not rebuild
+> x402 — we wrap the official client and own the trust layer: `npm i casper-trust` →
+> `import { checkTrust, pay } from 'casper-trust'`. Brand = Casper Agent Trust Layer.
 
 | Module | What it does | Depends on |
 |---|---|---|
-| `x402` | Wraps `fetch`: on HTTP 402, parse `accepts[]`, build + sign the v2 `PaymentPayload` (casper-eip-712 typed data), attach `PAYMENT-SIGNATURE`, retry. | casper-js-sdk, casper-eip-712, Casper Facilitator |
-| `trust` | Read-only trust queries over existing views. `checkTrust(agentId) → {trusted, score, ...}`, `getReputation(agentId) → full record`. Auto-invoked inside `pay()` when `minScore` is set. | RPC (CSPR.cloud), ReputationEngine + IdentityRegistry read methods |
-| `registry` | `register(agentMeta)` and `attestSettlement(receipt)`. **v1: `attestSettlement` routes a real escrowed+settled job through the deployed Escrow** so the 2% burn fires — it is NOT a new permissionless writer. | Escrow `create_job`/`approve`, CEP-18 approve/transfer_from |
+| `trust` | Read-only trust queries (**the wedge**). `checkTrust(agentId) → {trusted, score, ...}`, `getReputation(agentId) → full record`. Reads the Odra `state` storage over RPC and decodes client-side — Casper has no free view invocation, so we mirror the on-chain read (no wallet, no gas). | casper-js-sdk@5, CSPR.cloud RPC, ReputationEngine + IdentityRegistry storage |
+| `x402` | Thin wrapper over `@make-software/casper-x402`'s `pay`. Adds `pay({minScore})`: auto-calls `checkTrust` and refuses or settles based on the provider's on-chain score. The **trust-aware payment** — our differentiator. | `@make-software/casper-x402`, the `trust` module |
+| `registry` | `register(agentMeta)` and `attestSettlement(receipt)`. **v1: `attestSettlement` routes a real escrowed+settled job through the deployed Escrow** so the 2% burn fires — NOT a new permissionless writer. | casper-js-sdk@5 (Transaction + `proxy_caller.wasm` for the payable `register`), Escrow, CEP-18 |
 
-Public surface: `createCasperX402Client(config)`, `pay(request)`, `checkTrust(agentId)`,
-`getReputation(agentId)`, `register(agentMeta)`, `attestSettlement(receipt)`.
+Public surface: `createTrustClient(config)`, `checkTrust(agentId)`, `getReputation(agentId)`,
+`pay(request)` / `pay({minScore})`, `register(agentMeta)`, `attestSettlement(receipt)`.
 
-x402 v2 wire requirements the client must honor: `x402Version` = integer `2`; field is **`amount`**
-(not `maxAmountRequired`); `network` is CAIP-2 `casper:casper-test`; `PaymentPayload` is base64 in the
-`PAYMENT-SIGNATURE` header; signature via casper-eip-712 typed data.
+x402 is **delegated** to `@make-software/casper-x402`; we honor its wire contract (x402 v2: `amount`
+not `maxAmountRequired`, `network` CAIP-2, `PAYMENT-SIGNATURE` header, casper-eip-712
+`TransferWithAuthorization` typed data) but do not re-implement the handshake. Mechanics + traps in
+`docs/superpowers/research/2026-06-18-offchain-sdk-research.md`.
 
 **B. `apps/web` — Next.js read dashboard + demo** (the submission artifact)
 - Agent trust card over the public views: score, jobs completed, bond, status.
@@ -115,6 +118,13 @@ The 4 deployed contracts and their `wasm`. No contract redeploy for v1 (Casper t
 a redeploy is costly and unnecessary). All new work is off-chain TypeScript over existing entrypoints.
 
 ## 6. Read surface (already sufficient — no on-chain additions required)
+
+> **Read mechanism (research 2026-06-18):** Casper has no free view call (no `eth_call` equivalent),
+> so the SDK does not *invoke* these `&self` methods — it reads the Odra `state` dictionary over RPC
+> and decodes the bytes client-side, recomputing the view's formula in TS (exactly what Odra's livenet
+> backend does). Verified live on `casper-test` (3 contracts read, zero gas). Field indices / struct
+> order come from the contract source and are asserted against live values in tests. Details in the
+> research doc.
 
 `ReputationEngine`: `get_summary(agent_id)` (ERC-8004 facade), `get_reputation(provider)`,
 `score(provider)`, `pair_stat(provider, client_id)`.
@@ -145,7 +155,8 @@ happens for another reason.
 | Risk | Level |
 |---|---|
 | All of the off-chain surface (SDK, dashboard, demo) is greenfield; contracts are done. | high |
-| x402 v2 handshake against Casper's sponsored Facilitator is unproven end-to-end (no reference client to crib from — that is the gap). A CAIP-2 id or amount-encoding mismatch fails silently. | medium |
+| x402 handshake — **mitigated**: we wrap the official `@make-software/casper-x402` (proven client + hosted Facilitator), no hand-rolled signing. Residual: testnet facilitator quota (25/day) + auth token, and a v1-vs-v2 `PAYMENT-SIGNATURE`/`X-PAYMENT` header divergence. | low-medium |
+| Read path is a client-side storage decode (not a view call): wrong Odra field index or struct order silently mis-decodes. Mitigation: assert each decode against a known live value in tests. | medium |
 | Temptation to ship open-write to look "more substrate-like" — reintroduces laundering on camera. Mitigation: hard-freeze the write path; sell openness via reads only. | medium |
 | `attestSettlement` overpromising — must be scoped to "route a real escrowed job," not "push any settlement." | medium |
 | Testnet x402 free quota (25/day) can starve a live demo — request sponsored access (support@cspr.cloud) early, or split verify/settle. | medium |
@@ -182,11 +193,12 @@ happens for another reason.
    dashboard) is deferred to v1.5 — no success criterion requires it, and SSE already cost us pain
    at deploy time (see `tasks/lessons.md`).
 
-4. **Package name `casper-x402` (unscoped); publish to npm close to submission.**
-   Unscoped wins the "owns the default import" adoption argument in an empty ecosystem (every
-   `x402-casper` / `@x402/casper` name 404s today). Publish once it is working + tested, with a
-   README and a runnable example — not a half-baked early `0.0.x`. The product brand stays
-   "Casper Agent Trust Layer" (repo + README); the npm package is the adoption vehicle.
+4. **Package name `casper-trust` (unscoped); publish to npm close to submission.**
+   Research found an official x402 client (`@make-software/casper-x402`) already exists — so the wedge
+   is **trust, not x402**. `casper-trust` is unscoped + free on npm; it owns the "Casper trust layer"
+   import in a genuinely empty space (trust competitors are on Base). Publish once working + tested,
+   with a README and a runnable example — not a half-baked early `0.0.x`. Brand stays "Casper Agent
+   Trust Layer" (repo + README).
 
 ---
 
