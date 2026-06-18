@@ -106,7 +106,7 @@ export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response
   // Network defaults to casper:casper-test per research §2 (CAIP-2 identifier)
   const network = c.network ?? NETWORK_CASPER_TESTNET;
   const client = new x402Client();
-  client.register(network, new ExactCasperScheme(c.signer));
+  client.register(network as `${string}:${string}`, new ExactCasperScheme(c.signer));
 
   const paymentFetch = wrapFetchWithPayment(fetch, client);
   return paymentFetch(req.url, req.init);

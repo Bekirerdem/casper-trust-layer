@@ -27,6 +27,7 @@
     "casper-js-sdk": "5.0.12"
   },
   "devDependencies": {
+    "@types/node": "^25.9.3",
     "dotenv": "^16.4.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
