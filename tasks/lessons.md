@@ -27,3 +27,8 @@
 
 ## Genel
 - *(eklenecek)*
+
+## Off-chain SDK (TypeScript / casper-js-sdk@5)
+- **🔴 casper-js-sdk getDictionaryItemByIdentifier "not found" error shape:** an absent dictionary item throws a PLAIN `Error` (NOT a typed RpcError). `e.code` is **undefined**; the JSON-RPC code -32003 (QueryFailed) lives at **`e.statusCode`** AND **`e.sourceErr.code`**, and is embedded in `e.message` ("Code: -32003, err: Query failed"). To detect absent keys: `const code = e?.code ?? e?.statusCode ?? e?.sourceErr?.code; if (code === -32003) return null;`. Checking only `e.code` silently re-throws on every absent key.
+- **🔴 Mock must mirror the REAL error shape.** A not-found unit test mocked `{ code: -32003 }`, which passed but did NOT match the runtime object (`{statusCode, sourceErr:{code}}`) — false green. When a fix changes not-found/error-handling behaviour, the mock must replicate the true thrown object, and you MUST run the LIVE test, not just the mock. (A code-only fix shipped a regression because live was skipped after the change.)
+- **Odra reads are wallet-free storage decodes**, verified live: hash-<pkg> -> contract -> "state" URef -> dict item -> strip 4B List<U8> prefix -> bytesrepr. Field indices have a uniform +1 offset vs Rust source declaration order (Odra writes admin at live idx 0).
