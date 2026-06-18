@@ -1,6 +1,6 @@
 # Casper Agent Trust Layer — "Closed Product AND Open Substrate" Design
 
-> Status: **Validated, awaiting fresh-mind review** · Date: 2026-06-18 · Owner: Bekir (solo) · Buildathon deadline: 2026-06-30
+> Status: **Validated · open questions resolved (fresh-mind review done 2026-06-18)** · Date: 2026-06-18 · Owner: Bekir (solo) · Buildathon deadline: 2026-06-30
 >
 > This spec captures the architecture decision reached after a 5-agent adversarial validation
 > workflow. It is the anchor for the next session's implementation plan. The on-chain contracts
@@ -75,14 +75,19 @@ for v1.** Multi-writer support is a v2 item gated on a **proof-of-burn** settlem
    │   (always route through the REAL escrow — burn must fire)
 ┌──┴───────────────────────────────────────────────────────────┐
 │  OFF-CHAIN (this spec — TypeScript)                           │
-│  @casper-trust/sdk   x402 client + trust read + registry      │
+│  casper-x402         x402 client + trust read + registry      │
 │  apps/web            Next.js read dashboard + hero demo flow  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ### Components (each independently understandable + testable)
 
-**A. `@casper-trust/sdk` — the TypeScript package** (the adoption wedge)
+**A. `casper-x402` — the TypeScript package** (the adoption wedge)
+
+> Package name resolved (§10): `casper-x402`, unscoped. The widest entry point in an empty
+> ecosystem (no Casper x402 client exists; ~9 BUIDLs hand-roll the handshake). x402 is the
+> traffic driver; the `trust` module is the differentiator a payer discovers through the same
+> import. The product brand "Casper Agent Trust Layer" lives on in the repo + README.
 
 | Module | What it does | Depends on |
 |---|---|---|
@@ -155,12 +160,33 @@ happens for another reason.
 5. Demo video records criteria 1–4 end-to-end on live testnet.
 6. Pitch explicitly frames write-path openness as a v2 proof-of-burn roadmap — no overpromise.
 
-## 10. Open questions for fresh-mind review
+## 10. Resolved decisions (fresh-mind review, 2026-06-18)
 
-- First build order: **SDK (x402 client + read trust) first**, then dashboard, then demo video — agreed?
-- Does the live demo need an autonomous LLM agent driving the flow, or is a scripted hero flow enough for v1? (The buildathon rewards "meaningful AI agent integration.")
-- Is a CSPR.cloud SSE indexer needed for v1, or can the dashboard read on demand? (Lean: read on demand; indexer is v1.5.)
-- SDK package name + whether it publishes to npm during the buildathon (publishing maximizes the "owns the default import" adoption argument).
+1. **Build order — `trust` (read) → `x402` client → `registry` → dashboard → demo.**
+   The `trust` read module ships first, even before x402. It is the lowest-risk, fastest-green
+   work (pure read-only RPC against the deployed contracts — no wallet, no signing, no tx) and
+   alone satisfies success criterion #1; it is also the dependency of `pay({minScore})` gating.
+   The x402 client (medium risk — the Facilitator handshake is unproven) builds on top.
+
+2. **Demo agent — hybrid: real transactions + a thin LLM decision layer.**
+   A client-agent picks a provider, calls `checkTrust`, and `pay({minScore})` settles or refuses.
+   Every transaction is real and deterministic; the LLM only drives the "look at trust, then
+   decide" moment. This meets the buildathon's "meaningful AI agent integration" bar at low risk
+   (the SDK already exposes `pay` + `checkTrust`). A fully autonomous multi-step agent is a v2 item
+   — its non-determinism + Facilitator quota make it a poor fit for a live demo.
+
+3. **No SSE indexer for v1 — read on demand.**
+   The dashboard shows a handful of agent trust cards; each view live-queries `get_summary` +
+   `get_agent` over CSPR.cloud RPC. "Score moved" in the hero flow = one re-query after the
+   `approve` tx confirms. A CSPR.cloud SSE indexer (only needed for a real-time feed / many-agent
+   dashboard) is deferred to v1.5 — no success criterion requires it, and SSE already cost us pain
+   at deploy time (see `tasks/lessons.md`).
+
+4. **Package name `casper-x402` (unscoped); publish to npm close to submission.**
+   Unscoped wins the "owns the default import" adoption argument in an empty ecosystem (every
+   `x402-casper` / `@x402/casper` name 404s today). Publish once it is working + tested, with a
+   README and a runnable example — not a half-baked early `0.0.x`. The product brand stays
+   "Casper Agent Trust Layer" (repo + README); the npm package is the adoption vehicle.
 
 ---
 
