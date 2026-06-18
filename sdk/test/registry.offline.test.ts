@@ -97,24 +97,29 @@ describe("buildRegister (offline)", () => {
     expect(BigInt(amtArg.ui512.value.toString())).toBe(bondMotes);
   });
 
-  it("package_hash arg is a CLKey", () => {
+  it("package_hash arg is a ByteArray(32) of the raw package hash", () => {
+    // Live-verified: the proxy reads package_hash as casper_types::PackageHash,
+    // whose CLType is ByteArray(32) — a Key (tag 1/16) is rejected as InvalidArgument.
     const pkArg = argValue(tx, "package_hash");
-    expect(pkArg?.key).toBeDefined();
+    expect(pkArg?.byteArray).toBeDefined();
+    const data: Uint8Array = (pkArg.byteArray as any).data;
+    expect(data.length).toBe(32);
   });
 
-  it("args arg is a CLByteArray (inner RuntimeArgs)", () => {
+  it("args arg is a List<U8> (Bytes) of the inner RuntimeArgs", () => {
+    // Live-verified: the proxy reads ARGS_ARG as casper_types::Bytes (CLType List<U8>);
+    // a ByteArray (no length prefix) is rejected as InvalidArgument.
     const argsArg = argValue(tx, "args");
-    expect(argsArg?.byteArray).toBeDefined();
+    expect(argsArg?.list).toBeDefined();
   });
 
   it("inner args bytes decode back to contain agent_uri", () => {
     const argsArg = argValue(tx, "args");
-    // byteArray.data is the raw bytes of the CL-serialized inner RuntimeArgs
-    const rawBytes: Uint8Array = (argsArg?.byteArray as any)?.data ?? (argsArg?.byteArray as any)?.bytes;
-    expect(rawBytes).toBeDefined();
-    // The UTF-8 text "agent_uri" should appear in the bytes
-    const text = Buffer.from(rawBytes!).toString("binary");
-    expect(text).toContain("agent_uri");
+    const elements: any[] = (argsArg?.list as any)?.elements ?? [];
+    expect(elements.length).toBeGreaterThan(0);
+    const rawBytes = Buffer.from(elements.map((e) => Number(e.ui8?.value ?? e.uint8?.value ?? 0)));
+    // The UTF-8 text "agent_uri" should appear in the inner serialized RuntimeArgs.
+    expect(rawBytes.toString("binary")).toContain("agent_uri");
   });
 
   it("payment is set (PaymentLimited mode present)", () => {
