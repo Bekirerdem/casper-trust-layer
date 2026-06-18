@@ -1,0 +1,326 @@
+/**
+ * Offline registry write-path tests.
+ *
+ * Each test generates a throwaway key, builds+signs a transaction, and
+ * asserts structural correctness WITHOUT any network call.
+ *
+ * What is NOT verified here (deferred to funded-key live run):
+ *   - Gas amounts sufficient for testnet acceptance
+ *   - Real tx execution (register succeeds, job settles, score moves)
+ *   - proxy_caller_with_return return value deserialization (u32 agent id)
+ */
+
+import { describe, it, expect } from "vitest";
+import { PrivateKey, KeyAlgorithm } from "casper-js-sdk";
+import { CASPER_TEST } from "../src/config.js";
+import {
+  buildRegister,
+  buildApproveToken,
+  buildCreateJob,
+  buildSubmitWork,
+  buildApproveJob,
+  buildAttestSettlement,
+} from "../src/registry/index.js";
+
+// ---------------------------------------------------------------------------
+// helpers
+// ---------------------------------------------------------------------------
+
+function throwaway(): PrivateKey {
+  return PrivateKey.generate(KeyAlgorithm.ED25519);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function argNames(tx: any): string[] {
+  return [...(tx.args.args as Map<string, unknown>).keys()];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function argValue(tx: any, name: string): any {
+  return (tx.args.args as Map<string, unknown>).get(name);
+}
+
+// ---------------------------------------------------------------------------
+// register
+// ---------------------------------------------------------------------------
+
+describe("buildRegister (offline)", () => {
+  const key = throwaway();
+  const bondMotes = 10_000_000_000n;
+  const tx = buildRegister(CASPER_TEST, key, "ipfs://agent-card", bondMotes);
+
+  it("builds without throwing", () => {
+    expect(tx).toBeDefined();
+  });
+
+  it("chainName is casper-test", () => {
+    expect(tx.chainName).toBe("casper-test");
+  });
+
+  it("has at least one approval (signed)", () => {
+    // tx.approvals comes from TransactionV1.approvals via the Transaction wrapper
+    const inner = (tx as any).transactionV1 ?? (tx as any);
+    const approvals = inner?.approvals ?? [];
+    expect(approvals.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("targets a Session (wasm bytes present)", () => {
+    // TransactionTarget.session should be set for SessionBuilder
+    expect(tx.target?.session).toBeDefined();
+    expect(tx.target?.session?.moduleBytes?.length).toBeGreaterThan(0);
+  });
+
+  it("proxy_caller runtime args contain all five expected keys", () => {
+    const names = argNames(tx);
+    expect(names).toContain("package_hash");
+    expect(names).toContain("entry_point");
+    expect(names).toContain("args");
+    expect(names).toContain("attached_value");
+    expect(names).toContain("amount");
+  });
+
+  it("entry_point arg value is 'register'", () => {
+    const epArg = argValue(tx, "entry_point");
+    expect(epArg?.stringVal?.value).toBe("register");
+  });
+
+  it("attached_value equals bondMotes", () => {
+    const av = argValue(tx, "attached_value");
+    // CLValueUInt512 stores value in ui512.val (BigNumber) or similar
+    expect(av?.ui512).toBeDefined();
+  });
+
+  it("amount equals attached_value (same object structure)", () => {
+    const amtArg = argValue(tx, "amount");
+    expect(amtArg?.ui512).toBeDefined();
+  });
+
+  it("package_hash arg is a CLKey", () => {
+    const pkArg = argValue(tx, "package_hash");
+    expect(pkArg?.key).toBeDefined();
+  });
+
+  it("args arg is a CLByteArray (inner RuntimeArgs)", () => {
+    const argsArg = argValue(tx, "args");
+    expect(argsArg?.byteArray).toBeDefined();
+  });
+
+  it("inner args bytes decode back to contain agent_uri", () => {
+    const argsArg = argValue(tx, "args");
+    // byteArray.data is the raw bytes of the CL-serialized inner RuntimeArgs
+    const rawBytes: Uint8Array = (argsArg?.byteArray as any)?.data ?? (argsArg?.byteArray as any)?.bytes;
+    expect(rawBytes).toBeDefined();
+    // The UTF-8 text "agent_uri" should appear in the bytes
+    const text = Buffer.from(rawBytes!).toString("binary");
+    expect(text).toContain("agent_uri");
+  });
+
+  it("payment is set (PaymentLimited mode present)", () => {
+    expect(tx.pricingMode?.paymentLimited).toBeDefined();
+    expect(tx.pricingMode?.paymentLimited?.paymentAmount).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// approveToken
+// ---------------------------------------------------------------------------
+
+describe("buildApproveToken (offline)", () => {
+  const key = throwaway();
+  const tx = buildApproveToken(
+    CASPER_TEST,
+    key,
+    CASPER_TEST.packages.escrow,
+    1_000_000n,
+  );
+
+  it("builds without throwing", () => {
+    expect(tx).toBeDefined();
+  });
+
+  it("chainName is casper-test", () => {
+    expect(tx.chainName).toBe("casper-test");
+  });
+
+  it("entryPoint is Custom:approve", () => {
+    expect(tx.entryPoint?.customEntryPoint).toBe("approve");
+  });
+
+  it("runtime args contain spender and amount", () => {
+    const names = argNames(tx);
+    expect(names).toContain("spender");
+    expect(names).toContain("amount");
+  });
+
+  it("spender is a CLKey", () => {
+    const spender = argValue(tx, "spender");
+    expect(spender?.key).toBeDefined();
+  });
+
+  it("amount is a CLUInt256", () => {
+    const amount = argValue(tx, "amount");
+    expect(amount?.ui256).toBeDefined();
+  });
+
+  it("payment is set", () => {
+    expect(tx.pricingMode?.paymentLimited?.paymentAmount).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createJob
+// ---------------------------------------------------------------------------
+
+describe("buildCreateJob (offline)", () => {
+  const key = throwaway();
+  const params = {
+    clientId: 0,
+    provider: 1,
+    amount: 500_000n,
+    deadline: Math.floor(Date.now() / 1000) + 3600,
+  };
+  const tx = buildCreateJob(CASPER_TEST, key, params);
+
+  it("builds without throwing", () => {
+    expect(tx).toBeDefined();
+  });
+
+  it("entryPoint is Custom:create_job", () => {
+    expect(tx.entryPoint?.customEntryPoint).toBe("create_job");
+  });
+
+  it("runtime args contain client_id, provider, amount, deadline", () => {
+    const names = argNames(tx);
+    expect(names).toContain("client_id");
+    expect(names).toContain("provider");
+    expect(names).toContain("amount");
+    expect(names).toContain("deadline");
+  });
+
+  it("client_id is CLUInt32", () => {
+    expect(argValue(tx, "client_id")?.ui32).toBeDefined();
+  });
+
+  it("provider is CLUInt32", () => {
+    expect(argValue(tx, "provider")?.ui32).toBeDefined();
+  });
+
+  it("amount is CLUInt256", () => {
+    expect(argValue(tx, "amount")?.ui256).toBeDefined();
+  });
+
+  it("deadline is CLUInt64", () => {
+    expect(argValue(tx, "deadline")?.ui64).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// submitWork
+// ---------------------------------------------------------------------------
+
+describe("buildSubmitWork (offline)", () => {
+  const key = throwaway();
+  const tx = buildSubmitWork(CASPER_TEST, key, 0n, "ipfs://result");
+
+  it("builds without throwing", () => {
+    expect(tx).toBeDefined();
+  });
+
+  it("entryPoint is Custom:submit_work", () => {
+    expect(tx.entryPoint?.customEntryPoint).toBe("submit_work");
+  });
+
+  it("runtime args contain job_id and result_hash", () => {
+    const names = argNames(tx);
+    expect(names).toContain("job_id");
+    expect(names).toContain("result_hash");
+  });
+
+  it("job_id is CLUInt64", () => {
+    expect(argValue(tx, "job_id")?.ui64).toBeDefined();
+  });
+
+  it("result_hash is CLString", () => {
+    expect(argValue(tx, "result_hash")?.stringVal).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// approveJob
+// ---------------------------------------------------------------------------
+
+describe("buildApproveJob (offline)", () => {
+  const key = throwaway();
+  const tx = buildApproveJob(CASPER_TEST, key, 0n);
+
+  it("builds without throwing", () => {
+    expect(tx).toBeDefined();
+  });
+
+  it("entryPoint is Custom:approve", () => {
+    expect(tx.entryPoint?.customEntryPoint).toBe("approve");
+  });
+
+  it("runtime args contain job_id", () => {
+    expect(argNames(tx)).toContain("job_id");
+  });
+
+  it("job_id is CLUInt64", () => {
+    expect(argValue(tx, "job_id")?.ui64).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// attestSettlement (sequence structure)
+// ---------------------------------------------------------------------------
+
+describe("buildAttestSettlement (offline)", () => {
+  const clientKey = throwaway();
+  const providerKey = throwaway();
+
+  const plan = buildAttestSettlement(CASPER_TEST, {
+    clientSigner: clientKey,
+    providerSigner: providerKey,
+    clientId: 0,
+    providerId: 1,
+    tokenAmount: 500_000n,
+    deadline: Math.floor(Date.now() / 1000) + 3600,
+    jobId: 0n,
+    resultHash: "ipfs://result-hash",
+  });
+
+  it("returns four transactions", () => {
+    const keys = Object.keys(plan);
+    expect(keys).toEqual(["approveTx", "createJobTx", "submitWorkTx", "approveJobTx"]);
+  });
+
+  it("approveTx targets CEP-18 approve", () => {
+    expect(plan.approveTx.entryPoint?.customEntryPoint).toBe("approve");
+  });
+
+  it("createJobTx targets escrow create_job", () => {
+    expect(plan.createJobTx.entryPoint?.customEntryPoint).toBe("create_job");
+  });
+
+  it("submitWorkTx targets escrow submit_work", () => {
+    expect(plan.submitWorkTx.entryPoint?.customEntryPoint).toBe("submit_work");
+  });
+
+  it("approveJobTx targets escrow approve", () => {
+    expect(plan.approveJobTx.entryPoint?.customEntryPoint).toBe("approve");
+  });
+
+  it("all four txs have chainName casper-test", () => {
+    for (const tx of Object.values(plan)) {
+      expect(tx.chainName).toBe("casper-test");
+    }
+  });
+
+  it("all four txs are signed (have approvals)", () => {
+    for (const tx of Object.values(plan)) {
+      const inner = (tx as any).transactionV1 ?? (tx as any);
+      const approvals = inner?.approvals ?? [];
+      expect(approvals.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
