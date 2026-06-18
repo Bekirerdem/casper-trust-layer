@@ -3,6 +3,10 @@ target/
 **/target/
 *.wasm
 wasm/
+# rustc internal-compiler-error crash dumps
+rustc-ice-*.txt
+# cargo-odra generated stub (root README is canonical)
+contracts/README.md
 
 # Node / TS
 node_modules/
