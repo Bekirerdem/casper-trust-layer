@@ -1,6 +1,8 @@
 import type { TrustClient } from "../trust/index.js";
 import { checkTrust } from "../trust/index.js";
-import { ExactCasperScheme } from "@make-software/casper-x402";
+import { ExactCasperScheme, NETWORK_CASPER_TESTNET } from "@make-software/casper-x402";
+import { wrapFetchWithPayment } from "@x402/fetch";
+import { x402Client } from "@x402/core/client";
 
 // ---------------------------------------------------------------------------
 // Trust gate
@@ -49,7 +51,7 @@ export interface PayRequest {
 
 /**
  * The x402 client signer shape produced by createClientCasperSigner /
- * toClientCasperSigner from @make-software/casper-x402 0.1.0.
+ * toClientCasperSigner from @make-software/casper-x402.
  * The package does not export a named interface type — this mirrors the
  * return type of toClientCasperSigner() exactly.
  */
@@ -60,42 +62,36 @@ export interface CasperClientSigner {
 }
 
 /**
- * Extended TrustClient that carries an x402 client signer and the
- * facilitator URL needed to complete the payment handshake.
+ * Extended TrustClient that carries an x402 client signer.
  *
- * NOTE on the official client API (0.1.0 findings):
- *   @make-software/casper-x402 does NOT ship a wrapFetchWithPayment() or an
- *   x402Fetch helper.  The payment client surface is:
- *     - ExactCasperScheme(signer) — creates payloads via createPaymentPayload()
- *     - createClientCasperSigner(pemPath) / toClientCasperSigner(privateKey)
- *   There is no standalone fetch-wrapper; callers must implement the x402
- *   402-handshake (fetch → 402 → retry with X-PAYMENT header) manually using
- *   ExactCasperScheme.createPaymentPayload().  This wrapper does exactly that.
+ * Delegation: pay() builds an x402Client (from @x402/core) registered with
+ * ExactCasperScheme and delegates the 402-handshake to wrapFetchWithPayment
+ * from @x402/fetch.  That wrapper owns the retry loop and sets the
+ * PAYMENT-SIGNATURE header (x402 v2 wire contract — v1 used X-PAYMENT).
  */
 export interface X402TrustClient extends TrustClient {
   signer: CasperClientSigner;
-  /** e.g. "https://x402-facilitator.cspr.cloud" */
-  facilitatorUrl: string;
+  /** CAIP-2 network override; defaults to NETWORK_CASPER_TESTNET ("casper:casper-test") */
+  network?: string;
 }
 
 // ---------------------------------------------------------------------------
 // pay() — trust-gated x402 payment
 // ---------------------------------------------------------------------------
 
-const X402_VERSION = 1;
-
 /**
- * Trust-gated x402 payment wrapper.
+ * Trust-gated x402 v2 payment wrapper.
  *
  * 1. Gates on the provider's on-chain trust score (throws TrustGateError if below minScore).
- * 2. Performs the x402 402-handshake via ExactCasperScheme from @make-software/casper-x402.
+ * 2. Delegates the 402-handshake to wrapFetchWithPayment (@x402/fetch), which:
+ *    - Detects the 402 response
+ *    - Calls x402Client.createPaymentPayload (dispatches to ExactCasperScheme)
+ *    - Retries with PAYMENT-SIGNATURE header (x402 v2 wire name; v1 was X-PAYMENT)
+ *    - Uses amount field from paymentRequirements (x402 v2 — not maxAmountRequired)
  *
- * Integration assumptions (live facilitator not exercised here):
- *  - The facilitator at c.facilitatorUrl returns a 402 with a JSON body conforming
- *    to the x402 PaymentRequired spec (paymentRequirements array).
- *  - The retry with X-PAYMENT header is the standard x402 client loop.
- *  - ExactCasperScheme.createPaymentPayload() produces a base64-encodable payload
- *    suitable for the X-PAYMENT header value (JSON-encoded).
+ * Integration note: live facilitator not exercised here; the 402-loop is
+ * verified at the unit level via the gating tests. The handshake will be
+ * exercised end-to-end in the dashboard/demo task.
  */
 export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response> {
   // Step 1: gate
@@ -105,43 +101,13 @@ export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response
     req.minScore,
   );
 
-  // Step 2: attempt fetch
-  const scheme = new ExactCasperScheme(c.signer);
-  const initialResponse = await fetch(req.url, req.init);
+  // Step 2: build x402Client with ExactCasperScheme and delegate the 402-loop
+  // x402 v2 wire: amount (not maxAmountRequired), PAYMENT-SIGNATURE header
+  // Network defaults to casper:casper-test per research §2 (CAIP-2 identifier)
+  const network = c.network ?? NETWORK_CASPER_TESTNET;
+  const client = new x402Client();
+  client.register(network, new ExactCasperScheme(c.signer));
 
-  if (initialResponse.status !== 402) {
-    return initialResponse;
-  }
-
-  // Step 3: parse payment requirements from 402 body
-  let paymentRequirements: unknown;
-  try {
-    const body = await initialResponse.json() as { paymentRequirements?: unknown[] };
-    const reqs = body.paymentRequirements;
-    if (!Array.isArray(reqs) || reqs.length === 0) {
-      throw new Error("no paymentRequirements in 402 response body");
-    }
-    // Pick the first exact/casper requirement
-    paymentRequirements = reqs[0];
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`x402: failed to parse 402 body: ${msg}`);
-  }
-
-  // Step 4: create payment payload and retry
-  const payloadResult = await scheme.createPaymentPayload(
-    X402_VERSION,
-    paymentRequirements as Parameters<ExactCasperScheme["createPaymentPayload"]>[1],
-  );
-
-  const paymentHeader = btoa(JSON.stringify(payloadResult));
-  const retryInit: RequestInit = {
-    ...req.init,
-    headers: {
-      ...(req.init?.headers as Record<string, string> | undefined),
-      "X-PAYMENT": paymentHeader,
-    },
-  };
-
-  return fetch(req.url, retryInit);
+  const paymentFetch = wrapFetchWithPayment(fetch, client);
+  return paymentFetch(req.url, req.init);
 }
