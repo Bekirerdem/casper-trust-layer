@@ -1,0 +1,26 @@
+{
+  "name": "casper-trust",
+  "version": "0.0.0",
+  "description": "The settled-payment trust layer for Casper agents — read reputation in one line, gate x402 payments on it.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:live": "CASPER_LIVE=1 vitest run"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "casper-js-sdk": "5.0.12",
+    "@make-software/casper-x402": "latest",
+    "blakejs": "^1.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "dotenv": "^16.4.0"
+  }
+}
