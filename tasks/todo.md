@@ -60,11 +60,17 @@ PRISM pattern'leri: checks-effects-interactions (spend transfer'den önce), per-
 - [x] **Odra patch** (vendor + [patch.crates-io]) — Condor'da named-keys boş → effects'ten ContractPackage resolution + resilient SSE matcher
 - [x] ✅ **DEPLOY + WIRE TAMAM** — 4 kontrat + 2 set_escrow, 6 tx hepsi başarılı testnet'te. Adresler + cspr.live linkleri: `DEPLOYMENT.md`
 
-## Milestone 5 — Off-chain (sonra)
-- [ ] Functional doğrulama (register agent → job → approve → reputation, on-chain)
-- [ ] x402 TS client (SDK yok → yaz) + agent runtime (LLM+MCP) + CSPR.cloud SSE indexer
-- [ ] Next.js + CSPR.design frontend (UI = Bekir + Gemini)
-- [ ] Demo video + submission (DoraHacks)
+## Milestone 5 — Off-chain  (DEVAM EDİYOR)
+- [x] Functional doğrulama — `hero-loop.mts` canlı (register→job→submit→approve→settle, success #4 scoreBps 0→100)
+- [x] casper-trust SDK (checkTrust/getReputation/getAgent/pay/register) — 66 test, npm'de `casper-trust@0.1.0` CANLI
+- [ ] **x402 CANLI HANDSHAKE (WCSPR yolu)** ← ŞİMDİ
+  - [ ] Faz 0: client'a WCSPR sağla (CSPR→WCSPR wrap) · doğrula: balance_of>0 · risk düşük
+  - [ ] Faz 1: imzalı payload → facilitator `/verify` · doğrula: valid:true (secp256k1+domain+token uyumu) · risk orta
+  - [ ] Faz 2: Express paywalled endpoint + `pay()` → `/settle` · doğrula: on-chain WCSPR transfer cspr.live · risk orta
+  - [ ] Faz 3: SDK'ya entegre + demo script (hero-loop tarzı) · risk düşük
+  - NOT: standart AGT CEP-18 settle EDİLEMEZ (facilitator `transfer_with_authorization`/CEP-3009 ister). WCSPR (`3d80df21...`) facilitator'da destekli. Auth: `Authorization: <token>` düz (Bearer YOK). EIP-712 `version="1"`, domain custom-field `chain_name`+`contract_package_hash`.
+- [ ] Next.js dashboard (UI = Bekir + Gemini; SDK read katmanı = Claude)
+- [ ] Demo video (Remotion, EN SON) + DoraHacks submission
 
 ## Milestone 4 — Integration + Deploy
 - [ ] 3 kontrat bağlanır (escrow→reputation hook, escrow→identity bond/slash)
