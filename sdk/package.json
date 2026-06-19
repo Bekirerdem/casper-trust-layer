@@ -1,6 +1,6 @@
 {
   "name": "casper-trust",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The settled-payment trust layer for Casper agents — read reputation in one line, gate x402 payments on it.",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,6 +14,27 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "casper",
+    "x402",
+    "ai-agents",
+    "agent-trust",
+    "reputation",
+    "erc-8004",
+    "escrow",
+    "web3",
+    "blockchain"
+  ],
+  "author": "Ebubekir Erdem",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bekirerdem/casper-trust-layer.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://github.com/Bekirerdem/casper-trust-layer#readme",
+  "bugs": {
+    "url": "https://github.com/Bekirerdem/casper-trust-layer/issues"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
