@@ -1,6 +1,6 @@
 {
   "name": "casper-trust",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The settled-payment trust layer for Casper agents — read reputation in one line, gate x402 payments on it.",
   "type": "module",
   "main": "./dist/index.js",
