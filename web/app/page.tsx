@@ -20,8 +20,7 @@ export default function Home() {
           </div>
 
           <h1
-            className="text-4xl font-semibold tracking-tight text-text"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="text-4xl font-semibold tracking-tight text-text font-display"
           >
             Casper Trust Layer
           </h1>

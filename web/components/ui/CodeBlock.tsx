@@ -7,6 +7,26 @@ interface CodeBlockProps {
   lang?: string;
 }
 
+function CopyButton({
+  onCopy,
+  copied,
+  className,
+}: {
+  onCopy: () => void;
+  copied: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onCopy}
+      className={`text-xs text-muted hover:text-text transition-colors ${className ?? ""}`}
+      aria-label="Copy code"
+    >
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
 export function CodeBlock({ code, lang }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
@@ -19,26 +39,17 @@ export function CodeBlock({ code, lang }: CodeBlockProps) {
 
   return (
     <div className="relative rounded-lg border border-border bg-surface overflow-hidden">
-      {lang && (
+      {lang ? (
         <div className="flex items-center justify-between px-4 py-2 border-b border-border">
           <span className="text-xs text-muted font-mono">{lang}</span>
-          <button
-            onClick={handleCopy}
-            className="text-xs text-muted hover:text-text transition-colors"
-            aria-label="Copy code"
-          >
-            {copied ? "Copied!" : "Copy"}
-          </button>
+          <CopyButton onCopy={handleCopy} copied={copied} />
         </div>
-      )}
-      {!lang && (
-        <button
-          onClick={handleCopy}
-          className="absolute top-3 right-3 text-xs text-muted hover:text-text transition-colors"
-          aria-label="Copy code"
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
+      ) : (
+        <CopyButton
+          onCopy={handleCopy}
+          copied={copied}
+          className="absolute top-3 right-3"
+        />
       )}
       <pre className="overflow-x-auto p-4 text-sm font-mono text-text leading-relaxed">
         <code>{code}</code>
