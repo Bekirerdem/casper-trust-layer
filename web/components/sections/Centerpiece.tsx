@@ -161,16 +161,16 @@ function AgentNode({
 
 // ── Payment flow arrow (SVG) ─────────────────────────────────────────────────
 
-function FlowArrow({ reduce }: { reduce: boolean }) {
+function FlowArrow({ staticMode }: { staticMode: boolean }) {
   return (
     <div className="flex flex-col items-center gap-1 pt-1">
       {/* line with travelling dot */}
-      <div className="relative h-0.5 w-20 bg-border">
-        {!reduce && (
+      <div className="relative h-0.5 w-20 bg-border overflow-hidden">
+        {!staticMode && (
           <motion.div
-            className="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-accent"
-            initial={{ left: 0 }}
-            animate={{ left: "100%" }}
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-accent"
+            initial={{ x: 0 }}
+            animate={{ x: "5rem" }}
             transition={{
               delay: 0.6,
               duration: 0.9,
@@ -194,6 +194,24 @@ function FlowArrow({ reduce }: { reduce: boolean }) {
   );
 }
 
+// ── Mobile detection hook ────────────────────────────────────────────────────
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return isMobile;
+}
+
 // ── Main Centerpiece export ──────────────────────────────────────────────────
 
 interface CenterpieceProps {
@@ -202,6 +220,8 @@ interface CenterpieceProps {
 
 export function Centerpiece({ data }: CenterpieceProps) {
   const reduce = useReducedMotion() ?? false;
+  const isMobile = useIsMobile();
+  const staticMode = reduce || isMobile;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -225,7 +245,7 @@ export function Centerpiece({ data }: CenterpieceProps) {
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs font-mono text-accent">
           <span className="relative flex h-1.5 w-1.5">
-            {!reduce && (
+            {mounted && !staticMode && (
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
             )}
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
@@ -237,7 +257,7 @@ export function Centerpiece({ data }: CenterpieceProps) {
       {/* agent flow diagram */}
       <motion.div
         className="flex items-end justify-center gap-4"
-        initial={reduce ? false : { opacity: 0 }}
+        initial={staticMode ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
@@ -246,12 +266,12 @@ export function Centerpiece({ data }: CenterpieceProps) {
             agentId={agentPayer.agentId}
             scoreBps={agentPayer.scoreBps}
             isPayee={false}
-            reduce={reduce}
+            reduce={staticMode}
           />
         )}
 
         <div className="mb-7">
-          <FlowArrow reduce={reduce} />
+          <FlowArrow staticMode={staticMode} />
         </div>
 
         {agentPayee && (
@@ -259,7 +279,7 @@ export function Centerpiece({ data }: CenterpieceProps) {
             agentId={agentPayee.agentId}
             scoreBps={agentPayee.scoreBps}
             isPayee={true}
-            reduce={reduce}
+            reduce={staticMode}
           />
         )}
       </motion.div>
@@ -275,7 +295,7 @@ export function Centerpiece({ data }: CenterpieceProps) {
               key={s.txHash}
               proof={s}
               index={i}
-              reduce={reduce}
+              reduce={staticMode}
             />
           ))}
         {!mounted &&
