@@ -12,7 +12,13 @@
  * If the RPC is unreachable the script exits with a non-zero code and the
  * existing snapshot.json is left untouched.
  */
-import "dotenv/config";
+// Load web/.env if dotenv is installed; otherwise rely on a shell-exported
+// CSPR_CLOUD_TOKEN. dotenv is not a hard dependency of the web app.
+try {
+  await import("dotenv/config");
+} catch {
+  /* no dotenv — caller must export CSPR_CLOUD_TOKEN in the shell */
+}
 import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +32,9 @@ const OUT = join(__dirname, "../lib/data/snapshot.json");
 // These are REAL tx hashes verified on testnet.cspr.live:
 //   0c58d79a — x402 handshake settle (wrap-wcspr + trust-gated-x402 demo)
 //   b4a4635f — trust-gated x402 paid settle (bar met by provider score)
+//   24f1914a — boost run job#3: agent#0 score 100->150, jobs 1->2
+//   50b6d34d — boost run job#4: agent#0 score 150->183, jobs 2->3
+//   1328ffa5 — boost run job#5: agent#0 score 183->208, jobs 3->4
 const KNOWN_SETTLEMENTS: SettlementProof[] = [
   {
     txHash:
@@ -44,6 +53,33 @@ const KNOWN_SETTLEMENTS: SettlementProof[] = [
     amount: "1000000",
     scoreBefore: 100,
     scoreAfter: 100,
+  },
+  {
+    txHash:
+      "24f1914adcf3915b6abbd69e2c992f251969abf383d278b15f3264218495c154",
+    from: 1,
+    to: 0,
+    amount: "1000000",
+    scoreBefore: 100,
+    scoreAfter: 150,
+  },
+  {
+    txHash:
+      "50b6d34dc3e8f223a50c79bebff697e4dbc1533b3e2799379f81f4fe00c1c275",
+    from: 1,
+    to: 0,
+    amount: "1000000",
+    scoreBefore: 150,
+    scoreAfter: 183,
+  },
+  {
+    txHash:
+      "1328ffa50300aa01e816a010ebbfe15e096f3ae8616f643a42612b55da18e167",
+    from: 1,
+    to: 0,
+    amount: "1000000",
+    scoreBefore: 183,
+    scoreAfter: 208,
   },
 ];
 

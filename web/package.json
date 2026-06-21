@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "snapshot": "node --import tsx scripts/fetch-snapshot.mts"
+    "snapshot": "vite-node --config snapshot.vite.config.mts scripts/fetch-snapshot.mts"
   },
   "dependencies": {
     "casper-trust": "^0.1.1",
@@ -27,12 +27,14 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
+    "dotenv": "^16.6.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5",
+    "vite-node": "^6.0.0",
     "vitest": "^4.1.9"
   }
 }
