@@ -28,12 +28,12 @@ interface MotionConfigProviderProps {
 }
 
 export function MotionConfigProvider({ children }: MotionConfigProviderProps) {
-  const [reduce, setReduce] = useState(false)
+  const [reduce, setReduce] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
-    setReduce(mq.matches)
-
     const handler = (e: MediaQueryListEvent) => setReduce(e.matches)
     mq.addEventListener("change", handler)
     return () => mq.removeEventListener("change", handler)

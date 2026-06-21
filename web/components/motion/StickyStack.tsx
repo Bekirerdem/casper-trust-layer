@@ -1,14 +1,25 @@
 "use client"
 
-import { useEffect, useRef, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
+import React from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
 gsap.registerPlugin(ScrollTrigger)
 
 function usePrefersReducedMotion(): boolean {
-  if (typeof window === "undefined") return false
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  const [reduce, setReduce] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const handler = (e: MediaQueryListEvent) => setReduce(e.matches)
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
+  }, [])
+
+  return reduce
 }
 
 interface StickyStackProps {
@@ -82,13 +93,11 @@ export function StickyStack({ children, className }: StickyStackProps) {
   return (
     <div ref={containerRef} className={className}>
       {/* Wrap each child in a data-sticky-card sentinel */}
-      {Array.isArray(children)
-        ? (children as ReactNode[]).map((child, i) => (
-            <div key={i} data-sticky-card="">
-              {child}
-            </div>
-          ))
-        : <div data-sticky-card="">{children}</div>}
+      {React.Children.map(children, (child) => (
+        <div data-sticky-card="">
+          {child}
+        </div>
+      ))}
     </div>
   )
 }

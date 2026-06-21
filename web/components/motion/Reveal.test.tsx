@@ -55,11 +55,12 @@ describe('Reveal', () => {
     )
     const child = screen.getByText('hello world')
     expect(child).toBeInTheDocument()
-    // When reduced-motion, the wrapper must have no animation applied:
-    // we assert the element is present (opacity:1 default, no hidden state).
+    // When reduced-motion, Reveal must render a plain <div> (not a framer motion
+    // wrapper) with no hidden initial state — positively assert opacity:1 and
+    // that the wrapper tag is a plain div (no data-framer-* or style="opacity:0").
     const wrapper = child.parentElement
-    // No initial animation means no inline opacity:0 style
-    expect(wrapper).not.toHaveStyle({ opacity: '0' })
+    expect(wrapper?.tagName).toBe('DIV')
+    expect(wrapper).toHaveStyle({ opacity: '1' })
   })
 
   it('renders child in a wrapper (motion div) when motion is allowed', () => {
