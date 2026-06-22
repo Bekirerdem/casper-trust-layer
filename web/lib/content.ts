@@ -1,8 +1,13 @@
 /** Single source of truth for all landing-page copy. */
 
 export const hero = {
-  /** Main headline — ≤6 words, display-size graphic element. */
-  headline: "Trust, settled\non-chain.",
+  /**
+   * Main headline — split into segments so AccentWord can wrap one word.
+   * Rendered as: "Agent <AccentWord>Trust</AccentWord> Layer"
+   */
+  headlinePre: "Agent",
+  headlineAccent: "Trust",
+  headlinePost: "Layer",
 
   /** One-sentence sub-heading — objective, factual. */
   subhead:
@@ -22,4 +27,7 @@ export const hero = {
 
   /** Badge shown above headline. */
   badge: "Built on Casper",
+
+  /** Section label */
+  label: "01 / PROTOCOL LAYER",
 } as const;

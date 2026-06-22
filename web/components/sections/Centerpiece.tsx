@@ -1,215 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  motion,
-  useMotionValue,
-  useTransform,
-  animate,
-  useReducedMotion,
-} from "framer-motion";
-import type { TrustSnapshot, SettlementProof } from "@/lib/casper/types";
+import { Reveal } from "@/components/motion/Reveal";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import type { TrustSnapshot } from "@/lib/casper/types";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function shortHash(hash: string): string {
-  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
+  return `${hash.slice(0, 8)}…${hash.slice(-6)}`;
 }
 
-function bpsToPercent(bps: number): string {
-  return (bps / 100).toFixed(0) + "%";
-}
-
-// ── Score counter animated with framer useMotionValue ────────────────────────
-
-function AnimatedScore({
-  from,
-  to,
-  reduce,
-  delay = 0,
-}: {
-  from: number;
-  to: number;
-  reduce: boolean;
-  delay?: number;
-}) {
-  const mv = useMotionValue(reduce ? to : from);
-  const display = useTransform(mv, (v) => bpsToPercent(Math.round(v)));
-  const started = useRef(false);
-
-  useEffect(() => {
-    if (reduce || started.current) return;
-    started.current = true;
-    const controls = animate(mv, to, {
-      delay,
-      duration: 1.8,
-      ease: [0.16, 1, 0.3, 1],
-    });
-    return () => controls.stop();
-  }, [mv, to, delay, reduce]);
-
-  return (
-    <motion.span className="font-mono text-accent text-xl font-semibold tabular-nums">
-      {display}
-    </motion.span>
-  );
-}
-
-// ── Single settlement row ────────────────────────────────────────────────────
-
-function SettlementRow({
-  proof,
-  index,
-  reduce,
-}: {
-  proof: SettlementProof;
-  index: number;
-  reduce: boolean;
-}) {
-  const delta = proof.scoreAfter - proof.scoreBefore;
-
-  return (
-    <motion.div
-      className="flex items-center gap-3 py-3 border-b border-border last:border-0"
-      initial={reduce ? false : { opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.4 + index * 0.25, duration: 0.5, ease: "easeOut" }}
-    >
-      {/* tx hash */}
-      <span className="font-mono text-xs text-muted flex-1 truncate">
-        {shortHash(proof.txHash)}
-      </span>
-
-      {/* agent ids */}
-      <span className="text-xs text-muted whitespace-nowrap">
-        Agent&nbsp;
-        <span className="text-text font-medium">{proof.from}</span>
-        &nbsp;→&nbsp;
-        <span className="text-text font-medium">{proof.to}</span>
-      </span>
-
-      {/* amount */}
-      <span className="font-mono text-xs text-muted whitespace-nowrap">
-        {(Number(proof.amount) / 1_000_000_000).toFixed(3)} CSPR
-      </span>
-
-      {/* score delta — accent only if positive */}
-      {delta !== 0 && (
-        <span
-          className={[
-            "font-mono text-xs font-semibold whitespace-nowrap",
-            delta > 0 ? "text-accent" : "text-muted",
-          ].join(" ")}
-        >
-          {delta > 0 ? "+" : ""}
-          {bpsToPercent(delta)}
-        </span>
-      )}
-    </motion.div>
-  );
-}
-
-// ── Agent node (SVG circle) ───────────────────────────────────────────────────
-
-function AgentNode({
-  agentId,
-  scoreBps,
-  isPayee,
-  reduce,
-}: {
-  agentId: number;
-  scoreBps: number;
-  isPayee: boolean;
-  reduce: boolean;
-}) {
-  // find the settlement that changed this agent's score
-  const from = isPayee ? 0 : scoreBps;
-  const to = scoreBps;
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      {/* circle */}
-      <div
-        className={[
-          "relative flex h-14 w-14 items-center justify-center rounded-full border-2",
-          isPayee
-            ? "border-accent/60 bg-accent/5"
-            : "border-border bg-surface",
-        ].join(" ")}
-      >
-        {/* subtle ambient pulse on active agent (payee) */}
-        {isPayee && !reduce && (
-          <motion.div
-            className="absolute inset-0 rounded-full border border-accent/30"
-            animate={{ scale: [1, 1.18, 1], opacity: [0.6, 0, 0.6] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-        )}
-        <span className="font-mono text-sm font-semibold text-text">
-          A{agentId}
-        </span>
-      </div>
-
-      {/* score */}
-      <div className="flex flex-col items-center gap-0.5">
-        <AnimatedScore from={from} to={to} reduce={reduce} delay={isPayee ? 0.8 : 0} />
-        <span className="text-[10px] text-muted">trust score</span>
-      </div>
-    </div>
-  );
-}
-
-// ── Payment flow arrow (SVG) ─────────────────────────────────────────────────
-
-function FlowArrow({ staticMode }: { staticMode: boolean }) {
-  return (
-    <div className="flex flex-col items-center gap-1 pt-1">
-      {/* line with travelling dot */}
-      <div className="relative h-0.5 w-20 bg-border overflow-hidden">
-        {!staticMode && (
-          <motion.div
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-accent"
-            initial={{ x: 0 }}
-            animate={{ x: "5rem" }}
-            transition={{
-              delay: 0.6,
-              duration: 0.9,
-              ease: "easeInOut",
-              repeat: Infinity,
-              repeatDelay: 2.5,
-            }}
-          />
-        )}
-      </div>
-
-      <span className="text-[9px] font-mono text-muted tracking-wider uppercase">
-        x402 · CSPR
-      </span>
-
-      {/* arrowhead */}
-      <svg width="10" height="6" viewBox="0 0 10 6" className="text-border -mt-1">
-        <path d="M0 0 L5 6 L10 0" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      </svg>
-    </div>
-  );
-}
-
-// ── Mobile detection hook ────────────────────────────────────────────────────
-
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 767px)").matches;
-  });
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  return isMobile;
+function bpsToScore(bps: number): string {
+  return (bps / 100).toFixed(2);
 }
 
 // ── Main Centerpiece export ──────────────────────────────────────────────────
@@ -219,100 +21,87 @@ interface CenterpieceProps {
 }
 
 export function Centerpiece({ data }: CenterpieceProps) {
-  const reduce = useReducedMotion() ?? false;
-  const isMobile = useIsMobile();
-  const staticMode = reduce || isMobile;
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Use the two agents and settlements from snapshot
-  const agentPayer = data.agents.find((a) => a.agentId === 1) ?? data.agents[1];
-  const agentPayee = data.agents.find((a) => a.agentId === 0) ?? data.agents[0];
-  const settlements = data.settlements.slice(0, 3);
+  // Agent#0 is the primary agent with real data
+  const agent = data.agents.find((a) => a.agentId === 0) ?? data.agents[0];
 
   return (
     <div
-      className="relative flex flex-col gap-6 rounded-2xl border border-border bg-surface p-6"
-      aria-label="Live trust-settlement visualization"
+      className="flex flex-col gap-0 border-t border-line"
+      aria-label="Agent trust proof panel"
     >
-      {/* header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-mono text-muted tracking-wider uppercase">
+      {/* ── Header label ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between py-4 border-b border-line">
+        <SectionLabel>Agent#0 · Testnet</SectionLabel>
+        <span className="font-mono text-[10px] text-muted tracking-wider uppercase">
           {data.network}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-xs font-mono text-accent">
-          <span className="relative flex h-1.5 w-1.5">
-            {mounted && !staticMode && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
-            )}
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
-          </span>
-          live
-        </span>
       </div>
 
-      {/* agent flow diagram */}
-      <motion.div
-        className="flex items-end justify-center gap-4"
-        initial={staticMode ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-      >
-        {agentPayer && (
-          <AgentNode
-            agentId={agentPayer.agentId}
-            scoreBps={agentPayer.scoreBps}
-            isPayee={false}
-            reduce={staticMode}
-          />
-        )}
-
-        <div className="mb-7">
-          <FlowArrow staticMode={staticMode} />
+      {/* ── Big number: scoreBps ─────────────────────────────────── */}
+      <Reveal>
+        <div className="py-8 border-b border-line">
+          <p className="font-mono text-[clamp(3.5rem,10vw,5.5rem)] font-semibold leading-none tabular-nums text-text">
+            {bpsToScore(agent.scoreBps)}
+          </p>
+          <p className="mt-2 text-xs font-sans uppercase tracking-[0.10em] text-muted">
+            Trust Score (bps ÷ 100)
+          </p>
         </div>
+      </Reveal>
 
-        {agentPayee && (
-          <AgentNode
-            agentId={agentPayee.agentId}
-            scoreBps={agentPayee.scoreBps}
-            isPayee={true}
-            reduce={staticMode}
-          />
-        )}
-      </motion.div>
+      {/* ── Stat row: jobs completed ─────────────────────────────── */}
+      <Reveal delay={0.06}>
+        <div className="flex items-baseline gap-3 py-5 border-b border-line">
+          <span className="font-mono text-[2rem] font-semibold tabular-nums text-text leading-none">
+            {agent.jobsCompleted}
+          </span>
+          <span className="text-xs font-sans uppercase tracking-[0.10em] text-muted">
+            Jobs completed
+          </span>
+        </div>
+      </Reveal>
 
-      {/* settlement list */}
-      <div className="flex flex-col">
-        <span className="mb-1 text-[10px] font-mono text-muted tracking-wider uppercase">
-          Recent settlements
-        </span>
-        {mounted &&
-          settlements.map((s, i) => (
-            <SettlementRow
-              key={s.txHash}
-              proof={s}
-              index={i}
-              reduce={staticMode}
-            />
-          ))}
-        {!mounted &&
-          settlements.map((s) => (
-            <div
-              key={s.txHash}
-              className="flex items-center gap-3 py-3 border-b border-border last:border-0"
-            >
-              <span className="font-mono text-xs text-muted">
-                {shortHash(s.txHash)}
-              </span>
-            </div>
-          ))}
-      </div>
+      {/* ── Settlement list ──────────────────────────────────────── */}
+      <Reveal delay={0.12}>
+        <div className="flex flex-col gap-0">
+          <p className="py-3 text-[10px] font-sans uppercase tracking-[0.10em] text-muted border-b border-line">
+            Settled on-chain
+          </p>
+          {data.settlements.map((s) => {
+            const delta = s.scoreAfter - s.scoreBefore;
+            return (
+              <a
+                key={s.txHash}
+                href={`https://testnet.cspr.live/deploy/${s.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-between gap-4 py-3 border-b border-line last:border-0 hover:bg-[#FBF8F3] transition-colors"
+                aria-label={`View transaction ${s.txHash} on cspr.live`}
+              >
+                {/* tx hash */}
+                <span className="font-mono text-[11px] text-muted group-hover:text-text transition-colors shrink-0">
+                  {shortHash(s.txHash)}
+                </span>
 
-      {/* captured at */}
-      <p className="text-[10px] font-mono text-muted/60 text-right -mt-2">
+                {/* score delta */}
+                {delta !== 0 && (
+                  <span className="font-mono text-[11px] text-muted shrink-0">
+                    +{delta}&nbsp;<span className="text-[9px] uppercase tracking-wider">bps</span>
+                  </span>
+                )}
+
+                {/* cspr.live indicator */}
+                <span className="font-sans text-[9px] uppercase tracking-widest text-muted/50 group-hover:text-muted transition-colors shrink-0 ml-auto">
+                  cspr.live ↗
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </Reveal>
+
+      {/* ── Snapshot timestamp ───────────────────────────────────── */}
+      <p className="pt-4 font-mono text-[9px] text-muted/40 tabular-nums">
         snapshot {new Date(data.capturedAt).toISOString().slice(0, 10)}
       </p>
     </div>
