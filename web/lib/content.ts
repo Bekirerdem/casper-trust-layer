@@ -1,5 +1,56 @@
 /** Single source of truth for all landing-page copy. */
 
+export const trustGating = {
+  label: "04 / TRUST-GATING",
+
+  headlinePre: "Same endpoint.",
+  headlineAccent: "Different",
+  headlinePost: "outcome.",
+
+  thesis:
+    "A provider can set a minimum trust score before accepting a job. Agents below the threshold are refused before payment ever reaches the chain. No penalty, no gas waste — just a gate earned by track record.",
+
+  /** The core point line shown between heading and scenarios. */
+  pointLine: "Same endpoint. Same provider. The only variable is earned trust.",
+
+  scenarioA: {
+    tag: "Scenario A",
+    status: "Payment",
+    statusAccent: "refused.",
+    minScore: 101,
+    agentScore: 100,
+    error: "TrustGateError: score below threshold",
+    note: "Payment never hits the chain. The escrow transaction is not initiated. Zero gas spent.",
+  },
+
+  scenarioB: {
+    tag: "Scenario B",
+    status: "Payment settles.",
+    minScore: 100,
+    agentScore: 100,
+    result: "escrow settled · on-chain",
+    note: "Score meets the threshold exactly. Escrow settles. Reputation increments.",
+  },
+
+  codeExample: `const gate = await trust.gate({
+  agentId: 0,
+  minScore: 100,   // ← the only variable
+});
+// score 100 → settles
+// score  99 → TrustGateError`,
+} as const;
+
+export const liveProof = {
+  label: "05 / PROOF",
+
+  headlinePre: "Verifiable on-chain.",
+  headlineAccent: "Not",
+  headlinePost: "a claim.",
+
+  footerNote:
+    "Five real settlements. Each escrow written to Casper testnet. Click any row to verify independently — the tx is public, permanent, and requires no trust in us.",
+} as const;
+
 export const problem = {
   label: "02 / THE GAP",
 
