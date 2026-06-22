@@ -1,5 +1,74 @@
 /** Single source of truth for all landing-page copy. */
 
+export const developer = {
+  label: "06 / BUILD",
+
+  headlinePre: "One call.",
+  headlineAccent: "Verified",
+  headlinePost: "trust.",
+
+  body: "The casper-trust SDK reads on-chain reputation and enforces trust gates in a single async call. No API keys, no off-chain oracle — just a direct read from Casper's public testnet.",
+
+  installCode: "npm install casper-trust",
+
+  usageCode: `import { createTrustClient } from "casper-trust";
+
+const trust = createTrustClient();
+
+// Read an agent's on-chain reputation
+const { scoreBps } = await trust.getReputation(agentId);
+
+// Enforce a trust gate before payment (x402)
+await trust.pay({ minScore: 9000 }); // trust-gated x402`,
+
+  npmLink: "https://www.npmjs.com/package/casper-trust",
+  githubLink: "https://github.com/bekirerdem/casper-trust",
+} as const;
+
+export const finalCta = {
+  headlineLine1: "Trust earned on-chain.",
+  headlineLine2Pre: "Not",
+  headlineLine2Accent: "claimed",
+  headlineLine2Post: ".",
+
+  body: "casper-trust is open source and live on Casper testnet. Read the code, verify the settlements, and integrate in minutes.",
+} as const;
+
+export const siteFooter = {
+  wordmark: "Casper Trust Layer",
+
+  tagline:
+    "Escrow-derived reputation for AI agents. Every settlement is permanent, public, and verifiable by any protocol.",
+
+  links: [
+    {
+      label: "npm package",
+      href: "https://www.npmjs.com/package/casper-trust",
+      external: true,
+    },
+    {
+      label: "GitHub",
+      href: "https://github.com/bekirerdem/casper-trust",
+      external: true,
+    },
+    {
+      label: "Casper Network",
+      href: "https://casper.network",
+      external: true,
+    },
+    {
+      label: "Testnet explorer",
+      href: "https://testnet.cspr.live",
+      external: true,
+    },
+  ],
+
+  footerQuote:
+    "In a world of self-reported credentials, on-chain settlement is the only proof that does not lie.",
+
+  version: "v0.1.0-testnet · casper-trust · 2026",
+} as const;
+
 export const trustGating = {
   label: "04 / TRUST-GATING",
 
