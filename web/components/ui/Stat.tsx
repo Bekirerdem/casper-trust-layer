@@ -9,7 +9,7 @@ export function Stat({ value, label, mono = true }: StatProps) {
     <div className="flex flex-col gap-1">
       <span
         className={[
-          "text-3xl font-semibold tracking-tight text-accent",
+          "text-3xl font-semibold tracking-tight text-text",
           mono ? "font-mono" : "",
         ]
           .filter(Boolean)

@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({
-  variable: "--font-geist",
-  subsets: ["latin"],
+const zodiak = localFont({
+  src: [
+    { path: "../public/fonts/zodiak-regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/zodiak-bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-zodiak",
   display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const switzer = localFont({
+  src: [
+    { path: "../public/fonts/switzer-regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/switzer-medium.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/switzer-semibold.woff2", weight: "600", style: "normal" },
+  ],
+  variable: "--font-switzer",
   display: "swap",
 });
 
@@ -38,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geist.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${zodiak.variable} ${switzer.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-text">
         {children}

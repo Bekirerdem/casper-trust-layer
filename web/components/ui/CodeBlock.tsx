@@ -38,9 +38,9 @@ export function CodeBlock({ code, lang }: CodeBlockProps) {
   }
 
   return (
-    <div className="relative rounded-lg border border-border bg-surface overflow-hidden">
+    <div className="relative border border-line overflow-hidden" style={{ borderRadius: 0 }}>
       {lang ? (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-line bg-[#FBF8F3]">
           <span className="text-xs text-muted font-mono">{lang}</span>
           <CopyButton onCopy={handleCopy} copied={copied} />
         </div>
@@ -51,7 +51,7 @@ export function CodeBlock({ code, lang }: CodeBlockProps) {
           className="absolute top-3 right-3"
         />
       )}
-      <pre className="overflow-x-auto p-4 text-sm font-mono text-text leading-relaxed">
+      <pre className="overflow-x-auto p-4 text-sm font-mono text-text leading-relaxed bg-[#FBF8F3]">
         <code>{code}</code>
       </pre>
     </div>

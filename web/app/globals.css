@@ -2,29 +2,27 @@
 
 /* ── Design tokens ───────────────────────────────────────────────────────── */
 :root {
-  --bg: #0A0B0D;
-  --surface: #14161A;
-  --text: #E8EAED;
-  --accent: #2BD9A0;
-  --muted: #8A8F98;
-  --border: #23262D;
-  --accent-dim: #1C9C74;
+  --bg: #F5F0EA;
+  --text: #1A1714;
+  --muted: #6B645C;
+  --line: rgba(26, 23, 20, 0.10);
+  --accent-red: #ad0013;
+  --accent-gold: #a67d43;
 
   /* Font stacks wired from layout.tsx */
-  --font-display: var(--font-geist);
-  --font-sans: var(--font-inter);
+  --font-display: var(--font-zodiak);
+  --font-sans: var(--font-switzer);
   --font-mono: var(--font-jetbrains-mono);
 }
 
 /* ── Tailwind v4 @theme mapping ──────────────────────────────────────────── */
 @theme {
   --color-bg: var(--bg);
-  --color-surface: var(--surface);
   --color-text: var(--text);
-  --color-accent: var(--accent);
   --color-muted: var(--muted);
-  --color-border: var(--border);
-  --color-accent-dim: var(--accent-dim);
+  --color-line: var(--line);
+  --color-accent-red: var(--accent-red);
+  --color-accent-gold: var(--accent-gold);
 
   --font-family-display: var(--font-display);
   --font-family-sans: var(--font-sans);
@@ -37,7 +35,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
