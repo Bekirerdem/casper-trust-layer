@@ -10,10 +10,6 @@ function shortHash(hash: string): string {
   return `${hash.slice(0, 8)}…${hash.slice(-6)}`;
 }
 
-function bpsToScore(bps: number): string {
-  return (bps / 100).toFixed(2);
-}
-
 // ── Main Centerpiece export ──────────────────────────────────────────────────
 
 interface CenterpieceProps {
@@ -41,10 +37,10 @@ export function Centerpiece({ data }: CenterpieceProps) {
       <Reveal>
         <div className="py-8 border-b border-line">
           <p className="font-mono text-[clamp(3.5rem,10vw,5.5rem)] font-semibold leading-none tabular-nums text-text">
-            {bpsToScore(agent.scoreBps)}
+            {agent.scoreBps}
           </p>
           <p className="mt-2 text-xs font-sans uppercase tracking-[0.10em] text-muted">
-            Trust Score (bps ÷ 100)
+            Reputation · BPS
           </p>
         </div>
       </Reveal>
