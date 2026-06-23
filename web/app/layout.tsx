@@ -1,29 +1,15 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const zodiak = localFont({
-  src: [
-    { path: "../public/fonts/zodiak-regular.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/zodiak-bold.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-zodiak",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
   display: "swap",
 });
 
-const switzer = localFont({
-  src: [
-    { path: "../public/fonts/switzer-regular.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/switzer-medium.woff2", weight: "500", style: "normal" },
-    { path: "../public/fonts/switzer-semibold.woff2", weight: "600", style: "normal" },
-  ],
-  variable: "--font-switzer",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -46,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${zodiak.variable} ${switzer.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-text">
         {children}

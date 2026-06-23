@@ -2,22 +2,24 @@
 
 /* ── Design tokens ───────────────────────────────────────────────────────── */
 :root {
-  --bg: #F5F0EA;
-  --text: #1A1714;
-  --muted: #6B645C;
-  --line: rgba(26, 23, 20, 0.10);
-  --accent-red: #ad0013;
+  --bg: #0A0B0D;              /* ink near-black */
+  --surface: #14161A;         /* raised dark surface */
+  --text: #F2F3F5;            /* near-white */
+  --muted: #9AA0A6;           /* secondary grey */
+  --line: rgba(255, 255, 255, 0.10);
+  --accent-red: #E84142;      /* avax-referenced signal red (tone tunable at checkpoint) */
   --accent-gold: #a67d43;
 
   /* Font stacks wired from layout.tsx */
-  --font-display: var(--font-zodiak);
-  --font-sans: var(--font-switzer);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-geist-sans);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 /* ── Tailwind v4 @theme mapping ──────────────────────────────────────────── */
 @theme {
   --color-bg: var(--bg);
+  --color-surface: var(--surface);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-line: var(--line);
@@ -35,7 +37,7 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
