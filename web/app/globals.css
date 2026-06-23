@@ -8,7 +8,7 @@
   --muted: #9AA0A6;           /* secondary grey */
   --line: rgba(255, 255, 255, 0.10);
   --accent-red: #E84142;      /* avax-referenced signal red (tone tunable at checkpoint) */
-  --accent-gold: #a67d43;
+  --accent-gold: rgba(255, 255, 255, 0.14); /* neutralised hairline on dark (was warm gold) */
 
   /* Font stacks wired from layout.tsx */
   --font-display: var(--font-geist-sans);

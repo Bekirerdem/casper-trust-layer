@@ -18,11 +18,6 @@ export function TrustGating() {
           <Reveal>
             <div className="flex flex-col gap-6 lg:pt-2">
               <SectionLabel>{trustGating.label}</SectionLabel>
-              <div
-                aria-hidden
-                className="h-[1px] w-8"
-                style={{ background: "var(--accent-gold)" }}
-              />
             </div>
           </Reveal>
 
@@ -171,7 +166,7 @@ export function TrustGating() {
                       SDK
                     </span>
                     <pre
-                      className="font-mono text-[12px] leading-[1.8] text-text/80 bg-[#FBF8F3] px-5 py-4 border border-line overflow-x-auto"
+                      className="font-mono text-[12px] leading-[1.8] text-text/80 bg-surface px-5 py-4 border border-line overflow-x-auto"
                       aria-label="SDK usage example"
                     >
                       <code>{trustGating.codeExample}</code>

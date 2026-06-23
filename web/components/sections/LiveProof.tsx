@@ -2,6 +2,7 @@ import { loadSnapshot } from "@/lib/data/snapshot";
 import { liveProof } from "@/lib/content";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { AccentWord } from "@/components/ui/AccentWord";
+import { BentoGrid, BentoCell } from "@/components/ui/BentoGrid";
 import { Reveal } from "@/components/motion/Reveal";
 
 function shortHash(hash: string): string {
@@ -15,96 +16,77 @@ function formatScoreDelta(before: number, after: number): string {
 
 export function LiveProof() {
   const snapshot = loadSnapshot();
+  const agent0 = snapshot.agents.find((a) => a.agentId === 0);
 
   return (
-    <section
-      id="live-proof"
-      className="w-full bg-bg"
-      aria-labelledby="lp-headline"
-    >
-      <div className="mx-auto max-w-[1200px] px-6 md:px-12 py-24 md:py-36 lg:py-[clamp(6rem,12vw,11rem)]">
+    <section id="live-proof" className="w-full bg-bg" aria-labelledby="lp-headline">
+      <div className="mx-auto max-w-[1280px] px-6 md:px-12 [padding-block:clamp(6rem,10vw,10rem)]">
 
-        {/* Header — tight editorial, left-anchored */}
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_3fr] lg:gap-20 lg:items-end mb-20 md:mb-28">
-
+        {/* Asymmetric header */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_2fr] lg:items-end mb-14 md:mb-20">
           <Reveal>
-            <div className="flex flex-col gap-6">
-              <SectionLabel>{liveProof.label}</SectionLabel>
-              <div
-                aria-hidden
-                className="h-[1px] w-8"
-                style={{ background: "var(--accent-gold)" }}
-              />
-            </div>
+            <SectionLabel>{liveProof.label}</SectionLabel>
           </Reveal>
-
           <Reveal delay={0.08}>
             <h2
               id="lp-headline"
-              className="font-display text-[clamp(2rem,4.5vw,4rem)] font-semibold leading-[1.05] tracking-[-0.015em] text-text max-w-[30ch]"
+              className="font-display text-[clamp(2rem,4.5vw,4rem)] font-semibold leading-[1.04] tracking-[-0.015em] text-text max-w-[26ch]"
             >
-              {liveProof.headlinePre}{" "}
-              <AccentWord>{liveProof.headlineAccent}</AccentWord>
-              {liveProof.headlinePost && (
-                <>{" "}{liveProof.headlinePost}</>
-              )}
+              {liveProof.headlinePre} <AccentWord>{liveProof.headlineAccent}</AccentWord>
+              {liveProof.headlinePost && <>{" "}{liveProof.headlinePost}</>}
             </h2>
           </Reveal>
         </div>
 
-        {/* Settlement list — editorial, factual */}
-        <Reveal delay={0.14}>
-          <div className="flex flex-col">
-
-            {/* Column headers */}
-            <div className="grid grid-cols-[1fr_auto_auto] gap-4 sm:gap-8 pb-4 border-b border-line">
-              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-muted">Tx Hash</span>
-              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-muted text-right hidden sm:block">Score</span>
-              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-muted text-right">Proof</span>
-            </div>
-
-            {/* Settlement rows */}
-            {snapshot.settlements.map((s, i) => (
-              <Reveal key={s.txHash} delay={0.2 + i * 0.06}>
-                <div>
-                  <div className="grid grid-cols-[1fr_auto_auto] gap-4 sm:gap-8 py-5 border-b border-line items-center">
-
-                    {/* Hash + score delta (mobile: stacked) */}
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <span className="font-mono text-[13px] sm:text-[14px] text-text tabular-nums truncate">
-                        {shortHash(s.txHash)}
-                      </span>
-                      <span className="font-mono text-[11px] text-muted sm:hidden">
-                        {formatScoreDelta(s.scoreBefore, s.scoreAfter)}
-                      </span>
-                    </div>
-
-                    {/* Score delta — desktop only */}
-                    <span className="font-mono text-[13px] text-muted text-right hidden sm:block tabular-nums whitespace-nowrap">
-                      {formatScoreDelta(s.scoreBefore, s.scoreAfter)}
-                    </span>
-
-                    {/* cspr.live link */}
-                    <a
-                      href={`https://testnet.cspr.live/deploy/${s.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-sans text-[11px] uppercase tracking-[0.10em] text-muted hover:text-text transition-colors whitespace-nowrap underline underline-offset-4 decoration-line hover:decoration-text text-right"
-                      aria-label={`View transaction ${s.txHash} on cspr.live`}
-                    >
-                      cspr.live ↗
-                    </a>
-                  </div>
+        {/* Bento: hero reputation tile + settlement tiles */}
+        <BentoGrid>
+          <Reveal>
+            <BentoCell
+              span="md:col-span-1 md:row-span-2"
+              className="flex flex-col justify-between min-h-[260px]"
+            >
+              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-muted">
+                agent #0 · live reputation
+              </span>
+              <div>
+                <div className="font-mono text-[clamp(3rem,6vw,5rem)] leading-none text-text tabular-nums">
+                  {agent0?.scoreBps ?? 0}
                 </div>
-              </Reveal>
-            ))}
+                <div className="mt-2 font-mono text-xs text-muted">
+                  bps · {agent0?.jobsCompleted ?? 0} jobs settled on-chain
+                </div>
+              </div>
+            </BentoCell>
+          </Reveal>
 
-          </div>
-        </Reveal>
+          {snapshot.settlements.map((s, i) => (
+            <Reveal key={s.txHash} delay={0.06 + i * 0.05}>
+              <BentoCell className="flex flex-col justify-between min-h-[120px]">
+                <span className="font-mono text-[13px] text-text tabular-nums truncate">
+                  {shortHash(s.txHash)}
+                </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-[12px] text-accent-red tabular-nums">
+                    {formatScoreDelta(s.scoreBefore, s.scoreAfter)}
+                  </span>
+                  <a
+                    href={`https://testnet.cspr.live/deploy/${s.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-sans text-[10px] uppercase tracking-[0.10em] text-muted hover:text-text transition-colors whitespace-nowrap"
+                    aria-label={`View transaction ${s.txHash} on cspr.live`}
+                  >
+                    cspr.live ↗
+                  </a>
+                </div>
+              </BentoCell>
+            </Reveal>
+          ))}
+        </BentoGrid>
 
         {/* Footer note */}
-        <Reveal delay={0.5}>
-          <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Reveal delay={0.4}>
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-sans text-[14px] leading-[1.7] text-muted max-w-[52ch]">
               {liveProof.footerNote}
             </p>

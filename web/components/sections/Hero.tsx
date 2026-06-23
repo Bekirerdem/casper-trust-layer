@@ -52,11 +52,6 @@ export function Hero() {
                 <p className="max-w-[52ch] text-[17px] leading-[1.75] text-muted font-sans">
                   {hero.subhead}
                 </p>
-                <div
-                  aria-hidden
-                  className="h-[2px] w-12"
-                  style={{ background: "var(--accent-gold)" }}
-                />
               </div>
             </Reveal>
 

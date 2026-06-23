@@ -5,15 +5,28 @@ interface SectionProps {
   padded?: boolean;
   className?: string;
   children: ReactNode;
+  /** Full-bleed (no max-width container) — for marquees / edge-to-edge bands. */
+  bleed?: boolean;
+  /** Dark (default) or a light "rhythm" section that inverts bg/text. */
+  tone?: "dark" | "light";
 }
 
-export function Section({ id, padded = true, className = "", children }: SectionProps) {
+export function Section({
+  id,
+  padded = true,
+  className = "",
+  children,
+  bleed = false,
+  tone = "dark",
+}: SectionProps) {
+  const toneCls = tone === "light" ? "bg-text text-bg" : "";
   return (
     <section
       id={id}
       className={[
-        "w-full mx-auto max-w-[1200px]",
-        padded ? "px-6 md:px-12 [padding-block:clamp(7rem,15vw,15rem)]" : "",
+        bleed ? "w-full" : "w-full mx-auto max-w-[1280px]",
+        padded ? "px-6 md:px-12 [padding-block:clamp(6rem,10vw,10rem)]" : "",
+        toneCls,
         className,
       ]
         .filter(Boolean)
