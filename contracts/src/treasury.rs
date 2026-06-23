@@ -9,7 +9,6 @@ use odra_modules::cep18_token::Cep18ContractRef;
 
 /// Casper `get_block_time()` returns Unix MILLISECONDS, so a UTC day bucket
 /// divides by this (NOT 86_400). Reservation deadlines are milliseconds too.
-#[allow(dead_code)]
 const MS_PER_DAY: u64 = 86_400_000;
 
 /// Lifecycle of a locked-funds reservation (outcome-bound payment).
@@ -138,7 +137,8 @@ impl AgentTreasury {
             self.env().revert(Error::ZeroAmount);
         }
         self.assert_payee_allowed(payee);
-        if amount > self.per_task_limit.get_or_default() {
+        let task_spent = self.task_spent.get(&task_id).unwrap_or_default();
+        if task_spent + amount > self.per_task_limit.get_or_default() {
             self.env().revert(Error::ExceedsTaskLimit);
         }
         let day = self.today();
@@ -151,7 +151,6 @@ impl AgentTreasury {
         }
 
         // EFFECTS before INTERACTION.
-        let task_spent = self.task_spent.get(&task_id).unwrap_or_default();
         self.day_spent.set(&day, spent_today + amount);
         self.task_spent.set(&task_id, task_spent + amount);
 
@@ -189,8 +188,8 @@ impl AgentTreasury {
         }
     }
 
-    /// Whitelist OR earned-reputation gate. This task implements the
-    /// whitelist-only branch; Task 4 adds the reputation branch.
+    /// Reverts unless the payee is whitelisted (the reputation branch is enabled
+    /// once a reputation policy is set).
     fn assert_payee_allowed(&self, payee: u32) {
         if self.whitelist.get(&payee).unwrap_or(false) {
             return;
@@ -374,6 +373,22 @@ mod tests {
 
         w.env.set_caller(w.agent);
         let result = w.treasury.try_pay(1, provider, U256::from(50_000u64)); // PER_TASK = 40_000
+        assert_eq!(result, Err(super::Error::ExceedsTaskLimit.into()));
+    }
+
+    #[test]
+    fn pay_rejects_cumulative_over_per_task_limit() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        w.env.set_caller(w.admin);
+        w.treasury.add_payee(provider);
+        fund_treasury(&mut w, 200_000);
+
+        w.env.set_caller(w.agent);
+        w.treasury.pay(1, provider, U256::from(40_000u64)); // == PER_TASK, ok
+        let result = w.treasury.try_pay(1, provider, U256::from(1u64)); // cumulative 40_001 > 40_000
         assert_eq!(result, Err(super::Error::ExceedsTaskLimit.into()));
     }
 
