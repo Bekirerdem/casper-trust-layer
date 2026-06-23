@@ -1,9 +1,18 @@
-#![allow(dead_code)]
+// Deferred cross-contract refs — first used in Tasks 3-5; present per brief's use-block.
+#[allow(unused_imports)]
+use crate::identity::IdentityRegistryContractRef;
+#[allow(unused_imports)]
+use crate::reputation::ReputationEngineContractRef;
 use odra::casper_types::U256;
 use odra::prelude::*;
+#[allow(unused_imports)]
+use odra::ContractRef;
+#[allow(unused_imports)]
+use odra_modules::cep18_token::Cep18ContractRef;
 
 /// Casper `get_block_time()` returns Unix MILLISECONDS, so a UTC day bucket
 /// divides by this (NOT 86_400). Reservation deadlines are milliseconds too.
+#[allow(dead_code)]
 const MS_PER_DAY: u64 = 86_400_000;
 
 /// Lifecycle of a locked-funds reservation (outcome-bound payment).
@@ -50,6 +59,7 @@ pub enum Error {
 /// spending to an AI `agent`. The contract — not the model — enforces a payee
 /// gate (whitelist OR earned reputation), a per-task cap, and a UTC daily cap.
 /// Spend is accounted per task. Reservations lock funds for outcome-bound work.
+#[allow(dead_code)]
 #[odra::module(errors = Error, events = [Paid, Reserved, Released, Refunded])]
 pub struct AgentTreasury {
     admin: Var<Address>,
