@@ -114,6 +114,28 @@ impl AgentTreasury {
             self.per_task_limit.get_or_default(),
         )
     }
+
+    /// Whitelist an agent id as an always-allowed payee. Admin-only.
+    pub fn add_payee(&mut self, agent_id: u32) {
+        self.only_admin();
+        self.whitelist.set(&agent_id, true);
+    }
+
+    /// Remove an agent id from the whitelist. Admin-only.
+    pub fn remove_payee(&mut self, agent_id: u32) {
+        self.only_admin();
+        self.whitelist.set(&agent_id, false);
+    }
+
+    pub fn is_payee(&self, agent_id: u32) -> bool {
+        self.whitelist.get(&agent_id).unwrap_or(false)
+    }
+
+    fn only_admin(&self) {
+        if self.env().caller() != self.admin.get().unwrap_or_revert(self) {
+            self.env().revert(Error::NotAdmin);
+        }
+    }
 }
 
 /// Emitted on a direct payment.
@@ -206,5 +228,23 @@ mod tests {
         assert_eq!(w.treasury.admin(), w.admin);
         assert_eq!(w.treasury.agent_address(), w.agent);
         assert_eq!(w.treasury.limits(), (U256::from(DAILY), U256::from(PER_TASK)));
+    }
+
+    #[test]
+    fn admin_can_whitelist_and_remove_payee() {
+        let mut w = setup();
+        w.env.set_caller(w.admin);
+        w.treasury.add_payee(7);
+        assert!(w.treasury.is_payee(7));
+        w.treasury.remove_payee(7);
+        assert!(!w.treasury.is_payee(7));
+    }
+
+    #[test]
+    fn non_admin_cannot_whitelist() {
+        let mut w = setup();
+        w.env.set_caller(w.agent); // agent is not admin
+        let result = w.treasury.try_add_payee(7);
+        assert_eq!(result, Err(super::Error::NotAdmin.into()));
     }
 }
