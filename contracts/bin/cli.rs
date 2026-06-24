@@ -60,11 +60,13 @@ impl DeployScript for TrustLayerDeployScript {
             gas,
         )?;
 
-        // Wire the escrow address into both contracts (one-time).
+        // One-time wirings. On a re-run against already-wired contracts (loaded
+        // from the container) these revert with EscrowAlreadySet — swallow the
+        // error so a fresh AgentTreasury install can still proceed below.
         env.set_gas(20_000_000_000u64);
-        identity.set_escrow(escrow.address());
+        let _ = identity.try_set_escrow(escrow.address());
         env.set_gas(20_000_000_000u64);
-        reputation.set_escrow(escrow.address());
+        let _ = reputation.try_set_escrow(escrow.address());
 
         // Bounded treasury: the deployer is both admin (fund owner) and the
         // delegated agent for the demo (single funded key). Limits in token base

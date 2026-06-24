@@ -417,7 +417,7 @@ impl super::CasperClient {
                 .with_chain_name(self.configuration.chain_name())
                 .with_pricing_mode(PricingMode::PaymentLimited {
                     payment_amount: amount.as_u64(),
-                    gas_price_tolerance: 5,
+                    gas_price_tolerance: 1,
                     standard_payment: true
                 })
                 .with_secret_key(self.secret_key())
@@ -450,7 +450,7 @@ impl super::CasperClient {
             .with_chain_name(self.configuration.chain_name())
             .with_pricing_mode(PricingMode::PaymentLimited {
                 payment_amount: call_def.amount().as_u64() + self.gas.as_u64(),
-                gas_price_tolerance: 5,
+                gas_price_tolerance: 1,
                 standard_payment: true
             })
             .with_secret_key(self.secret_key())
@@ -464,7 +464,7 @@ impl super::CasperClient {
     fn pricing_mode(&self) -> PricingMode {
         PricingMode::PaymentLimited {
             payment_amount: self.gas.as_u64(),
-            gas_price_tolerance: self.configuration.gas_price_tolerance(),
+            gas_price_tolerance: 1,
             standard_payment: true
         }
     }
