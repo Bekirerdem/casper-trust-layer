@@ -173,6 +173,101 @@ impl AgentTreasury {
             .map(|r| (r, self.min_reputation.get_or_default()))
     }
 
+    // ---- reservation lifecycle -------------------------------------------------
+
+    /// Agent reserves `amount` for `payee` against a future-delivered task. Funds
+    /// stay in the treasury (locked, not transferred) until released by admin or
+    /// refunded by the agent after `deadline` (ms). Same payee gate + per-task cap
+    /// as a direct payment; the daily cap is enforced at release (real outflow).
+    pub fn create_reservation(
+        &mut self,
+        task_id: u64,
+        payee: u32,
+        amount: U256,
+        deadline: u64,
+    ) -> u64 {
+        self.only_agent();
+        if amount.is_zero() {
+            self.env().revert(Error::ZeroAmount);
+        }
+        self.assert_payee_allowed(payee);
+        if amount > self.per_task_limit.get_or_default() {
+            self.env().revert(Error::ExceedsTaskLimit);
+        }
+        if self.free_balance() < amount {
+            self.env().revert(Error::InsufficientFreeBalance);
+        }
+
+        let id = self.next_reservation_id.get_or_default();
+        self.reservations.set(
+            &id,
+            Reservation { payee, amount, task_id, deadline, state: ReservationState::Open },
+        );
+        self.next_reservation_id.set(id + 1);
+        self.locked.set(self.locked.get_or_default() + amount);
+
+        self.env().emit_event(Reserved { id, payee, amount });
+        id
+    }
+
+    /// Admin approves delivery → release locked funds to the payee. The daily cap
+    /// is enforced here (the real moment of outflow) and accounted per task.
+    pub fn release_reservation(&mut self, id: u64) {
+        self.only_admin();
+        let mut r = self.load_reservation(id);
+        if r.state != ReservationState::Open {
+            self.env().revert(Error::InvalidState);
+        }
+        let day = self.today();
+        let spent_today = self.day_spent.get(&day).unwrap_or_default();
+        if spent_today + r.amount > self.daily_limit.get_or_default() {
+            self.env().revert(Error::ExceedsDailyLimit);
+        }
+        let task_spent = self.task_spent.get(&r.task_id).unwrap_or_default();
+        if task_spent + r.amount > self.per_task_limit.get_or_default() {
+            self.env().revert(Error::ExceedsTaskLimit);
+        }
+
+        // EFFECTS before INTERACTION.
+        self.day_spent.set(&day, spent_today + r.amount);
+        self.task_spent.set(&r.task_id, task_spent + r.amount);
+        self.locked.set(self.locked.get_or_default() - r.amount);
+        let (payee, amount) = (r.payee, r.amount);
+        r.state = ReservationState::Released;
+        self.reservations.set(&id, r);
+
+        let wallet = self.agent_wallet(payee);
+        self.token_ref().transfer(&wallet, &amount);
+        self.env().emit_event(Released { id, payee, amount });
+    }
+
+    /// After the deadline, the agent reclaims an undelivered reservation: the lock
+    /// is released back to free balance. No transfer, no spend recorded.
+    pub fn refund_reservation(&mut self, id: u64) {
+        self.only_agent();
+        let mut r = self.load_reservation(id);
+        if r.state != ReservationState::Open {
+            self.env().revert(Error::InvalidState);
+        }
+        if self.env().get_block_time() < r.deadline {
+            self.env().revert(Error::DeadlineNotReached);
+        }
+        self.locked.set(self.locked.get_or_default() - r.amount);
+        let (payee, amount) = (r.payee, r.amount);
+        r.state = ReservationState::Refunded;
+        self.reservations.set(&id, r);
+
+        self.env().emit_event(Refunded { id, payee, amount });
+    }
+
+    pub fn get_reservation(&self, id: u64) -> Option<Reservation> {
+        self.reservations.get(&id)
+    }
+
+    pub fn locked(&self) -> U256 {
+        self.locked.get_or_default()
+    }
+
     // ---- spend views -----------------------------------------------------------
 
     pub fn balance(&self) -> U256 {
@@ -240,6 +335,12 @@ impl AgentTreasury {
 
     fn identity_ref(&self) -> IdentityRegistryContractRef {
         IdentityRegistryContractRef::new(self.env(), self.identity.get().unwrap_or_revert(self))
+    }
+
+    fn load_reservation(&self, id: u64) -> Reservation {
+        self.reservations
+            .get(&id)
+            .unwrap_or_revert_with(self, Error::ReservationNotFound)
     }
 }
 
@@ -475,6 +576,144 @@ mod tests {
         w.env.set_caller(w.agent);
         let result = w.treasury.try_pay(1, provider, U256::zero());
         assert_eq!(result, Err(super::Error::ZeroAmount.into()));
+    }
+
+    use super::ReservationState;
+
+    /// Whitelists `provider`, funds the treasury, and creates a reservation.
+    fn reserve(w: &mut World, provider: u32, amount: u64, deadline: u64) -> u64 {
+        w.env.set_caller(w.admin);
+        w.treasury.add_payee(provider);
+        w.env.set_caller(w.agent);
+        w.treasury.create_reservation(1, provider, U256::from(amount), deadline)
+    }
+
+    #[test]
+    fn create_reservation_locks_free_balance() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        fund_treasury(&mut w, 100_000);
+        let deadline = w.env.block_time() + 1000;
+
+        let id = reserve(&mut w, provider, 30_000, deadline);
+
+        assert_eq!(w.treasury.locked(), U256::from(30_000u64));
+        assert_eq!(w.treasury.balance(), U256::from(100_000u64)); // funds still held
+        assert_eq!(w.treasury.get_reservation(id).unwrap().state, ReservationState::Open);
+    }
+
+    #[test]
+    fn create_reservation_rejects_over_free_balance() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        fund_treasury(&mut w, 30_000);
+        let deadline = w.env.block_time() + 1000;
+
+        w.env.set_caller(w.admin);
+        w.treasury.add_payee(provider);
+        w.env.set_caller(w.agent);
+        // first reservation locks 25k of 30k; second 25k exceeds free balance (5k)
+        w.treasury.create_reservation(1, provider, U256::from(25_000u64), deadline);
+        let result =
+            w.treasury.try_create_reservation(2, provider, U256::from(25_000u64), deadline);
+        assert_eq!(result, Err(super::Error::InsufficientFreeBalance.into()));
+    }
+
+    #[test]
+    fn release_reservation_pays_and_accounts_daily() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        fund_treasury(&mut w, 100_000);
+        let deadline = w.env.block_time() + 1000;
+        let id = reserve(&mut w, provider, 30_000, deadline);
+
+        w.env.set_caller(w.admin);
+        w.treasury.release_reservation(id);
+
+        assert_eq!(w.token.balance_of(&provider_wallet), U256::from(30_000u64));
+        assert_eq!(w.treasury.locked(), U256::zero());
+        assert_eq!(w.treasury.day_spent(), U256::from(30_000u64));
+        assert_eq!(w.treasury.get_reservation(id).unwrap().state, ReservationState::Released);
+    }
+
+    #[test]
+    fn refund_reservation_after_deadline_unlocks_without_paying() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        fund_treasury(&mut w, 100_000);
+        let deadline = w.env.block_time() + 1000;
+        let id = reserve(&mut w, provider, 30_000, deadline);
+
+        w.env.advance_block_time(2000);
+        w.env.set_caller(w.agent);
+        w.treasury.refund_reservation(id);
+
+        assert_eq!(w.token.balance_of(&provider_wallet), U256::zero()); // no payout
+        assert_eq!(w.treasury.locked(), U256::zero()); // funds freed
+        assert_eq!(w.treasury.get_reservation(id).unwrap().state, ReservationState::Refunded);
+    }
+
+    #[test]
+    fn refund_reservation_rejected_before_deadline() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        fund_treasury(&mut w, 100_000);
+        let deadline = w.env.block_time() + 1000;
+        let id = reserve(&mut w, provider, 30_000, deadline);
+
+        w.env.set_caller(w.agent);
+        let result = w.treasury.try_refund_reservation(id);
+        assert_eq!(result, Err(super::Error::DeadlineNotReached.into()));
+    }
+
+    #[test]
+    fn release_reservation_rejects_non_admin() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        fund_treasury(&mut w, 100_000);
+        let deadline = w.env.block_time() + 1000;
+        let id = reserve(&mut w, provider, 30_000, deadline);
+
+        w.env.set_caller(w.agent); // agent cannot release
+        let result = w.treasury.try_release_reservation(id);
+        assert_eq!(result, Err(super::Error::NotAdmin.into()));
+    }
+
+    #[test]
+    fn release_reservation_rejects_cumulative_over_per_task_limit() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        fund_treasury(&mut w, 200_000);
+        let deadline = w.env.block_time() + 1000;
+
+        // Pay exactly PER_TASK (40_000) directly first.
+        w.env.set_caller(w.admin);
+        w.treasury.add_payee(provider);
+        w.env.set_caller(w.agent);
+        w.treasury.pay(1, provider, U256::from(40_000u64));
+
+        // Now create a reservation for task 1 — small enough to fit free balance
+        // and per-task single-reservation check (≤ per_task_limit), but release
+        // would push cumulative task_spent over per_task_limit.
+        let id = w.treasury.create_reservation(1, provider, U256::from(1u64), deadline);
+
+        w.env.set_caller(w.admin);
+        let result = w.treasury.try_release_reservation(id);
+        assert_eq!(result, Err(super::Error::ExceedsTaskLimit.into()));
     }
 
     use crate::reputation::{ReputationEngine, ReputationEngineHostRef, ReputationEngineInitArgs};
