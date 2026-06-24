@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* ── Design tokens ───────────────────────────────────────────────────────── */
+:root {
+  --bg: #0A0B0D;              /* ink near-black */
+  --surface: #14161A;         /* raised dark surface */
+  --text: #F2F3F5;            /* near-white */
+  --muted: #9AA0A6;           /* secondary grey */
+  --line: rgba(255, 255, 255, 0.10);
+  --accent-red: #E84142;      /* avax-referenced signal red (tone tunable at checkpoint) */
+  --accent-gold: rgba(255, 255, 255, 0.14); /* neutralised hairline on dark (was warm gold) */
+
+  /* Font stacks wired from layout.tsx */
+  --font-display: var(--font-geist-sans);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ── Tailwind v4 @theme mapping ──────────────────────────────────────────── */
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent-red: var(--accent-red);
+  --color-accent-gold: var(--accent-gold);
+
+  --font-family-display: var(--font-display);
+  --font-family-sans: var(--font-sans);
+  --font-family-mono: var(--font-mono);
+}
+
+/* ── Base reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

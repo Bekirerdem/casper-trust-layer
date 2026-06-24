@@ -1,4 +1,4 @@
-last_updated = "2026-06-17T14:01:04Z"
+last_updated = "2026-06-24T01:21:56Z"
 
 [[contracts]]
 name = "IdentityRegistry"
@@ -19,3 +19,8 @@ package_hash = "hash-f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c
 name = "Escrow"
 package_name = "Escrow"
 package_hash = "hash-fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c"
+
+[[contracts]]
+name = "AgentTreasury"
+package_name = "AgentTreasury"
+package_hash = "hash-abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c"
