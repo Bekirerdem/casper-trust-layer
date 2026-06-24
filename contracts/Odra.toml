@@ -9,3 +9,6 @@ fqn = "reputation::ReputationEngine"
 
 [[contracts]]
 fqn = "odra_modules::cep18_token::Cep18"
+
+[[contracts]]
+fqn = "treasury::AgentTreasury"

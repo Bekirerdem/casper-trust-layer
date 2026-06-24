@@ -6,6 +6,7 @@
 use contracts::escrow::{Escrow, EscrowInitArgs};
 use contracts::identity::IdentityRegistry;
 use contracts::reputation::{ReputationEngine, ReputationEngineInitArgs};
+use contracts::treasury::{AgentTreasury, AgentTreasuryInitArgs};
 use odra::casper_types::U256;
 use odra::host::{HostEnv, NoArgs};
 use odra::prelude::Addressable;
@@ -65,6 +66,30 @@ impl DeployScript for TrustLayerDeployScript {
         env.set_gas(20_000_000_000u64);
         reputation.set_escrow(escrow.address());
 
+        // Bounded treasury: the deployer is both admin (fund owner) and the
+        // delegated agent for the demo (single funded key). Limits in token base
+        // units (AGT decimals = 9). Reputation policy points at the live engine.
+        let daily_limit = U256::from(500_000_000_000u64); // 500 AGT/day
+        let per_task_limit = U256::from(100_000_000_000u64); // 100 AGT/task
+        let deployer = env.caller();
+        let mut treasury = AgentTreasury::load_or_deploy(
+            env,
+            AgentTreasuryInitArgs {
+                identity: identity.address(),
+                agent: deployer,
+                token: token.address(),
+                daily_limit,
+                per_task_limit,
+            },
+            container,
+            gas,
+        )?;
+
+        // Gate non-whitelisted payees on earned reputation (>= 1 bps suffices to
+        // require a real settled score; tune per demo).
+        env.set_gas(20_000_000_000u64);
+        treasury.set_reputation_policy(reputation.address(), U256::from(1u64));
+
         Ok(())
     }
 }
@@ -77,6 +102,7 @@ pub fn main() {
         .contract::<ReputationEngine>()
         .contract::<Escrow>()
         .contract::<Cep18>()
+        .contract::<AgentTreasury>()
         .build()
         .run();
 }
