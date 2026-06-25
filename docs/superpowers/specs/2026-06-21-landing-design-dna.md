@@ -1,130 +1,101 @@
 # Casper Trust Layer — Landing Page Tasarım DNA'sı
 
-**Tarih:** 2026-06-21
-**Durum:** Onaylandı (Bekir) — implementasyon planı (writing-plans) sırada
-**Kapsam:** Landing page tasarım DNA'sı. Dashboard ayrı fazda, ama DNA token'ları paylaşılır (density/motion farkı §5'te).
+**Tarih:** 2026-06-21 (v1 ink/green) → **2026-06-22 REVİZE v2 (editorial luxury, light)**
+**Durum:** v2 onaylandı (Bekir) — uygulama: Task 2 (tema/font) + Task 5 (Hero) revize + Task 6-9.
+**Kapsam:** Landing page tasarım DNA'sı. Dashboard ayrı faz.
 
-> Bu doküman görsel kimliğin tek kaynağıdır. Renk/tipografi/hareket/kompozisyon kararları buradan okunur. Gemini bu oturumda kullanılmadı — DNA Bekir + Claude tarafından birlikte çıkarıldı.
+> **v2 NOTU:** Bekir lüks renk paleti (kırmızı/altın/krem) seçti + **açık/beyaz-tonlu zemin** + 2026 trend istedi. v1'in koyu-mürekkep + signal-yeşil + Geist yönü TERK EDİLDİ. Yeni yön: high-end editorial luxury, off-white zemin, kırmızı+altın tipografi accent, Zodiak+Switzer. Karar 2026-06-22 trend araştırmasıyla (Awwwards/editorial-luxury/anti-slop) desteklendi.
 
 ---
 
 ## 1. Çekirdek karakter (ruh)
 
-**"Kanıt & sağlamlık" dominant + ince cinematic katman.**
+**"Editorial luxury + credibility"** — lüks his **gösterişten değil, boşluk + tipografiden** gelir (Hermès / editorial dergi mantığı; casino DEĞİL).
 
-- Ürün bir *trust altyapısı* (AI agent'ları için settled-payment trust layer). Güven = sakin, net, ölçülü güç; abartısız ama derin.
-- His çapası: **"bu çalışıyor, kanıtı burada."** Developer-grade ciddiyet (Stripe / Linear referans tonu).
-- Cinematic katman *ikincil*: az ama keskin hareket, bol nefes. Sakin-premium — cinematic-premium değil.
-- Reddedilen yön: Casper'ın kurumsal koyu+kırmızı DNA'sı (Bekir'e hitap etmiyor) ve "creative studio / digital exhibition" salt-gösteri estetiği (developer-trust mesajını boğar).
+- "Kanıt & sağlamlık" ruhu korunur ama editorial-luxury kılıfında. Developer/web3 ürünü → **inandırıcılık ön planda** (gerçek tx, gerçek sayı; "lightning fast" değil "23ms").
+- His çapası: sakin, pahalı, kasıtlı. Her boşluk ve her aksan bilinçli.
+- Reddedilen: salt-gösteri (WebGL/3D vitrin), casino (siyah+kırmızı+altın fill), jenerik SaaS (centered + Inter başlık + uniform radius).
 
-## 2. Renk & atmosfer
+## 2. Renk & atmosfer (off-white zemin, accent ÇOK az)
 
-Koyu, soğuk zemin + **tek** canlı accent. Web3 mor klişesinden kaçınılır.
+| Rol | Token | Hex | Kullanım |
+|-----|-------|-----|----------|
+| Zemin | `--bg` | `#F5F0EA` | keten-krem off-white. **Asla saf `#fff`** (ucuz). Sıcak yön. |
+| Metin | `--text` | `#1A1714` | sıcak near-black. **Asla saf `#000`.** |
+| Muted metin | `--muted` | `#6B645C` | ikincil metin / etiket |
+| Hairline | `--line` | `rgba(26,23,20,0.10)` | section ayraç + ince çizgi |
+| Accent kırmızı | `--accent-red` | `#ad0013` | ~%2.5 görünürlük |
+| Accent altın | `--accent-gold` | `#a67d43` | ~%1.5 görünürlük |
 
-| Rol | Token | Hex | Not |
-|-----|-------|-----|-----|
-| Zemin (ink) | `--bg` | `#0A0B0D` | mürekkep-siyah, soğuk |
-| Yüzey/kart | `--surface` | `#14161A` | kömür |
-| Metin | `--text` | `#E8EAED` | kırık beyaz |
-| Accent | `--accent` | `#2BD9A0` | signal yeşil — "live / verified / settled" |
-
-- Muted metin, border, accent-hover tonları implementasyonda bu 4 kökten türetilir (yeşilin koyu/parlak varyantları + nötr gri rampası).
-- **Casper kırmızısı KULLANILMAZ.** Accent yeşil tüm vurgularda baskın.
-- Yeşilin anlamı tutarlı olmalı: sadece "canlı/doğrulanmış/settled" durumları + birincil CTA. Süs olarak dağıtma.
+- **Kırmızı `#ad0013` SADECE:** (a) başlıktaki tek vurgu kelimesi, (b) section arası `1px` yatay çizgi. Buton/ikon/border/badge'de YOK.
+- **Altın `#a67d43` SADECE:** (a) H2 altı ~48px ince underline mark, (b) footer ornament / logo detay, (c) hover underline rengi.
+- **KRİTİK:** kırmızı + altın **aynı elementte asla birlikte** (casino tuzağı). Toplam accent görünürlüğü sayfanın ~%4'ünü geçmez.
+- Surface/kart gerekiyorsa: zeminden çok hafif fark (`#FBF8F3` veya hairline border) — koyu kutu yok.
 
 ## 3. Tipografi
 
-Kontrast **boyut + weight + mono karışımı** ile yaratılır ("büyüklük değil kontrast"; dev tipografi grafik öğesi).
+Lüks his tipografiden gelir. Slop fontları yasak.
 
-- **Display/başlık:** karakterli grotesk — `Geist` veya `Space Grotesk` (implementasyonda örnekle netleşir). Tight tracking, iri boyut.
-- **Gövde:** `Inter` (nötr, okunur).
-- **Mono:** `JetBrains Mono` — adres, tx hash, skor, sayısal veri. Ekosistem de-facto'su + terminal-precision hissi.
+- **Display/başlık:** **Zodiak** (Fontshare, ücretsiz) — yüksek kontrastlı serif, dergi başlığı. `clamp(3rem,8vw,7.5rem)`, tracking `-0.015em`.
+- **Gövde:** **Switzer** (Fontshare) — temiz grotesk, 17–18px, line-height `1.75`, max satır `65–75ch`.
+- **Mono:** `JetBrains Mono` — yalnızca tx hash, adres, skor, sayısal veri.
+- **Başlıkta tek anahtar kelime kırmızı** (her H1'de bir kez): "Agent **Trust** Layer".
+- Küçük etiketler: uppercase Switzer, tracking `+0.10em` ("PROTOCOL LAYER").
+- ⚠️ **Inter/Poppins başlık YASAK** (AI-slop sinyali). Inter sadece gerekiyorsa UI mikro-metinde; başlık asla.
 
-## 4. Hareket felsefesi
+## 4. Layout & kompozisyon (2026 editorial standardı)
 
-Hareket süs değil, **gözü yönlendirir** (kompozisyon kontrolü; IG post 2 dersi: "guided, not generated").
+- **Asimetrik editorial:** 2:3 / 3:5 sütun oranları. **Asla 50/50, asla ortalanmış hero.**
+- Container `max-width: ~1200px` (1400px+ ecommerce hissi → hayır).
+- Section padding dikey `clamp(7rem, 15vw, 15rem)` (160–240px aralığı) — cömert boşluk = lüks dili.
+- **Hairline divider'lar** (`--line`), section arası `1px` kırmızı yatay çizgi imzası (tekrar eden).
+- **Number tokens** `01 / 02 / 03` (uppercase light) + kategori etiketleri.
+- Spacing varyasyonu **kasıtlı**: bazı section yoğun, bazı nefes alan (monoton ritim = slop).
+- Spacing token sistemi: `8/16/24/40/64/96/128`. Uniform `border-radius: 12-16px` her yerde YASAK (slop).
 
-- Yoğunluk: **MOTION ~5-6/10** — az ama keskin.
-- **Ambient:** hero'da yavaş, sürekli bir "nefes" (dikkat dağıtmayan).
-- **Scroll:** choreographed reveal (stagger `whileInView`) + **1-2 imza sinematik an** (sticky-stack veya yatay settlement akışı).
-- **İmza an iskeletleri** (taste-skill'den, performanslı):
+## 5. Hareket felsefesi
 
-  Sticky-stack (kartlar pinlenip ölçeklenir):
-  ```tsx
-  ScrollTrigger.create({ trigger: card, start: "top top",
-    endTrigger: cardEls.at(-1), end: "top top", pin: true, pinSpacing: false });
-  gsap.to(card, { scale: 0.92, opacity: 0.55, ease: "none",
-    scrollTrigger: { trigger: cardEls[i+1], start: "top bottom", end: "top top", scrub: true }});
-  ```
-  Horizontal-pan (dikey scroll → yatay hareket, settlement akışı için):
-  ```tsx
-  const distance = track.scrollWidth - window.innerWidth;
-  gsap.to(track, { x: -distance, ease: "none",
-    scrollTrigger: { trigger: wrap, start: "top top", end: () => `+=${distance}`,
-      pin: true, scrub: 1, invalidateOnRefresh: true }});
-  ```
-  Hafif reveal (GSAP değil, Motion):
-  ```tsx
-  <motion.li initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.3 }}
-    transition={{ duration: 0.6, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }} />
-  ```
+- **Hafif, editorial.** Lüks = whitespace + tipografi; motion DEĞİL.
+- İzin: staggered fade-in (`Reveal`), hover transform (underline + letter-spacing), hairline reveal.
+- **YASAK:** WebGL/3D hero, kinetic typography (layout-shift → CWV fail), full-page glassmorphism, ağır parallax.
+- Performans hard-kuralları (korunur): `transform`+`opacity` only, IntersectionObserver/`useScroll` (scroll listener yok), `prefers-reduced-motion` respect, cleanup zorunlu.
 
-- **Performans hard-kuralları (zorunlu):**
-  - `window.addEventListener("scroll")` YASAK → `useScroll()` / ScrollTrigger / IntersectionObserver.
-  - Sadece `transform` + `opacity` animate et.
-  - GSAP useEffect cleanup zorunlu: `return () => ctx.revert()`.
-  - Scroll/cursor değerleri `useMotionValue` + `useTransform`, React state DEĞİL.
-  - GSAP ve framer-motion'ı **aynı component ağacında karıştırma** (frame control yarışır).
-  - `prefers-reduced-motion` her MOTION>3 efektte respect edilir.
-  - Spring default: `type: "spring", stiffness: 100, damping: 20`.
+## 6. Hero centerpiece (editorial revize)
 
-## 5. Kompozisyon & density
+Önceki "canlı animasyonlu 3D/data-viz" YERİNE → **editorial, sayı-odaklı, sakin** sunum:
+- Gerçek veri: agent#0 `scoreBps 208`, `jobsCompleted 4`, gerçek settlement tx'ler (`24f1914a…`, `50b6d34d…`, `1328ffa5…`, `0c58d79a…`, `b4a4635f…`) + cspr.live linkleri.
+- Sunum: büyük mono sayı + hairline + tx satırları (editorial liste), minimal hareket. "Kanıt burada" — gösterişsiz inandırıcılık.
+- Snapshot kaynağı: `loadSnapshot()` (build-time, runtime RPC yok).
 
-- **Dial'lar (landing):** `DESIGN_VARIANCE 6-7` / `MOTION_INTENSITY 5-6` / `VISUAL_DENSITY 3-4`.
-- **Dial'lar (dashboard, sonraki faz):** `DENSITY 5-7` / `MOTION 3-4`.
-- Kontrollü asimetri (kanıt & sağlamlık çok dağınık istemez), bol nefes (art-gallery hissi, `py-32`+ aralıklar).
-- Her section'da **tek güçlü odak** — ne önce görülür, göz sonra nereye gider.
-- Mobilde (`<768px`) asimetrik layout'lar tek kolona çöker.
+## 7. Casper uyum stratejisi (değişmedi)
 
-## 6. Hero centerpiece
+- Fonksiyonel (yüksek puan): canlı testnet verisi + cspr.live tx kanıt linkleri + `casper-trust` SDK read + motes→CSPR util. Cüzdan (CSPR.click) dashboard fazı.
+- İnce marka: "Built on Casper" — ama editorial, sade (badge gösterişsiz). Casper kırmızısı ayrımı: bizim kırmızı `#ad0013` zaten accent; Casper logosu footer'da nötr.
 
-**Dekoratif 3D obje değil → canlı trust-settlement görselleştirmesi.**
+## 8. Üretim disiplini — anti-AI-slop (light premium)
 
-- Akış: agent → x402 ödeme → on-chain settle → reputation skoru güncelleniyor.
-- Gerçek/gerçekçi testnet verisiyle beslenir → hem cinematic hem **"kanıt & sağlamlık"** (gerçek veri = ürünün kalbi).
-- Spline 3D objeden daha *anlamlı*, daha *hafif*, DNA'ya tam uyumlu.
-- Opsiyonel: ikincil hafif Spline 3D aksanı eklenebilir (karar implementasyonda; centerpiece data-viz birincil kalır).
+**Slop sinyalleri (YASAK):** saf `#fff` zemin + saf `#000` metin · Inter/Poppins başlık · uniform `border-radius` her yerde · ortalanmış hero + centered feature grid · purple→blue gradient · Lucide/Heroicons doğrudan · "Build the future" tarzı boş başlık · tüm section aynı yükseklik/yapı · Tailwind default `box-shadow` · stock foto.
+**Craft moves (ZORUNLU):** asimetrik tipografik layout · tek kırmızı vurgu kelimesi · tekrar eden `1px` accent çizgi imzası · kasıtlı spacing varyasyonu · `01/02` number tokens · sürprizli hover (underline + tracking) · editorial footer (ince serif alıntı + hairline + versiyon) · gerçek sayı/claim (latency/throughput/skor) + gerçek contract/tx.
 
-## 7. Casper uyum stratejisi (~%80 Bekir estetiği / %20 Casper sinyali)
+## 9. Teknik stack
 
-Ek puan görselden değil, **fonksiyonel + içerik uyumundan** gelir (jüri kriteri: ekosistem etkisi).
+- Next.js (App Router) + Tailwind v4 (off-white token'lar `@theme`).
+- **Fontlar:** Zodiak + Switzer (Fontshare) → `next/font/local` (woff2 indir) VEYA Fontshare CSS API; JetBrains Mono (`next/font/google`).
+- `framer-motion` (Reveal/hover). GSAP/StickyStack muhtemelen GEREKSİZ (editorial, ağır scroll yok) — kaldırılabilir.
+- Casper: `casper-trust` (read) · cspr.cloud (build-time snapshot).
+- Hosting: Cloudflare.
 
-- **Fonksiyonel (yüksek puan):**
-  - `@make-software/csprclick-ui` ile cüzdan bağlama (ekosistem standardı; custom buton + `signIn()`).
-  - Canlı testnet verisi (reputation/settlement) + cspr.live tx kanıt linkleri.
-  - `casper-trust` SDK read katmanı (`checkTrust`/`getReputation`/`getAgent`) + motes→CSPR formatlama.
-- **İnce marka:** "Built on Casper" badge + footer wordmark. (Badge'de Casper logosu kendi renginde minik kabul edilebilir; gerisi yeşil.)
-- **Kırmızı yok.**
+## 10. Mevcut koda etki (v1→v2 rework)
 
-## 8. Üretim disiplini (taste-skill çıkarımları)
+- **Task 1 (scaffold):** değişmez.
+- **Task 2 (tema/font/primitives):** KOMPLE revize — off-white palet token'ları, Zodiak/Switzer fontları, primitives editorial (Section + yeni: SectionLabel, Divider, AccentWord; Badge/CodeBlock/Stat light'a uyarlanır).
+- **Task 3 (data):** değişmez (snapshot/read; veri boost edildi).
+- **Task 4 (motion):** Reveal + reduced-motion korunur; StickyStack editorial'de gerekmeyebilir.
+- **Task 5 (Hero):** KOMPLE yeniden tasarım (editorial, off-white, kırmızı vurgu kelime, Zodiak, sayı-odaklı centerpiece).
+- **Task 6-9:** yeni section'lar editorial yönde.
 
-- **Kütüphane seçimi:** UI/state → Motion (`motion/react`); full-page pin/scrub → GSAP ScrollTrigger; 3D → Three/Spline. İzole tut (§4).
-- **image-to-code disiplini** (Gemini görseli kullanılırsa): görseli "spec gibi oku" (exact metin, spacing oranları, tipografi ilişkileri); **anti-drift** ("görsel premium, kod jenerik" hatasını engelle); belirsiz section'ı kırpma → taze görsel ürettir; section başına ayrı görsel.
-- **Anti-slop kapısı (her section sonu kontrol):** hero ≤1-3 satır; nested box yok (card-in-card); micro-UI clutter yok (sahte pill/label); spacing oranları korundu mu; palet 4 token'la eşleşti mi; küçük laptop'ta hero temiz/okunur mu.
-- **Kod üretimi:** placeholder/`// ... rest` yasak; tam dosya ya da temiz breakpoint.
+## 11. Sonraya bırakılanlar
 
-## 9. Teknik stack (ön — kesinleşme writing-plans'de)
-
-- Next.js (App Router) + Tailwind. shadcn/ui gerektiğinde.
-- `framer-motion` + `gsap` (ScrollTrigger), izole.
-- `next/font`: display (Geist/Space Grotesk) + Inter + JetBrains Mono.
-- Casper: `@make-software/csprclick-ui` (cüzdan) · `casper-trust` (read) · cspr.cloud (data).
-- Hosting: Cloudflare (production default).
-
-## 10. Sonraya bırakılanlar (writing-plans / implementasyon)
-
-- Display font kesin seçimi (Geist vs Space Grotesk) — örnekle karşılaştır.
-- İkincil Spline 3D aksanı eklenecek mi.
-- Section yapısı (hangi bölümler, sıra) — writing-plans'de netleşir.
-- Centerpiece data-viz'in veri kaynağı: canlı RPC mi, snapshot mı (performans/güvenilirlik dengesi).
+- Zodiak/Switzer kesin yükleme yolu (next/font/local woff2 vs Fontshare CSS) — Task 2'de netleşir.
+- Section yapısı (7 bölüm) korunur: Hero · Problem · How it works · x402 trust-gating · Live proof · Developer/SDK · Footer.
+- Bento kullanılacak section (varsa) — implementasyonda.

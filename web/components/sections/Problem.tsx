@@ -1,50 +1,68 @@
+"use client";
+
 import { problem } from "@/lib/content";
-import { SectionLabel } from "@/components/ui/SectionLabel";
-import { AccentWord } from "@/components/ui/AccentWord";
 import { Reveal } from "@/components/motion/Reveal";
 
 export function Problem() {
   return (
     <section
       id="problem"
-      className="w-full bg-bg"
+      className="relative w-full bg-bg overflow-hidden py-24 md:py-36"
       aria-labelledby="problem-headline"
     >
-      <div className="mx-auto max-w-[1200px] px-6 md:px-12 py-24 md:py-36 lg:py-[clamp(6rem,12vw,11rem)]">
-        {/* Asymmetric layout: label flush left, headline shifted right on large screens */}
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_3fr] lg:gap-20 lg:items-start">
+      {/* Glow background ornament behind the section */}
+      <div className="absolute inset-0 bg-glow-red opacity-50 pointer-events-none z-0" />
 
-          {/* Left: label column */}
+      <div className="mx-auto max-w-[1200px] px-6 md:px-12 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2.5fr] gap-12 lg:gap-20 items-start">
+          
+          {/* Left Column: Number & Section Tag */}
           <Reveal>
-            <div className="flex flex-col gap-6 lg:pt-3">
-              <SectionLabel>{problem.label}</SectionLabel>
-              {/* Gold underline ornament */}
-              <div
-                aria-hidden
-                className="h-[1px] w-8"
-                style={{ background: "var(--accent-gold)" }}
-              />
+            <div className="flex flex-col gap-4">
+              <span className="font-mono text-xs font-bold tracking-[0.2em] text-accent-red uppercase">
+                {problem.label}
+              </span>
+              <div className="h-px w-10 bg-accent-red/40" />
             </div>
           </Reveal>
 
-          {/* Right: statement column */}
-          <div className="flex flex-col gap-10">
+          {/* Right Column: Statement & Details */}
+          <div className="flex flex-col gap-8">
             <Reveal delay={0.08}>
               <h2
                 id="problem-headline"
-                className="font-display text-[clamp(2.5rem,6vw,5.5rem)] font-semibold leading-[1.05] tracking-[-0.015em] text-text"
+                className="font-sans text-[clamp(2.25rem,5vw,4.5rem)] font-black leading-[1.1] tracking-tight text-white"
               >
                 {problem.headlinePre}{" "}
-                <AccentWord>{problem.headlineAccent}</AccentWord>
-                <br className="hidden sm:block" />
-                {" "}{problem.headlinePost}
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-accent-red to-orange-500 font-extrabold">
+                  {problem.headlineAccent}
+                </span>{" "}
+                {problem.headlinePost}
               </h2>
             </Reveal>
 
             <Reveal delay={0.16}>
-              <p className="max-w-[60ch] text-[17px] leading-[1.75] text-muted font-sans">
+              <p className="font-sans text-lg md:text-xl text-[#8E8E93] leading-relaxed max-w-[54ch]">
                 {problem.body}
               </p>
+            </Reveal>
+
+            {/* Micro details or stats cards beneath the statement */}
+            <Reveal delay={0.22}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div className="glass-panel p-6 rounded-xl border border-white/5 bg-white/5 flex flex-col gap-2">
+                  <span className="font-mono text-xs text-accent-red font-bold uppercase tracking-wider">The Status Quo</span>
+                  <p className="font-sans text-sm text-[#8E8E93]">
+                    AI agents rely on centralized APIs and self-asserted metadata to establish reputation. Easily spoofed, impossible to verify.
+                  </p>
+                </div>
+                <div className="glass-panel p-6 rounded-xl border border-white/5 bg-white/5 flex flex-col gap-2">
+                  <span className="font-mono text-xs text-green-400 font-bold uppercase tracking-wider">The Trust Solution</span>
+                  <p className="font-sans text-sm text-[#8E8E93]">
+                    Every interaction locks funds in escrow. Completed jobs prove value on-chain, automatically updating reputation scores.
+                  </p>
+                </div>
+              </div>
             </Reveal>
           </div>
 
