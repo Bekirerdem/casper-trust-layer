@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -25,6 +27,9 @@ export function Navbar() {
     { label: "Live Proof", href: "#live-proof" },
     { label: "Developer", href: "#developer" },
   ];
+
+  // The dashboard (/app) has its own header — hide the marketing navbar there.
+  if (pathname?.startsWith("/app")) return null;
 
   return (
     <header
@@ -59,8 +64,14 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* CTA Button */}
-        <div>
+        {/* CTA Buttons */}
+        <div className="flex items-center gap-3">
+          <a
+            href="/app"
+            className="hidden sm:inline-flex items-center justify-center px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white border border-white/20 rounded-full hover:border-white hover:bg-white hover:text-black transition-all duration-300"
+          >
+            Open Console ↗
+          </a>
           <a
             href="#developer"
             className="inline-flex items-center justify-center px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white bg-accent-red border border-transparent rounded-full hover:bg-white hover:text-black transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-accent-red/20"
