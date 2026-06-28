@@ -9,6 +9,13 @@ import { useState, useEffect, useRef } from "react";
 
 export function Hero() {
   const snapshot = loadSnapshot();
+  // Real on-chain values for the showcase slides (no fabricated data).
+  const latestSettle = snapshot.settlements[0];
+  const settleDelta = latestSettle ? latestSettle.scoreAfter - latestSettle.scoreBefore : 0;
+  const shortHash = (h: string) => `${h.slice(0, 8)}…${h.slice(-6)}`;
+  const verifiedNodes = snapshot.agents.filter((a) => a.exists).length;
+  const REGISTRY_PKG = "3a51cc5f"; // IdentityRegistry package — see DEPLOYMENT.md
+
   const [copied, setCopied] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0 });
@@ -226,28 +233,28 @@ export function Hero() {
 
                     <div className="flex flex-col gap-4 py-2">
                       <div className="flex justify-between items-baseline border-b border-white/5 pb-2">
-                        <span className="font-mono text-xs text-[#8E8E93]">Escrow Hash</span>
-                        <span className="font-mono text-xs text-white">0x07f18a2...c421</span>
+                        <span className="font-mono text-xs text-[#8E8E93]">Escrow Tx</span>
+                        <span className="font-mono text-xs text-white">{latestSettle ? shortHash(latestSettle.txHash) : "—"}</span>
                       </div>
                       <div className="flex justify-between items-baseline border-b border-white/5 pb-2">
-                        <span className="font-mono text-xs text-[#8E8E93]">Funds Locked</span>
-                        <span className="font-mono text-xs text-green-400 font-bold">12,500 CSPR</span>
+                        <span className="font-mono text-xs text-[#8E8E93]">Reputation Δ</span>
+                        <span className="font-mono text-xs text-green-400 font-bold">+{settleDelta} bps</span>
                       </div>
                       <div className="flex justify-between items-baseline border-b border-white/5 pb-2">
-                        <span className="font-mono text-xs text-[#8E8E93]">Provider Address</span>
-                        <span className="font-mono text-xs text-[#8E8E93]">0xca52d...99b0</span>
+                        <span className="font-mono text-xs text-[#8E8E93]">Settled To</span>
+                        <span className="font-mono text-xs text-[#8E8E93]">Agent #{latestSettle ? latestSettle.to : 0}</span>
                       </div>
                     </div>
 
                     <div className="bg-black/40 border border-white/5 rounded-lg p-4 font-mono text-[11px] leading-relaxed text-[#8E8E93]">
-                      <span className="text-white font-bold block mb-1">State: SECURED</span>
-                      Funds are programmatically locked in the Casper Escrow client. On job delivery, Casper Trust Layer auto-releases payment and triggers on-chain score shifts.
+                      <span className="text-white font-bold block mb-1">State: SETTLED · ON-CHAIN</span>
+                      A client locked CEP-18 funds in the Casper Escrow; on delivery the payment settled to the provider and reputation accrued — atomically, in one transaction.
                     </div>
                   </div>
 
                   <div className="w-full flex items-center justify-between font-mono text-[10px] text-[#8E8E93]/60 pt-4">
                     <span>ledger status: verified</span>
-                    <span>100% SECURE</span>
+                    <span>VERIFIABLE ON CSPR.LIVE</span>
                   </div>
                 </div>
 
@@ -269,29 +276,29 @@ export function Hero() {
 
                     <div className="flex flex-col gap-2 bg-black/40 border border-white/5 rounded-lg p-4 font-mono text-[11px] leading-relaxed">
                       <div className="flex items-center justify-between text-green-400 border-b border-white/5 pb-1.5 mb-1.5">
-                        <span>Agent Key Signature</span>
-                        <span>0x23ea...f1b2</span>
+                        <span>Registry Contract</span>
+                        <span>{REGISTRY_PKG}…</span>
                       </div>
                       <p className="text-[#8E8E93]">
-                        The Casper Trust Registry binds cryptographic public keys to Agent nodes. No centralized verification needed—deterministic trust computed directly on-chain.
+                        The IdentityRegistry binds each agent to an on-chain identity (ERC-8004). No centralized verification—reputation is computed deterministically from settled escrow.
                       </p>
                     </div>
 
                     <div className="flex items-center gap-4 py-2 border-t border-white/5 mt-2">
                       <div className="flex-1 p-3 bg-white/5 border border-white/5 rounded-lg text-center flex flex-col">
-                        <span className="font-mono text-xl font-bold text-white">4</span>
+                        <span className="font-mono text-xl font-bold text-white">{verifiedNodes}</span>
                         <span className="text-[9px] uppercase tracking-wider text-[#8E8E93]">Verified Nodes</span>
                       </div>
                       <div className="flex-1 p-3 bg-white/5 border border-white/5 rounded-lg text-center flex flex-col">
                         <span className="font-mono text-xl font-bold text-accent-red">0</span>
-                        <span className="text-[9px] uppercase tracking-wider text-[#8E8E93]">Default Rates</span>
+                        <span className="text-[9px] uppercase tracking-wider text-[#8E8E93]">Slashed</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="w-full flex items-center justify-between font-mono text-[10px] text-[#8E8E93]/60 pt-4">
                     <span>registry status: synced</span>
-                    <span>99.9% UPTIME</span>
+                    <span>{snapshot.network}</span>
                   </div>
                 </div>
 

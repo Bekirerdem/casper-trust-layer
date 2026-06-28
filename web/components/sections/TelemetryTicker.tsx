@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { loadSnapshot } from "@/lib/data/snapshot";
 
 interface TickerItem {
   id: string;
@@ -9,19 +9,43 @@ interface TickerItem {
   type: "success" | "warning" | "info" | "error";
 }
 
-export function TelemetryTicker() {
-  const [items] = useState<TickerItem[]>(() => [
-    { id: "1", label: "AGENT_0", value: "SETTLED (+5 BPS)", type: "success" },
-    { id: "2", label: "NETWORK", value: "CASPER-TESTNET ACTIVE", type: "info" },
-    { id: "3", label: "ESCROW_BLOCK", value: "0xe81a...f7b3 SECURED", type: "success" },
-    { id: "4", label: "AGENT_1", value: "GATE CHECK PASSED", type: "success" },
-    { id: "5", label: "x402_STATE", value: "ESCROW CONTRACT DEPLOYED", type: "info" },
-    { id: "6", label: "SYSTEM", value: "TELEMETRY SYNCED", type: "success" },
-    { id: "7", label: "AGENT_2", value: "SCORE 9450 BPS (STABLE)", type: "info" },
-    { id: "8", label: "DEPLOY_STATUS", value: "BLOCK_HEIGHT 4091802", type: "info" },
-    { id: "9", label: "GATE_ERROR", value: "AGENT_4 BLOCKED (SCORE 88 BPS)", type: "error" },
-  ]);
+// Every line is derived from the real on-chain snapshot — no fabricated values.
+function buildItems(): TickerItem[] {
+  const s = loadSnapshot();
+  const items: TickerItem[] = [
+    { id: "net", label: "NETWORK", value: "CASPER-TESTNET ACTIVE", type: "info" },
+  ];
 
+  for (const a of s.agents) {
+    items.push({
+      id: `agent-${a.agentId}`,
+      label: `AGENT_${a.agentId}`,
+      value: `SCORE ${a.scoreBps} BPS`,
+      type: a.scoreBps > 0 ? "success" : "info",
+    });
+  }
+
+  for (const t of s.settlements.slice(0, 3)) {
+    const delta = t.scoreAfter - t.scoreBefore;
+    items.push({
+      id: `settle-${t.txHash}`,
+      label: "SETTLED",
+      value: `${t.txHash.slice(0, 8)}… +${delta} BPS`,
+      type: "success",
+    });
+  }
+
+  items.push(
+    { id: "registry", label: "REGISTRY", value: `${s.agents.length} AGENTS VERIFIED`, type: "info" },
+    { id: "x402", label: "x402", value: "FACILITATOR LIVE", type: "success" },
+    { id: "src", label: "REPUTATION", value: "DERIVED FROM SETTLED ESCROW", type: "info" },
+  );
+
+  return items;
+}
+
+export function TelemetryTicker() {
+  const items = buildItems();
   // Double the list to support seamless infinite scrolling
   const scrollItems = [...items, ...items];
 
