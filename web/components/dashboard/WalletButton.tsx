@@ -1,14 +1,17 @@
 "use client";
 
-import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
+import type { WalletState } from "@/lib/wallet/useCasperWallet";
 
 function shortKey(k: string): string {
   return `${k.slice(0, 6)}…${k.slice(-4)}`;
 }
 
-export function WalletButton() {
-  const { connecting, publicKey, error, connect, disconnect } = useCasperWallet();
+type Props = Pick<WalletState, "connecting" | "publicKey" | "error"> & {
+  connect: () => void;
+  disconnect: () => void;
+};
 
+export function WalletButton({ connecting, publicKey, error, connect, disconnect }: Props) {
   if (publicKey) {
     return (
       <button
@@ -28,8 +31,6 @@ export function WalletButton() {
     );
   }
 
-  // Detection is unreliable (extension injects async), so we always offer Connect
-  // and only surface an install hint if a click couldn't find the provider.
   const notFound = !!error && /bulunamad|not detected|not found/i.test(error);
 
   return (

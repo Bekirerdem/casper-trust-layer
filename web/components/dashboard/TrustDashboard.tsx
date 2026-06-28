@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { loadSnapshot } from "@/lib/data/snapshot";
 import { WalletButton } from "@/components/dashboard/WalletButton";
+import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
+import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
 import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
 
 const SCORE_MAX = 500;
@@ -85,6 +87,7 @@ function SettlementRow({ s, agentId }: { s: SettlementProof; agentId: number }) 
 
 export function TrustDashboard() {
   const snapshot = loadSnapshot();
+  const wallet = useCasperWallet();
   const [selectedId, setSelectedId] = useState(0);
   const [live, setLive] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(false);
@@ -132,7 +135,13 @@ export function TrustDashboard() {
             <span className="font-mono text-[10px] uppercase tracking-widest text-accent-red border border-accent-red/20 bg-accent-red/5 rounded px-2 py-1">
               {snapshot.network}
             </span>
-            <WalletButton />
+            <WalletButton
+              connecting={wallet.connecting}
+              publicKey={wallet.publicKey}
+              error={wallet.error}
+              connect={wallet.connect}
+              disconnect={wallet.disconnect}
+            />
           </div>
         </header>
 
@@ -252,6 +261,8 @@ export function TrustDashboard() {
             </div>
           </section>
         </div>
+
+        {wallet.publicKey && <RegisterPanel publicKey={wallet.publicKey} />}
       </div>
     </main>
   );
