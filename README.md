@@ -1,12 +1,21 @@
+<div align="center">
+
+<img src="web/public/logo.png" alt="Casper Trust Layer" width="104" height="104" />
+
 # Casper Agent Trust Layer
 
 **On-chain trust infrastructure for autonomous agents on Casper** — where reputation is *earned from settled, paid work*, not self-reported, and **x402 payments are gated on it**.
 
+</div>
+
+[![live demo](https://img.shields.io/badge/live%20demo-online-2ea44f)](https://web-five-psi-7iqrhfurdh.vercel.app)
 [![npm](https://img.shields.io/npm/v/casper-trust?label=casper-trust&color=cb3837)](https://www.npmjs.com/package/casper-trust)
 [![contracts](https://img.shields.io/badge/OdraVM%20tests-31%20passing-2ea44f)](contracts/src)
 [![sdk](https://img.shields.io/badge/SDK%20tests-66%20passing-2ea44f)](sdk/test)
 [![network](https://img.shields.io/badge/casper--test-deployed-blue)](DEPLOYMENT.md)
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
+🔗 **[Live demo](https://web-five-psi-7iqrhfurdh.vercel.app)** · 📦 **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · ⛓️ **[On-chain proof](DEPLOYMENT.md)**
 
 > Built for the **Casper Agentic Buildathon 2026** · Contracts live on `casper-test` ([proof](DEPLOYMENT.md)) · SDK live on [npm](https://www.npmjs.com/package/casper-trust) · x402 settlement [verified on-chain](#live-proof)
 
@@ -86,13 +95,20 @@ Everything below is live on `casper-test` — see [`DEPLOYMENT.md`](DEPLOYMENT.m
 | IdentityRegistry | [`3a51cc5f…`](https://testnet.cspr.live/contract-package/3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc) |
 | ReputationEngine | [`d73fb111…`](https://testnet.cspr.live/contract-package/d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb) |
 | Escrow | [`fe6b0ddb…`](https://testnet.cspr.live/contract-package/fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c) |
+| AgentTreasury | [`abbdbdfd…`](https://testnet.cspr.live/contract-package/abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c) |
 | Cep18 (demo token) | [`f962076e…`](https://testnet.cspr.live/contract-package/f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6) |
 
-**End-to-end runs** (reproducible scripts in [`sdk/scripts`](sdk/scripts))
+> **AgentTreasury** gives a business a *capped spending envelope* for an AI agent: the contract enforces per-task (100 AGT) + daily (500 AGT) limits and a **protocol-level reputation gate** — funds only release to a payee that is whitelisted **or** clears a `ReputationEngine.score` threshold. Trust enforced in the contract, not the SDK.
+
+**End-to-end runs** (reproducible via [`sdk/scripts/network-boost.mts`](sdk/scripts) + the x402 demos)
+
+A live **4-agent trust network** on `casper-test`: reputation flows from *multiple* counterparties, not a single loop. Agent #0 earned **408 bps over 6 settled jobs**; every row below is independently verifiable.
 
 | What it proves | Transaction |
 |---|---|
-| Escrow→reputation hero loop (provider score `0 → 100`) | see [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| Cross-edge settle — agent #2 → #0 lifts score `208 → 308` | [`6a7d54e8…`](https://testnet.cspr.live/transaction/6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69) |
+| Cross-edge settle — agent #3 → #0 lifts score `308 → 408` | [`9e490f62…`](https://testnet.cspr.live/transaction/9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a) |
+| Bootstrap — agent #0 vouches for new agent #2 (`0 → 100`) | [`b5d6c3b9…`](https://testnet.cspr.live/transaction/b5d6c3b91efdcecf858bcaa55fba0804f7f2ccde1199ba1a5f9affa735edc591) |
 | x402 handshake settles on-chain | [`0c58d79a…`](https://testnet.cspr.live/transaction/0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e) |
 | **Trust-gated x402** — paid only when score clears the bar | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 
@@ -143,12 +159,14 @@ contracts/
   src/identity.rs        IdentityRegistry  — ERC-8004 identity + bond + slash
   src/escrow.rs          Escrow            — A2A job state machine, CEP-18, burn fee
   src/reputation.rs      ReputationEngine  — escrow-derived sybil-resistant score
-  bin/cli.rs             odra-cli deploy script (4 contracts + wiring)
+  src/treasury.rs        AgentTreasury     — capped spend envelope + on-chain reputation gate
+  bin/cli.rs             odra-cli deploy script (5 contracts + wiring)
   vendor/                patched odra-casper-rpc-client (Casper 2.0/Condor deploy fix)
 sdk/
   src/                   casper-trust TypeScript SDK (published to npm)
-  scripts/               live demos: hero-loop, wrap-wcspr, x402-handshake, trust-gated-x402
+  scripts/               live demos: hero-loop, x402-handshake, trust-gated-x402, network-boost
   test/                  66 offline tests + live read assertions
+web/                     Next.js landing + live trust dashboard (deployed on Vercel)
 docs/reputation-formula.md   research-grounded formula design + threat model
 tasks/                       build log + hard-won lessons
 DEPLOYMENT.md                live addresses + tx proofs
