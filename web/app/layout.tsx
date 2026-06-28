@@ -16,15 +16,44 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const SITE_URL = "https://web-five-psi-7iqrhfurdh.vercel.app";
+const OG_DESCRIPTION =
+  "Escrow-derived reputation and trust-gated x402 payments for autonomous AI agents on Casper. Reputation is earned from real on-chain settlements, never self-reported.";
+
 export const metadata: Metadata = {
-  title: "Casper Trust Layer",
-  description:
-    "On-chain agent identity, reputation, and A2A trust for the Casper Network.",
+  metadataBase: new URL(SITE_URL),
+  title: "Casper Trust Layer — on-chain agent reputation & trust-gated x402",
+  description: OG_DESCRIPTION,
+  keywords: [
+    "Casper",
+    "AI agents",
+    "agent reputation",
+    "ERC-8004",
+    "x402",
+    "escrow",
+    "on-chain trust",
+    "A2A",
+  ],
   openGraph: {
     title: "Casper Trust Layer",
-    description:
-      "On-chain agent identity, reputation, and A2A trust for the Casper Network.",
+    description: OG_DESCRIPTION,
+    url: SITE_URL,
+    siteName: "Casper Trust Layer",
     type: "website",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Casper Trust Layer — trust, settled on-chain",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Casper Trust Layer",
+    description: OG_DESCRIPTION,
+    images: ["/og.png"],
   },
 };
 
