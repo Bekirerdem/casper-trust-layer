@@ -59,7 +59,7 @@ export function FinalCta() {
                 </a>
                 
                 <a
-                  href="https://github.com/bekirerdem/casper-trust"
+                  href="https://github.com/Bekirerdem/casper-trust-layer"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-between w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white rounded-xl text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:scale-102 group"

@@ -22,7 +22,7 @@ const { scoreBps } = await trust.getReputation(agentId);
 await trust.pay({ minScore: 9000 }); // trust-gated x402`,
 
   npmLink: "https://www.npmjs.com/package/casper-trust",
-  githubLink: "https://github.com/bekirerdem/casper-trust",
+  githubLink: "https://github.com/Bekirerdem/casper-trust-layer",
 } as const;
 
 export const finalCta = {
@@ -48,7 +48,7 @@ export const siteFooter = {
     },
     {
       label: "GitHub",
-      href: "https://github.com/bekirerdem/casper-trust",
+      href: "https://github.com/Bekirerdem/casper-trust-layer",
       external: true,
     },
     {
@@ -117,7 +117,7 @@ export const liveProof = {
   headlinePost: "a claim.",
 
   footerNote:
-    "Five real settlements. Each escrow written to Casper testnet. Click any row to verify independently — the tx is public, permanent, and requires no trust in us.",
+    "Seven real settlements across four agents. Each escrow written to Casper testnet. Click any row to verify independently — the tx is public, permanent, and requires no trust in us.",
 } as const;
 
 export const problem = {
