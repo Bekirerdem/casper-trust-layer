@@ -28,14 +28,50 @@ import type { TrustSnapshot, AgentSnapshot, SettlementProof } from "../lib/caspe
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "../lib/data/snapshot.json");
 
-// Known settlements from live demo runs (DEPLOYMENT.md + README.md).
-// These are REAL tx hashes verified on testnet.cspr.live:
+// Real settlements verified on testnet.cspr.live, ordered strongest-first so the
+// UI showcase (LiveProof shows the first 4, Centerpiece the first 3) leads with
+// high-delta, multi-counterparty edges — a network, not a single 1->0 loop.
+//
+// Cross-edges (network boost, 2026-06-28):
+//   6a7d54e8 — 2->0 : agent#0 earns trust from agent#2 (208->308)
+//   9e490f62 — 3->0 : agent#0 earns trust from agent#3 (308->408)
+//   b5d6c3b9 — 0->2 : agent#0 vouches for new agent#2 (0->100)
+//   16931dc7 — 0->3 : agent#0 vouches for new agent#3 (0->4, trust-conserved)
+//   bd968a26 — 0->1 : agent#0 -> agent#1 (0->0, grant budget exhausted)
+// Original 1->0 history (agent#0 as provider):
 //   0c58d79a — x402 handshake settle (wrap-wcspr + trust-gated-x402 demo)
-//   b4a4635f — trust-gated x402 paid settle (bar met by provider score)
-//   24f1914a — boost run job#3: agent#0 score 100->150, jobs 1->2
-//   50b6d34d — boost run job#4: agent#0 score 150->183, jobs 2->3
-//   1328ffa5 — boost run job#5: agent#0 score 183->208, jobs 3->4
+//   24f1914a — boost job: agent#0 100->150
+//   50b6d34d — boost job: agent#0 150->183
+//   1328ffa5 — boost job: agent#0 183->208
+//   b4a4635f — trust-gated x402 paid settle (bar met, 100->100)
 const KNOWN_SETTLEMENTS: SettlementProof[] = [
+  {
+    txHash:
+      "6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69",
+    from: 2,
+    to: 0,
+    amount: "1000000",
+    scoreBefore: 208,
+    scoreAfter: 308,
+  },
+  {
+    txHash:
+      "9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a",
+    from: 3,
+    to: 0,
+    amount: "1000000",
+    scoreBefore: 308,
+    scoreAfter: 408,
+  },
+  {
+    txHash:
+      "b5d6c3b91efdcecf858bcaa55fba0804f7f2ccde1199ba1a5f9affa735edc591",
+    from: 0,
+    to: 2,
+    amount: "1000000",
+    scoreBefore: 0,
+    scoreAfter: 100,
+  },
   {
     txHash:
       "0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e",
@@ -43,15 +79,6 @@ const KNOWN_SETTLEMENTS: SettlementProof[] = [
     to: 0,
     amount: "1000000",
     scoreBefore: 0,
-    scoreAfter: 100,
-  },
-  {
-    txHash:
-      "b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3",
-    from: 1,
-    to: 0,
-    amount: "1000000",
-    scoreBefore: 100,
     scoreAfter: 100,
   },
   {
