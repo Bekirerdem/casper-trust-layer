@@ -12,12 +12,14 @@
 
 Her task'ın gereksinimleri bu bölümü kapsar. Değerler DNA spec'ten verbatim:
 
-- **Renk token'ları:** `--bg #0A0B0D` · `--surface #14161A` · `--text #E8EAED` · `--accent #2BD9A0`. Diğer tonlar (muted/border/accent-hover) bu 4 kökten türetilir. **Casper kırmızısı KULLANILMAZ.**
-- **Accent disiplini:** yeşil yalnızca canlı/doğrulanmış/settled durumları + birincil CTA. Süs olarak dağıtma.
-- **Tipografi:** display = Geist (next/font); body = Inter; mono = JetBrains Mono (adres/tx/skor/sayı). Kontrast boyut+weight+mono ile.
-- **Hareket:** MOTION 5-6 (az ama keskin). Sadece `transform`+`opacity` animate et. `window.addEventListener("scroll")` YASAK → `useScroll`/ScrollTrigger/IntersectionObserver. GSAP ve framer-motion **aynı component ağacında karışmaz**. GSAP cleanup `return () => ctx.revert()`. Scroll/cursor değerleri `useMotionValue`+`useTransform`. `prefers-reduced-motion` her MOTION>3 efektte respect edilir. Spring default `stiffness:100, damping:20`.
-- **Kompozisyon:** DENSITY 3-4 (bol nefes, `py-28`+ section aralıkları), VARIANCE 6-7 (kontrollü asimetri), her section TEK güçlü odak. `<768px` asimetrik layout tek kolona çöker.
-- **Anti-slop kapısı (her section sonu):** hero ≤1-3 satır; nested box yok (card-in-card); micro-UI clutter yok (sahte pill/label); spacing oranları korundu; palet 4 token'la eşleşti; küçük laptop'ta hero temiz/okunur.
+> **v2 (2026-06-22) — EDITORIAL LUXURY, LIGHT.** Tek kaynak: `docs/superpowers/specs/2026-06-21-landing-design-dna.md` (v2). Aşağıdaki kısıtlar v1'in koyu/yeşil/Geist değerlerini değiştirir.
+
+- **Renk token'ları:** `--bg #F5F0EA` (keten-krem off-white) · `--text #1A1714` (sıcak near-black) · `--muted #6B645C` · `--line rgba(26,23,20,0.10)` (hairline) · `--accent-red #ad0013` · `--accent-gold #a67d43`. **Asla saf `#fff` zemin / saf `#000` metin.**
+- **Accent disiplini:** Kırmızı SADECE (a) başlıktaki tek vurgu kelimesi + (b) section arası `1px` yatay çizgi. Altın SADECE (a) H2 altı ~48px ince underline + (b) footer ornament/hover underline. **Kırmızı+altın aynı elementte ASLA** (casino tuzağı). Toplam accent < %4.
+- **Tipografi:** display = **Zodiak** (Fontshare, serif); body = **Switzer** (Fontshare, grotesk, 17-18px / lh 1.75 / 65-75ch); mono = JetBrains Mono (tx/adres/skor). Başlıkta tek anahtar kelime kırmızı. Uppercase etiket tracking `+0.10em`. **Inter/Poppins başlık YASAK** (slop).
+- **Hareket:** Hafif editorial. İzin: `Reveal` staggered fade, hover (underline+tracking), hairline reveal. **WebGL/3D/kinetic-typography YASAK** (CWV). Sadece `transform`+`opacity`. Scroll listener yok (IntersectionObserver/`useScroll`). `prefers-reduced-motion` respect. Lüks = whitespace, motion değil.
+- **Kompozisyon:** Asimetrik editorial (2:3 / 3:5; **asla 50/50, asla ortalanmış hero**), `max-w ~1200px`, section dikey padding `clamp(7rem,15vw,15rem)`. Number tokens `01/02`. Kasıtlı spacing varyasyonu (monoton = slop). Uniform `border-radius` her yerde YASAK.
+- **Anti-slop kapısı (her section sonu):** off-white zemin (`#fff` değil) + near-black metin (`#000` değil); Zodiak/Switzer (Inter başlık yok); asimetrik (centered değil); tek kırmızı vurgu kelimesi; tekrar eden `1px` accent çizgi; kasıtlı spacing; gerçek sayı/claim + gerçek tx; uniform radius/shadow yok.
 - **Kod:** placeholder/`// ... rest` yasak; tam dosya ya da temiz breakpoint. Named export tercih. Dosya başına tek sorumluluk, ~150 LOC hedef.
 
 ---

@@ -1,51 +1,41 @@
+"use client";
+
 import { siteFooter } from "@/lib/content";
 
 export function SiteFooter() {
   return (
     <footer
-      className="w-full bg-bg"
+      className="w-full bg-[#08080A] border-t border-white/5"
       aria-label="Site footer"
     >
-      {/* Gold hairline — single thin ornament */}
-      <div
-        aria-hidden
-        className="w-full h-px"
-        style={{ background: "var(--accent-gold)", opacity: 0.5 }}
-      />
-
-      {/* Hairline line divider */}
-      <div className="w-full h-px border-t border-line" aria-hidden />
-
-      <div className="mx-auto max-w-[1200px] px-6 md:px-12 py-16 md:py-20">
-
-        {/* Top row: wordmark + links — asymmetric, editorial */}
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-[2fr_1fr] sm:gap-8 sm:items-start">
-
-          {/* Wordmark — Zodiak text mark, not a logo SVG */}
-          <div className="flex flex-col gap-4">
-            <p className="font-display text-[clamp(1.5rem,3vw,2.25rem)] font-semibold leading-[1.0] tracking-[-0.01em] text-text">
-              {siteFooter.wordmark}
-            </p>
-            <p className="font-sans text-[14px] leading-[1.7] text-muted max-w-[42ch]">
+      <div className="mx-auto max-w-[1200px] px-6 md:px-12 py-16 md:py-24">
+        
+        {/* Top row: Brand & navigation */}
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-12 items-start">
+          
+          {/* Brand Info */}
+          <div className="flex flex-col items-start gap-4">
+            <span className="font-mono text-sm tracking-[0.2em] text-white font-black uppercase">
+              Casper <span className="text-accent-red">Trust</span> Layer
+            </span>
+            <p className="font-sans text-sm text-[#8E8E93] leading-relaxed max-w-[44ch] text-left">
               {siteFooter.tagline}
             </p>
           </div>
 
-          {/* Links — editorial list, not a grid dump */}
-          <nav aria-label="Footer navigation">
-            <ul className="flex flex-col gap-3">
+          {/* Navigation Links */}
+          <nav aria-label="Footer navigation" className="flex flex-col items-start md:items-end">
+            <ul className="flex flex-col gap-3 text-left md:text-right">
               {siteFooter.links.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
                     target={link.external ? "_blank" : undefined}
                     rel={link.external ? "noopener noreferrer" : undefined}
-                    className="font-sans text-[13px] text-muted hover:text-text transition-colors underline underline-offset-4 decoration-line hover:decoration-text"
+                    className="font-sans text-xs font-semibold uppercase tracking-widest text-[#8E8E93] hover:text-white transition-colors duration-200"
                   >
                     {link.label}
-                    {link.external && (
-                      <span aria-hidden className="ml-1">↗</span>
-                    )}
+                    {link.external && <span className="text-[10px] ml-1">↗</span>}
                   </a>
                 </li>
               ))}
@@ -54,22 +44,18 @@ export function SiteFooter() {
 
         </div>
 
-        {/* Hairline separator */}
-        <div className="mt-16 w-full h-px border-t border-line" aria-hidden />
+        {/* Hairline Separator */}
+        <div className="my-12 w-full h-px bg-white/5" />
 
-        {/* Bottom row: serif editorial one-liner + mono version */}
-        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-
-          {/* Editorial footer seriousness — thin serif quote */}
-          <p className="font-display text-[13px] font-normal italic leading-[1.6] text-muted max-w-[52ch]">
-            {siteFooter.footerQuote}
+        {/* Bottom row: Quotes & Version */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
+          <p className="font-sans text-xs italic text-[#8E8E93]/70 max-w-[50ch] text-left">
+            &quot;{siteFooter.footerQuote}&quot;
           </p>
-
-          {/* Mono version snapshot */}
-          <p className="font-mono text-[10px] text-muted/50 tabular-nums whitespace-nowrap sm:text-right">
-            {siteFooter.version}
-          </p>
-
+          <div className="flex flex-col items-start sm:items-end font-mono text-[9px] text-[#8E8E93]/40 tracking-wider">
+            <span>{siteFooter.version}</span>
+            <span className="mt-1">&copy; {new Date().getFullYear()} Casper Trust Layer. All rights reserved.</span>
+          </div>
         </div>
 
       </div>

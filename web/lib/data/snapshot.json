@@ -1,35 +1,63 @@
 {
-  "capturedAt": "2026-06-21T20:08:30.973Z",
+  "capturedAt": "2026-06-28T14:57:05.701Z",
   "network": "casper-test",
   "agents": [
     {
       "agentId": 0,
-      "scoreBps": 208,
-      "jobsCompleted": 4,
+      "scoreBps": 408,
+      "jobsCompleted": 6,
       "exists": true
     },
     {
       "agentId": 1,
       "scoreBps": 0,
-      "jobsCompleted": 0,
+      "jobsCompleted": 1,
+      "exists": true
+    },
+    {
+      "agentId": 2,
+      "scoreBps": 100,
+      "jobsCompleted": 1,
+      "exists": true
+    },
+    {
+      "agentId": 3,
+      "scoreBps": 4,
+      "jobsCompleted": 1,
       "exists": true
     }
   ],
   "settlements": [
+    {
+      "txHash": "6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69",
+      "from": 2,
+      "to": 0,
+      "amount": "1000000",
+      "scoreBefore": 208,
+      "scoreAfter": 308
+    },
+    {
+      "txHash": "9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a",
+      "from": 3,
+      "to": 0,
+      "amount": "1000000",
+      "scoreBefore": 308,
+      "scoreAfter": 408
+    },
+    {
+      "txHash": "b5d6c3b91efdcecf858bcaa55fba0804f7f2ccde1199ba1a5f9affa735edc591",
+      "from": 0,
+      "to": 2,
+      "amount": "1000000",
+      "scoreBefore": 0,
+      "scoreAfter": 100
+    },
     {
       "txHash": "0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e",
       "from": 1,
       "to": 0,
       "amount": "1000000",
       "scoreBefore": 0,
-      "scoreAfter": 100
-    },
-    {
-      "txHash": "b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3",
-      "from": 1,
-      "to": 0,
-      "amount": "1000000",
-      "scoreBefore": 100,
       "scoreAfter": 100
     },
     {

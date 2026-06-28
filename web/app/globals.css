@@ -2,13 +2,13 @@
 
 /* ── Design tokens ───────────────────────────────────────────────────────── */
 :root {
-  --bg: #0A0B0D;              /* ink near-black */
-  --surface: #14161A;         /* raised dark surface */
-  --text: #F2F3F5;            /* near-white */
-  --muted: #9AA0A6;           /* secondary grey */
-  --line: rgba(255, 255, 255, 0.10);
-  --accent-red: #E84142;      /* avax-referenced signal red (tone tunable at checkpoint) */
-  --accent-gold: rgba(255, 255, 255, 0.14); /* neutralised hairline on dark (was warm gold) */
+  --bg: #08080A;              /* deep slate black */
+  --surface: #121215;         /* dark gray surface */
+  --text: #FFFFFF;            /* pure white */
+  --muted: #8E8E93;           /* slate grey */
+  --line: rgba(255, 255, 255, 0.08); /* fine border line */
+  --accent-red: #E6212F;      /* avax signature red */
+  --accent-gold: rgba(255, 255, 255, 0.12); /* fallback hairline tint */
 
   /* Font stacks wired from layout.tsx */
   --font-display: var(--font-geist-sans);
@@ -38,6 +38,7 @@
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -46,4 +47,182 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
+
+/* ── Custom Utilities ────────────────────────────────────────────────────── */
+
+/* Fine web3 grid mesh overlay */
+.bg-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+/* Glowing radial backdrop shadow */
+.bg-glow-red {
+  background: radial-gradient(circle 400px at 50% 50%, rgba(230, 33, 47, 0.08), transparent 80%);
+}
+
+.bg-glow-green {
+  background: radial-gradient(circle 300px at 50% 50%, rgba(34, 197, 94, 0.05), transparent 80%);
+}
+
+/* Glassmorphism styling */
+.glass-panel {
+  background: rgba(18, 18, 21, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(230, 33, 47, 0.25);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), inset 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+/* Card Pointer Spotlight Effect */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px; /* border thickness */
+  background: radial-gradient(
+    300px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    rgba(230, 33, 47, 0.3),
+    transparent 80%
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 10;
+}
+
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+
+.spotlight-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    300px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    rgba(230, 33, 47, 0.04),
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 0;
+}
+
+.spotlight-card:hover .spotlight-bg {
+  opacity: 1;
+}
+
+/* Telemetry Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 45s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Fade-In reveal keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-fade-in {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Progress-bar animation for slideshow */
+@keyframes slideProgress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-slide-progress {
+  animation: slideProgress 6s linear infinite;
+}
+
+/* Volumetric floating animation keyframes */
+@keyframes float-slow-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(60px, -40px) scale(1.1);
+  }
+}
+@keyframes float-slow-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1.05);
+  }
+  50% {
+    transform: translate(-80px, 60px) scale(0.95);
+  }
+}
+@keyframes float-slow-3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(0.95);
+  }
+  50% {
+    transform: translate(50px, 80px) scale(1.05);
+  }
+}
+
+/* Film Grain overlay using SVG noise */
+.film-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* Vignette overlay */
+.vignette-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 35%, #08080A 95%);
+  pointer-events: none;
+}
+
