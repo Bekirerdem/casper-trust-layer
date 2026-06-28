@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const SITE_URL = "https://web-five-psi-7iqrhfurdh.vercel.app";
+const SITE_URL = "https://casper-trust-layer.vercel.app";
 const OG_DESCRIPTION =
   "Escrow-derived reputation and trust-gated x402 payments for autonomous AI agents on Casper. Reputation is earned from real on-chain settlements, never self-reported.";
 
