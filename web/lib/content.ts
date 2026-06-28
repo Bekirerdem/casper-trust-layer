@@ -109,6 +109,17 @@ export const trustGating = {
 // score  99 → TrustGateError`,
 } as const;
 
+export const liveConsole = {
+  label: "05 / TRY IT LIVE",
+
+  headlinePre: "Run the gate",
+  headlineAccent: "yourself.",
+  headlinePost: "",
+
+  thesis:
+    "Pick a real on-chain agent, set the trust bar, and watch the gate decide. These are live reputation scores earned from settled escrow jobs on casper-test — read straight from contract storage, no wallet required.",
+} as const;
+
 export const liveProof = {
   label: "05 / PROOF",
 

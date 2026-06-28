@@ -3,6 +3,7 @@ import { TelemetryTicker } from "@/components/sections/TelemetryTicker";
 import { Problem } from "@/components/sections/Problem";
 import { HowItWorks } from "@/components/sections/HowItWorks";
 import { TrustGating } from "@/components/sections/TrustGating";
+import { LiveConsole } from "@/components/sections/LiveConsole";
 import { LiveProof } from "@/components/sections/LiveProof";
 import { Developer } from "@/components/sections/Developer";
 import { FinalCta } from "@/components/sections/FinalCta";
@@ -25,6 +26,8 @@ export default function Home() {
         <HowItWorks />
         <Divider />
         <TrustGating />
+        <Divider />
+        <LiveConsole />
         <Divider />
         <LiveProof />
         <Divider />

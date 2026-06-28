@@ -21,6 +21,7 @@ export function Navbar() {
     { label: "Overview", href: "#hero" },
     { label: "Mechanism", href: "#how-it-works" },
     { label: "Trust-Gating", href: "#trust-gating" },
+    { label: "Try It", href: "#console" },
     { label: "Live Proof", href: "#live-proof" },
     { label: "Developer", href: "#developer" },
   ];
