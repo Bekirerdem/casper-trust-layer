@@ -20,7 +20,14 @@ export async function POST(req: Request) {
 
     const tx = Transaction.fromJSON(txJson);
     const pub = PublicKey.fromHex(publicKeyHex);
-    const sigBytes = Uint8Array.from(Buffer.from(signatureHex.replace(/^0x/, ""), "hex"));
+
+    // Casper approvals need the algorithm-tagged signature (01=ed25519, 02=secp256k1).
+    // The wallet returns the raw 64-byte signature → prepend the tag from the public key.
+    let sigBytes = Uint8Array.from(Buffer.from(signatureHex.replace(/^0x/, ""), "hex"));
+    if (sigBytes.length === 64) {
+      const algoTag = parseInt(publicKeyHex.slice(0, 2), 16); // 01 or 02
+      sigBytes = Uint8Array.from([algoTag, ...sigBytes]);
+    }
     tx.setSignature(sigBytes, pub);
 
     const { rpc } = createReadClient();
@@ -31,7 +38,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ txHash: hash });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "submit failed";
+    const err = e as { message?: string; code?: number; data?: unknown };
+    const detail = err?.data ? ` · ${JSON.stringify(err.data)}` : "";
+    const message = `${err?.message ?? "submit failed"}${err?.code ? ` (code ${err.code})` : ""}${detail}`;
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
