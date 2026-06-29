@@ -20,10 +20,8 @@ export function Navbar() {
   }, []);
 
   const navItems = [
-    { label: "Overview", href: "#hero" },
     { label: "Mechanism", href: "#how-it-works" },
     { label: "Trust-Gating", href: "#trust-gating" },
-    { label: "Try It", href: "#console" },
     { label: "Live Proof", href: "#live-proof" },
     { label: "Developer", href: "#developer" },
   ];
@@ -51,13 +49,13 @@ export function Navbar() {
           </span>
         </a>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+        {/* Desktop Navigation Links — shown at lg where there's room */}
+        <nav className="hidden xl:flex items-center gap-7">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-xs uppercase tracking-widest text-[#8E8E93] hover:text-white transition-colors duration-200"
+              className="text-xs uppercase tracking-widest text-[#8E8E93] hover:text-white transition-colors duration-200 whitespace-nowrap"
             >
               {item.label}
             </a>
@@ -65,16 +63,16 @@ export function Navbar() {
         </nav>
 
         {/* CTA Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <a
             href="/app"
-            className="hidden sm:inline-flex items-center justify-center px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white border border-white/20 rounded-full hover:border-white hover:bg-white hover:text-black transition-all duration-300"
+            className="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white border border-white/20 rounded-full hover:border-white hover:bg-white hover:text-black transition-all duration-300 whitespace-nowrap"
           >
             Open Console ↗
           </a>
           <a
             href="#developer"
-            className="inline-flex items-center justify-center px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white bg-accent-red border border-transparent rounded-full hover:bg-white hover:text-black transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-accent-red/20"
+            className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white bg-accent-red border border-transparent rounded-full hover:bg-white hover:text-black transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-accent-red/20 whitespace-nowrap"
           >
             Install SDK
           </a>
