@@ -116,7 +116,7 @@ async function main() {
 
   // Probe a few agent IDs.  The hero-loop registered agents 0+1; scan up to 8
   // to catch any additional registrations on the shared testnet deployer.
-  const agentIds = [0, 1, 2, 3];
+  const agentIds = [0, 1, 2, 3, 4, 5, 6, 7];
   const agents: AgentSnapshot[] = [];
 
   for (const id of agentIds) {

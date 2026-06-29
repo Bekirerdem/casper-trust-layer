@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-06-28T14:57:05.701Z",
+  "capturedAt": "2026-06-29T23:33:13.307Z",
   "network": "casper-test",
   "agents": [
     {
@@ -24,6 +24,12 @@
       "agentId": 3,
       "scoreBps": 4,
       "jobsCompleted": 1,
+      "exists": true
+    },
+    {
+      "agentId": 4,
+      "scoreBps": 0,
+      "jobsCompleted": 0,
       "exists": true
     }
   ],
