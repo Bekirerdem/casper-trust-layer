@@ -40,7 +40,7 @@ export function RegisterPanel({ publicKey }: { publicKey: string }) {
         Casper Wallet imzalar, işlem zincire gider — tüm akış canlı.
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end max-w-2xl">
         <label className="flex flex-col gap-1.5 flex-1">
           <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Agent metadata URI</span>
           <input

@@ -221,7 +221,7 @@ export function TrustDashboard() {
         </div>
 
         {/* Treasury + contracts */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 mt-6 items-start">
           <section className="glass-panel bg-white/5 border-white/5 rounded-2xl p-6 md:p-8">
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mb-4">
               AgentTreasury · bounded spend envelope

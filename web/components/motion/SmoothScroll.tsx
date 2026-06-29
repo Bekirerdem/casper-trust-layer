@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   useEffect(() => {
+    // The dashboard (/app) is an app surface — native scroll, no marketing smoothing.
+    if (pathname?.startsWith("/app")) return;
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -42,7 +46,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       lenis.destroy();
       document.removeEventListener("click", handleAnchorScroll);
     };
-  }, []);
+  }, [pathname]);
 
   return <>{children}</>;
 }
