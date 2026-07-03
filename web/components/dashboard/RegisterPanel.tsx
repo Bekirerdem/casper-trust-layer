@@ -6,7 +6,13 @@ import { registerAgent } from "@/lib/wallet/registerAgent";
 const BOND_CSPR = 10;
 const BOND_MOTES = String(BOND_CSPR * 1_000_000_000);
 
-export function RegisterPanel({ publicKey }: { publicKey: string }) {
+export function RegisterPanel({
+  publicKey,
+  onRegistered,
+}: {
+  publicKey: string;
+  onRegistered?: () => void;
+}) {
   const [agentUri, setAgentUri] = useState("ipfs://my-agent-card");
   const [status, setStatus] = useState<"idle" | "pending" | "done" | "error">("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -20,6 +26,7 @@ export function RegisterPanel({ publicKey }: { publicKey: string }) {
       const { txHash } = await registerAgent({ publicKeyHex: publicKey, agentUri, bondMotes: BOND_MOTES });
       setTxHash(txHash);
       setStatus("done");
+      onRegistered?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "register failed");
       setStatus("error");

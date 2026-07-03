@@ -108,6 +108,8 @@ export function TrustDashboard() {
   const wallet = useCasperWallet();
   const [selectedId, setSelectedId] = useState(0);
   const [live, setLive] = useState<Record<number, LiveRep>>({});
+  const [extraSettlements, setExtraSettlements] = useState(0);
+  const [extraAgents, setExtraAgents] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const agents = snapshot.agents;
@@ -164,12 +166,12 @@ export function TrustDashboard() {
           </div>
         </header>
 
-        {/* Stat strip */}
+        {/* Stat strip — live actions (hire/register) update these in place */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           {[
-            { n: agents.length, l: "Agents registered" },
-            { n: snapshot.settlements.length, l: "Settlements" },
-            { n: Math.max(...agents.map((a) => a.scoreBps)), l: "Top score (bps)" },
+            { n: agents.length + extraAgents, l: "Agents registered" },
+            { n: snapshot.settlements.length + extraSettlements, l: "Settlements" },
+            { n: Math.max(...agents.map((a) => live[a.agentId]?.scoreBps ?? a.scoreBps)), l: "Top score (bps)" },
             { n: CONTRACTS.length, l: "Live contracts" },
           ].map((s) => (
             <div key={s.l} className="glass-panel bg-white/5 border-white/5 rounded-xl p-4">
@@ -287,9 +289,15 @@ export function TrustDashboard() {
             <HirePanel
               publicKey={wallet.publicKey}
               agents={agents}
-              onSettled={(providerId, rep) => setLive((prev) => ({ ...prev, [providerId]: rep }))}
+              onSettled={(providerId, rep) => {
+                setLive((prev) => ({ ...prev, [providerId]: rep }));
+                setExtraSettlements((n) => n + 1);
+              }}
             />
-            <RegisterPanel publicKey={wallet.publicKey} />
+            <RegisterPanel
+              publicKey={wallet.publicKey}
+              onRegistered={() => setExtraAgents((n) => n + 1)}
+            />
           </>
         )}
       </div>
