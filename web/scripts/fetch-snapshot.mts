@@ -46,6 +46,16 @@ const OUT = join(__dirname, "../lib/data/snapshot.json");
 //   b4a4635f — trust-gated x402 paid settle (bar met, 100->100)
 const KNOWN_SETTLEMENTS: SettlementProof[] = [
   {
+    // 2026-07-03 — wallet-signed hire through the live /app UI (Casper Wallet)
+    txHash:
+      "f0e1ab418481b9a60fc1b17956bb8dcf0f7dacc4e0b146847cf342bd8a96ac17",
+    from: 0,
+    to: 1,
+    amount: "1000000",
+    scoreBefore: 0,
+    scoreAfter: 100,
+  },
+  {
     // 2026-07-03 — first settlement through the /app hire flow (job #11)
     txHash:
       "04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce",

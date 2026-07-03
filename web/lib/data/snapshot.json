@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-07-03T07:13:11.027Z",
+  "capturedAt": "2026-07-03T18:47:45.902Z",
   "network": "casper-test",
   "agents": [
     {
@@ -10,8 +10,8 @@
     },
     {
       "agentId": 1,
-      "scoreBps": 0,
-      "jobsCompleted": 1,
+      "scoreBps": 100,
+      "jobsCompleted": 2,
       "exists": true
     },
     {
@@ -31,9 +31,23 @@
       "scoreBps": 0,
       "jobsCompleted": 0,
       "exists": true
+    },
+    {
+      "agentId": 5,
+      "scoreBps": 0,
+      "jobsCompleted": 0,
+      "exists": true
     }
   ],
   "settlements": [
+    {
+      "txHash": "f0e1ab418481b9a60fc1b17956bb8dcf0f7dacc4e0b146847cf342bd8a96ac17",
+      "from": 0,
+      "to": 1,
+      "amount": "1000000",
+      "scoreBefore": 0,
+      "scoreAfter": 100
+    },
     {
       "txHash": "04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce",
       "from": 1,
