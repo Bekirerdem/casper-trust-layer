@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { loadSnapshot } from "@/lib/data/snapshot";
 import { WalletButton } from "@/components/dashboard/WalletButton";
 import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
+import { HirePanel } from "@/components/dashboard/HirePanel";
 import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
 import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
 
@@ -262,7 +263,12 @@ export function TrustDashboard() {
           </section>
         </div>
 
-        {wallet.publicKey && <RegisterPanel publicKey={wallet.publicKey} />}
+        {wallet.publicKey && (
+          <>
+            <HirePanel publicKey={wallet.publicKey} agents={agents} />
+            <RegisterPanel publicKey={wallet.publicKey} />
+          </>
+        )}
       </div>
     </main>
   );

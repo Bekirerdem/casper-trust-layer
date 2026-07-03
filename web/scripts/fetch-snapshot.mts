@@ -46,6 +46,16 @@ const OUT = join(__dirname, "../lib/data/snapshot.json");
 //   b4a4635f — trust-gated x402 paid settle (bar met, 100->100)
 const KNOWN_SETTLEMENTS: SettlementProof[] = [
   {
+    // 2026-07-03 — first settlement through the /app hire flow (job #11)
+    txHash:
+      "04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce",
+    from: 1,
+    to: 2,
+    amount: "1000000",
+    scoreBefore: 100,
+    scoreAfter: 200,
+  },
+  {
     txHash:
       "6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69",
     from: 2,
