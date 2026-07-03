@@ -319,6 +319,7 @@ export function TrustDashboard() {
             <HirePanel
               publicKey={wallet.publicKey}
               agents={agents}
+              rescanKey={extraAgents}
               onSettled={(providerId, rep) => {
                 setLive((prev) => ({ ...prev, [providerId]: rep }));
                 setExtraSettlements((n) => n + 1);

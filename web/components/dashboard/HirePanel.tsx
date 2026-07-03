@@ -25,10 +25,13 @@ const STEPS: { key: HirePhase; label: string; signer: "you" | "agent" }[] = [
 export function HirePanel({
   publicKey,
   agents,
+  rescanKey = 0,
   onSettled,
 }: {
   publicKey: string;
   agents: AgentSnapshot[];
+  /** Bump after a register tx — the panel re-scans until the new agent appears. */
+  rescanKey?: number;
   onSettled?: (providerId: number, rep: { scoreBps: number; jobsCompleted: number }) => void;
 }) {
   const [myAgentIds, setMyAgentIds] = useState<number[] | null>(null);
@@ -45,14 +48,26 @@ export function HirePanel({
   useEffect(() => {
     let cancelled = false;
     setMyAgentIds(null);
-    fetch(`/api/agents/mine?publicKey=${publicKey}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => !cancelled && setMyAgentIds(d.agentIds ?? []))
-      .catch(() => !cancelled && setMyAgentIds([]));
+    // After a register tx (rescanKey bump) the registry needs a while to show the
+    // new agent — poll until it appears instead of requiring a page refresh.
+    (async () => {
+      for (let attempt = 0; attempt < 16 && !cancelled; attempt++) {
+        try {
+          const d = await fetch(`/api/agents/mine?publicKey=${publicKey}`, { cache: "no-store" }).then((r) => r.json());
+          if (cancelled) return;
+          const ids: number[] = d.agentIds ?? [];
+          setMyAgentIds(ids);
+          if (ids.length > 0 || rescanKey === 0) return; // found, or initial load (no tx pending)
+        } catch {
+          if (!cancelled) setMyAgentIds([]);
+        }
+        await new Promise((r) => setTimeout(r, 10_000));
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [publicKey]);
+  }, [publicKey, rescanKey]);
 
   const myAgentId = clientId ?? myAgentIds?.[0];
   const providers = useMemo(
