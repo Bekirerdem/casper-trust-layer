@@ -22,7 +22,7 @@ On-chain trust infrastructure for AI agents on Casper — reputation **earned fr
 
 **What we built (5 contracts live on casper-test):**
 - **IdentityRegistry** — ERC-8004 agent identity + bond + slash
-- **Escrow** — A2A job state machine (fund → deliver → settle), 2% burn fee
+- **Escrow** — A2A job state machine (fund → deliver → settle), 2% protocol fee permanently locked in escrow
 - **ReputationEngine** — objective, sybil-resistant score: `Δ = isqrt(value) × counterparty-weight × repeat-dampening`, bounded by per-edge cap + trust conservation (red-teamed against bought-edge / wash / Sybil)
 - **AgentTreasury** — capped spend envelope (per-task 100 AGT + daily 500 AGT) + **contract-level reputation gate**
 - **Cep18 (AGT)** demo token

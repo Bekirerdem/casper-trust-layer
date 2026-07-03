@@ -36,7 +36,7 @@ The canonical agent-trust standard (ERC-8004) stores reputation as **subjective 
         ▲  resolve wallet / slash bond
         │
 ┌─────────────────┐   client hires provider (CEP-18 locked)
-│      Escrow      │   submit → approve → settle (pay wallet, 2% burn fee)
+│      Escrow      │   submit → approve → settle (pay wallet, 2% protocol fee)
 └─────────────────┘   deadline default → refund client + slash provider
         │  record_settlement(provider, client, amount)
         ▼
@@ -82,7 +82,14 @@ Every term is **unsigned-integer / basis-point math, O(1) per settlement** — n
 | **per-edge lifetime cap** | **bought-edge / star laundering** (the attack a naive 3-factor formula fails) |
 | **trust conservation** | a payer can't confer more reputation than it earned |
 | bonded-newcomer **cold-start floor** (gated + capped) | the multiply-by-zero bootstrap deadlock — without letting bonds buy rank |
-| escrow **burn fee** + bond **slashing** | making fake reputation cost > benefit (cryptoeconomic security) |
+| escrow **protocol fee** (2%, permanently locked in escrow) + bond **slashing** | making fake reputation cost > benefit (cryptoeconomic security) |
+
+### "Paid ≠ good work?"
+
+The strongest objection to settlement-derived reputation: a payment proves the work was *paid for*, not that it was *good*. Fair — and answered by the design. Settlement here is **approval-gated**: funds only move when the *client* calls `approve`, so every score-moving settlement is a counterparty's costly endorsement — it permanently locks the 2% protocol fee — not a provider's self-report. A dissatisfied client simply doesn't approve, and reclaims the funds after the deadline.
+
+- **The alternatives reintroduce a trusted writer.** LLM-jury verdicts and "trusted verifier" roles let whoever controls the judge mint subjective scores for free. Here, score can only be minted by pushing real value through escrow and giving up the fee.
+- **A dishonest pair is bounded, not trusted.** Even a counterparty that *always* approves can only fabricate a capped, capital-linear amount of score — per-edge lifetime caps, trust conservation, and `isqrt` value concavity bound every edge ([full math](docs/reputation-formula.md)).
 
 ## Live proof
 
@@ -113,6 +120,31 @@ A live **4-agent trust network** on `casper-test`: reputation flows from *multip
 | **Trust-gated x402** — paid only when score clears the bar | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 
 > The trust-gated demo runs the *same* provider and endpoint twice: a bar above its earned score is **refused before any payment**; a bar it meets **settles on-chain**.
+
+### Verify it yourself
+
+No claim in this README requires trusting us:
+
+| Claim | How to check |
+|---|---|
+| Agent #0 holds **408 bps over 6 settled jobs** | `curl https://casper-trust-layer.vercel.app/api/trust/0` → `{"agentId":0,"scoreBps":408,"jobsCompleted":6,"exists":true}` — a live, wallet-free storage read |
+| The score came from real settlements, not writes we control | Settlement txs [`6a7d54e8…`](https://testnet.cspr.live/transaction/6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69) and [`9e490f62…`](https://testnet.cspr.live/transaction/9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a) route through the deployed Escrow |
+| x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) — the same endpoint is refused below the bar, settled above it |
+| All 5 contracts are live and wired | Package hashes in the table above; every install + wiring transaction linked in [`DEPLOYMENT.md`](DEPLOYMENT.md) on [testnet.cspr.live](https://testnet.cspr.live) |
+| The SDK is public and installable today | [`npm install casper-trust`](https://www.npmjs.com/package/casper-trust) |
+| The code does what we say | `cargo odra test` in `contracts/` (50 tests) · `npx vitest run` in `sdk/` (66 tests incl. live read assertions) |
+
+## Judging criteria at a glance
+
+| Criterion | What ships | Evidence |
+|---|---|---|
+| **Technical quality** | 5 contracts live and wired on `casper-test`; 50 OdraVM tests (incl. the adversarial reputation suite) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
+| **Innovation** | Reputation derived *objectively* from settled escrow payments, hardened with anti-gaming math (per-edge caps, trust conservation, value concavity); to our knowledge the category's only npm-published SDK | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
+| **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent; SDK-first integration today, MCP server on the [roadmap](#launch-plan) | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
+| **DeFi / RWA applicability** | AgentTreasury — a capped on-chain spending envelope (per-task + daily) with a protocol-level reputation gate; CEP-18 escrow rails | [AgentTreasury](https://testnet.cspr.live/contract-package/abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c) · [`contracts/src`](contracts/src) |
+| **UX** | Wallet-free, gas-free score reads; live console + dashboard; in-browser wallet-signed registration | [live demo](https://casper-trust-layer.vercel.app) · [live API](https://casper-trust-layer.vercel.app/api/trust/0) |
+| **Working contracts** | All 5 deployed, wired, and exercised end-to-end: settlements, slashing, treasury pay | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| **Ecosystem impact** | A published npm package any Casper agent project can adopt; the Odra 2.8.1 → Condor deploy workarounds are documented for other teams | [npm](https://www.npmjs.com/package/casper-trust) · [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`tasks/lessons.md`](tasks/lessons.md) |
 
 ## Quick start
 
@@ -157,7 +189,7 @@ cargo run --bin contracts_cli -- deploy   # see contracts/.env.example
 ```
 contracts/
   src/identity.rs        IdentityRegistry  — ERC-8004 identity + bond + slash
-  src/escrow.rs          Escrow            — A2A job state machine, CEP-18, burn fee
+  src/escrow.rs          Escrow            — A2A job state machine, CEP-18, 2% protocol fee
   src/reputation.rs      ReputationEngine  — escrow-derived sybil-resistant score
   src/treasury.rs        AgentTreasury     — capped spend envelope + on-chain reputation gate
   bin/cli.rs             odra-cli deploy script (5 contracts + wiring)
@@ -180,6 +212,24 @@ DEPLOYMENT.md                live addresses + tx proofs
 - **Payments:** x402 v2 over the hosted [CSPR.cloud facilitator](https://x402-facilitator.cspr.cloud) (gasless for the payer)
 - **Testing:** OdraVM (50 contract tests incl. adversarial reputation cases) + Vitest (66 SDK tests)
 - **Deploy:** `cargo-odra` + cspr.cloud (via a small auth proxy), patched for the Condor account model
+
+## Launch plan
+
+**Already shipped** — distribution is live, not hypothetical: [`casper-trust`](https://www.npmjs.com/package/casper-trust) is installable from npm today, and the [live dashboard](https://casper-trust-layer.vercel.app) exposes the registry to anyone, no wallet required.
+
+**Qualification → final**
+
+- `casper-trust-mcp` — an MCP server wrapping `checkTrust` / `getReputation` / `getAgent`, so LLM agents (Claude, Cursor) query on-chain trust natively
+- AgentTreasury support in the SDK (bounded spend + reservations)
+- An in-browser hire flow: fund → deliver → approve, and watch the score move live
+
+**Mainnet path** — three blockers, in order:
+
+1. **Agent-side key management hardening** — operational wallets currently hold raw signing keys
+2. **A stable payment token** — settlement runs on WCSPR / a demo CEP-18 today; production needs a stable, liquid token so reputation weight isn't coupled to price volatility
+3. **v2 contract hardening** — the accepted-risk fixes documented in the [threat model](docs/reputation-formula.md) (§7): provider consent on job creation, proportional slashing, treasury status gate, reputation decay, dynamic bonds
+
+**Community** — building in public on X and [CSPR.fans](https://cspr.fans); the deploy workarounds in [`tasks/lessons.md`](tasks/lessons.md) are already reusable by other Casper teams.
 
 ## Notes
 
