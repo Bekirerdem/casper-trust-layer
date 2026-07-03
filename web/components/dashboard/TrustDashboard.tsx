@@ -55,9 +55,17 @@ function RegistryItem({
         />
       </div>
       <div className="mt-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-        <span>{agent.jobsCompleted} jobs settled</span>
-        <span className={agent.scoreBps > 0 ? "text-green-400" : "text-[#8E8E93]"}>
-          {agent.scoreBps > 0 ? "trusted" : "unproven"}
+        <span>{agent.jobsCompleted} {agent.jobsCompleted === 1 ? "job" : "jobs"} settled</span>
+        <span
+          className={
+            agent.scoreBps >= 100
+              ? "text-green-400"
+              : agent.scoreBps > 0
+                ? "text-orange-400"
+                : "text-[#8E8E93]"
+          }
+        >
+          {agent.scoreBps >= 100 ? "trusted" : agent.scoreBps > 0 ? "earning" : "unproven"}
         </span>
       </div>
     </button>
@@ -75,11 +83,12 @@ function SettlementRow({ s, agentId }: { s: SettlementProof; agentId: number }) 
       className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 font-mono text-xs transition-colors hover:border-white/15 hover:bg-white/5"
     >
       <span className={`shrink-0 text-[9px] uppercase tracking-widest ${earned ? "text-green-400" : "text-[#8E8E93]"}`}>
-        {earned ? `from #${s.from}` : `to #${s.to}`}
+        {earned ? `from #${s.from}` : `vouched #${s.to}`}
       </span>
       <span className="text-white">{short(s.txHash)}</span>
-      <span className={`font-bold ${delta > 0 ? "text-green-400" : "text-[#8E8E93]"}`}>
-        {delta > 0 ? `+${delta}` : delta} bps
+      {/* An outgoing row's delta belongs to the counterparty — show it neutral, not as a gain */}
+      <span className={`font-bold ${earned && delta > 0 ? "text-green-400" : "text-[#8E8E93]"}`}>
+        {earned ? `${delta > 0 ? "+" : ""}${delta} bps` : `+${delta} bps → #${s.to}`}
       </span>
       <span className="text-accent-red">↗</span>
     </a>
