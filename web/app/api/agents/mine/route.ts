@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PublicKey } from "casper-js-sdk";
-import { createTrustClient, getAgent } from "casper-trust";
+import { getAgent } from "casper-trust";
+import { createReadClient } from "@/lib/casper/read";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
     }
 
     const walletHash = hex64(PublicKey.fromHex(publicKey).accountHash().toPrefixedString());
-    const client = createTrustClient();
+    const client = createReadClient();
 
     const mine: number[] = [];
     for (let id = 0; id < SCAN_LIMIT; id++) {
