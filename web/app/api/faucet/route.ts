@@ -19,13 +19,13 @@ export async function POST(req: Request) {
   try {
     const { publicKeyHex } = (await req.json()) as { publicKeyHex: string };
     if (!publicKeyHex) {
-      return NextResponse.json({ error: "publicKeyHex gerekli" }, { status: 400 });
+      return NextResponse.json({ error: "publicKeyHex required" }, { status: 400 });
     }
 
     const prev = lastClaim.get(publicKeyHex.toLowerCase());
     if (prev && Date.now() - prev < CLAIM_COOLDOWN_MS) {
       return NextResponse.json(
-        { error: "faucet cooldown — bu cüzdan için saatte bir talep" },
+        { error: "faucet cooldown — one claim per wallet per hour" },
         { status: 429 },
       );
     }

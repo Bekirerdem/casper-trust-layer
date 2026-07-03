@@ -15,7 +15,7 @@ const hex64 = (s: string) => s.toLowerCase().match(/[0-9a-f]{64}/)?.[0] ?? null;
  */
 export async function GET(req: Request) {
   const publicKey = new URL(req.url).searchParams.get("publicKey");
-  if (!publicKey) return NextResponse.json({ error: "publicKey gerekli" }, { status: 400 });
+  if (!publicKey) return NextResponse.json({ error: "publicKey required" }, { status: 400 });
 
   try {
     const walletHash = hex64(PublicKey.fromHex(publicKey).accountHash().toPrefixedString());

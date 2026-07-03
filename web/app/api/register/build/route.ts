@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       bondMotes: string;
     };
     if (!publicKeyHex || !agentUri || !bondMotes) {
-      return NextResponse.json({ error: "publicKeyHex, agentUri, bondMotes gerekli" }, { status: 400 });
+      return NextResponse.json({ error: "publicKeyHex, agentUri, bondMotes required" }, { status: 400 });
     }
 
     const { cfg } = createReadClient();

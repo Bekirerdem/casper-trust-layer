@@ -19,9 +19,11 @@ const STEPS: { key: HirePhase; label: string; signer: "you" | "agent" }[] = [
 export function HirePanel({
   publicKey,
   agents,
+  onSettled,
 }: {
   publicKey: string;
   agents: AgentSnapshot[];
+  onSettled?: (providerId: number, rep: { scoreBps: number; jobsCompleted: number }) => void;
 }) {
   const [myAgentIds, setMyAgentIds] = useState<number[] | null>(null);
   const [providerId, setProviderId] = useState<number | null>(null);
@@ -87,6 +89,7 @@ export function HirePanel({
         if (res.ok) {
           const d = (await res.json()) as { scoreBps: number; jobsCompleted: number };
           setResult((r) => (r ? { ...r, after: d } : r));
+          onSettled?.(provider.agentId, { scoreBps: d.scoreBps, jobsCompleted: d.jobsCompleted });
         }
       } catch {
         /* result panel falls back to tx links */
@@ -107,23 +110,23 @@ export function HirePanel({
         <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
           Hire an agent · live escrow → settlement → reputation
         </h2>
-        <span className="font-mono text-[10px] text-green-400">● cüzdan bağlı</span>
+        <span className="font-mono text-[10px] text-green-400">● wallet connected</span>
       </div>
 
       <p className="font-sans text-sm text-[#8E8E93] mb-5 leading-relaxed max-w-[68ch]">
-        Kendi agent&apos;ınla registry&apos;den bir agent kirala: fonlar escrow&apos;da kilitlenir, kiralanan
-        agent işi teslim eder, sen onaylarsın — ödeme settle olur ve provider&apos;ın itibarı{" "}
-        <span className="text-white">zincir üstünde, senin işlemlerinle</span> değişir.
+        Hire an agent from the registry with your own agent: funds lock in escrow, the hired
+        agent delivers, you approve — payment settles and the provider&apos;s reputation changes{" "}
+        <span className="text-white">on-chain, from your own transactions</span>.
       </p>
 
       {myAgentIds === null && (
-        <p className="font-mono text-xs text-[#8E8E93]">Registry taranıyor — agent&apos;ın aranıyor…</p>
+        <p className="font-mono text-xs text-[#8E8E93]">Scanning the registry for your agent…</p>
       )}
 
       {myAgentIds !== null && myAgentId === undefined && (
         <p className="font-mono text-xs text-[#8E8E93]">
-          Bu cüzdana kayıtlı agent yok — önce aşağıdan <span className="text-white">register</span> ol,
-          sonra kiralama burada açılır.
+          No agent is registered to this wallet — <span className="text-white">register</span> below
+          first, and hiring unlocks here.
         </p>
       )}
 
@@ -168,7 +171,7 @@ export function HirePanel({
               className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10 disabled:opacity-50"
             >
               <span className={`h-1.5 w-1.5 rounded-full bg-green-400 ${faucetState === "pending" ? "animate-ping" : ""}`} />
-              {faucetState === "pending" ? "Gönderiliyor…" : faucetState === "done" ? "✓ AGT alındı" : "1 · Get test AGT"}
+              {faucetState === "pending" ? "Sending…" : faucetState === "done" ? "✓ AGT received" : "1 · Get test AGT"}
             </button>
             <button
               onClick={onHire}
@@ -176,13 +179,13 @@ export function HirePanel({
               className="inline-flex items-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
             >
               <span className={`h-1.5 w-1.5 rounded-full bg-white ${running ? "animate-ping" : ""}`} />
-              {running ? "Akış sürüyor — cüzdanı izle…" : `2 · Hire Agent #${provider?.agentId ?? "…"}`}
+              {running ? "Flow running — watch your wallet…" : `2 · Hire Agent #${provider?.agentId ?? "…"}`}
             </button>
           </div>
 
           {faucetState === "done" && faucetMsg && (
             <a href={explorer(faucetMsg)} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-green-400 hover:text-white transition-colors -mt-2">
-              faucet zincirde — {faucetMsg.slice(0, 12)}… ↗
+              faucet on-chain — {faucetMsg.slice(0, 12)}… ↗
             </a>
           )}
           {faucetState === "error" && faucetMsg && (
@@ -231,7 +234,7 @@ export function HirePanel({
           {/* Result */}
           {phase === "done" && result && (
             <div className="rounded-xl border border-green-400/20 bg-green-400/5 p-4 font-mono text-sm">
-              <span className="text-green-400 font-bold">Settlement zincirde.</span>{" "}
+              <span className="text-green-400 font-bold">Settlement on-chain.</span>{" "}
               <span className="text-white">
                 Agent #{result.before.agentId}: {result.before.scoreBps} bps
                 {result.after ? ` → ${result.after.scoreBps} bps` : ""} · jobs{" "}
@@ -239,7 +242,7 @@ export function HirePanel({
                 {result.after ? ` → ${result.after.jobsCompleted}` : ""}
               </span>
               <p className="text-[#8E8E93] text-xs mt-1">
-                İtibar senin ödediğin, senin onayladığın gerçek bir işten türedi — self-report yok.
+                This reputation came from real work you paid for and approved — no self-reports.
               </p>
             </div>
           )}

@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const body = (await req.json()) as BuildBody;
     const { publicKeyHex, step } = body;
     if (!publicKeyHex || !step) {
-      return NextResponse.json({ error: "publicKeyHex, step gerekli" }, { status: 400 });
+      return NextResponse.json({ error: "publicKeyHex, step required" }, { status: 400 });
     }
 
     const { cfg } = createReadClient();
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     let nextJobId: string | undefined;
 
     if (step === "approve") {
-      if (!body.amountMotes) return NextResponse.json({ error: "amountMotes gerekli" }, { status: 400 });
+      if (!body.amountMotes) return NextResponse.json({ error: "amountMotes required" }, { status: 400 });
       pkg = cfg.packages.cep18;
       entryPoint = "approve";
       args = Args.fromMap({
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       });
     } else if (step === "create_job") {
       if (body.clientId === undefined || body.providerId === undefined || !body.amountMotes || !body.deadlineMs) {
-        return NextResponse.json({ error: "clientId, providerId, amountMotes, deadlineMs gerekli" }, { status: 400 });
+        return NextResponse.json({ error: "clientId, providerId, amountMotes, deadlineMs required" }, { status: 400 });
       }
       pkg = cfg.packages.escrow;
       entryPoint = "create_job";
@@ -58,12 +58,12 @@ export async function POST(req: Request) {
       });
       nextJobId = (await getNextJobId()).toString();
     } else if (step === "approve_job") {
-      if (body.jobId === undefined) return NextResponse.json({ error: "jobId gerekli" }, { status: 400 });
+      if (body.jobId === undefined) return NextResponse.json({ error: "jobId required" }, { status: 400 });
       pkg = cfg.packages.escrow;
       entryPoint = "approve";
       args = Args.fromMap({ job_id: CLValue.newCLUint64(body.jobId) });
     } else {
-      return NextResponse.json({ error: `bilinmeyen step: ${step}` }, { status: 400 });
+      return NextResponse.json({ error: `unknown step: ${step}` }, { status: 400 });
     }
 
     const tx = new ContractCallBuilder()

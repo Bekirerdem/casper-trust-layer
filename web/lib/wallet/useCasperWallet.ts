@@ -122,19 +122,19 @@ export function useCasperWallet() {
   const connect = useCallback(async () => {
     const provider = getProvider();
     if (!provider) {
-      setState((s) => ({ ...s, available: false, error: "Casper Wallet bulunamadı — eklenti kurulu+açık mı?" }));
+      setState((s) => ({ ...s, available: false, error: "Casper Wallet not found — is the extension installed and unlocked?" }));
       return;
     }
     setState((s) => ({ ...s, available: true, connecting: true, error: null }));
     try {
       const ok = await provider.requestConnection();
       const key = ok ? await provider.getActivePublicKey() : null;
-      setState((s) => ({ ...s, connecting: false, publicKey: key, error: ok ? null : "bağlantı reddedildi" }));
+      setState((s) => ({ ...s, connecting: false, publicKey: key, error: ok ? null : "connection rejected" }));
     } catch (e) {
       setState((s) => ({
         ...s,
         connecting: false,
-        error: e instanceof Error ? e.message : "bağlantı başarısız",
+        error: e instanceof Error ? e.message : "connection failed",
       }));
     }
   }, []);

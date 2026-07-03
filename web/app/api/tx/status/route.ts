@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const hash = new URL(req.url).searchParams.get("hash");
-  if (!hash) return NextResponse.json({ error: "hash gerekli" }, { status: 400 });
+  if (!hash) return NextResponse.json({ error: "hash required" }, { status: 400 });
 
   try {
     const { rpc } = createReadClient();

@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const { jobId } = (await req.json()) as { jobId: string };
     if (jobId === undefined || jobId === null || jobId === "") {
-      return NextResponse.json({ error: "jobId gerekli" }, { status: 400 });
+      return NextResponse.json({ error: "jobId required" }, { status: 400 });
     }
 
     const { rpc, cfg } = createReadClient();

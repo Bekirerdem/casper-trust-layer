@@ -42,14 +42,14 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 
 async function signWithWallet(txJson: unknown, publicKeyHex: string): Promise<string> {
   const provider = getProvider();
-  if (!provider) throw new Error("Casper Wallet bulunamadı");
+  if (!provider) throw new Error("Casper Wallet not found");
   const signFn = provider.signTransaction ?? provider.sign;
-  if (!signFn) throw new Error("cüzdan signTransaction desteklemiyor");
+  if (!signFn) throw new Error("wallet does not support signTransaction");
   const signed = await signFn.call(provider, JSON.stringify(txJson), publicKeyHex);
-  if (signed?.cancelled) throw new Error("imza iptal edildi");
+  if (signed?.cancelled) throw new Error("signature cancelled");
   const signatureHex =
     signed?.signatureHex ?? (signed?.signature ? bytesToHex(signed.signature) : null);
-  if (!signatureHex) throw new Error("cüzdan imza döndürmedi");
+  if (!signatureHex) throw new Error("wallet returned no signature");
   return signatureHex;
 }
 
@@ -57,13 +57,13 @@ async function signWithWallet(txJson: unknown, publicKeyHex: string): Promise<st
 async function waitForTx(txHash: string, timeoutMs = 180_000): Promise<void> {
   const start = Date.now();
   for (;;) {
-    if (Date.now() - start > timeoutMs) throw new Error(`tx ${txHash.slice(0, 10)}… zaman aşımı`);
+    if (Date.now() - start > timeoutMs) throw new Error(`tx ${txHash.slice(0, 10)}… timed out`);
     const res = await fetch(`/api/tx/status?hash=${txHash}`, { cache: "no-store" });
     if (res.ok) {
       const d = (await res.json()) as { executed: boolean; success?: boolean; error?: string };
       if (d.executed) {
         if (d.success) return;
-        throw new Error(`tx başarısız: ${d.error ?? "bilinmeyen hata"}`);
+        throw new Error(`tx failed: ${d.error ?? "unknown error"}`);
       }
     }
     await new Promise((r) => setTimeout(r, 5_000));
@@ -129,7 +129,7 @@ export async function hireAgent(opts: {
   });
   onPhase?.("create_job", created.txHash);
   const jobId = created.nextJobId;
-  if (jobId === undefined) throw new Error("job id belirlenemedi");
+  if (jobId === undefined) throw new Error("could not determine job id");
 
   onPhase?.("work");
   const work = await postJson<{ txHash: string }>("/api/hire/work", { jobId });

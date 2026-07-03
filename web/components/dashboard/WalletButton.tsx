@@ -50,7 +50,7 @@ export function WalletButton({ connecting, publicKey, error, connect, disconnect
           rel="noopener noreferrer"
           className="font-mono text-[10px] text-[#8E8E93] hover:text-white transition-colors"
         >
-          Eklenti bulunamadı — kur / kilidi aç ↗
+          Extension not found — install / unlock ↗
         </a>
       ) : (
         error && <span className="font-mono text-[10px] text-accent-red">{error}</span>

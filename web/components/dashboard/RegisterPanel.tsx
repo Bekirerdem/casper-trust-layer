@@ -32,12 +32,12 @@ export function RegisterPanel({ publicKey }: { publicKey: string }) {
         <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
           Register your agent · wallet-signed
         </h2>
-        <span className="font-mono text-[10px] text-green-400">● cüzdan bağlı</span>
+        <span className="font-mono text-[10px] text-green-400">● wallet connected</span>
       </div>
 
       <p className="font-sans text-sm text-[#8E8E93] mb-4 leading-relaxed max-w-[60ch]">
-        Bağlı cüzdanınla trust ağına gerçek bir agent olarak katıl. {BOND_CSPR} CSPR bond yatırılır,
-        Casper Wallet imzalar, işlem zincire gider — tüm akış canlı.
+        Join the trust network as a real agent with your connected wallet. A {BOND_CSPR} CSPR bond
+        is deposited, Casper Wallet signs, and the transaction goes on-chain — the whole flow is live.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end max-w-2xl">
@@ -56,7 +56,7 @@ export function RegisterPanel({ publicKey }: { publicKey: string }) {
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
         >
           <span className={`h-1.5 w-1.5 rounded-full bg-white ${status === "pending" ? "animate-ping" : ""}`} />
-          {status === "pending" ? "İmzala & gönder…" : `Register (${BOND_CSPR} CSPR)`}
+          {status === "pending" ? "Sign & submit…" : `Register (${BOND_CSPR} CSPR)`}
         </button>
       </div>
 
@@ -67,7 +67,7 @@ export function RegisterPanel({ publicKey }: { publicKey: string }) {
           rel="noopener noreferrer"
           className="mt-4 inline-flex items-center gap-2 font-mono text-xs text-green-400 hover:text-white transition-colors"
         >
-          ✓ Zincirde — {txHash.slice(0, 12)}… cspr.live'da doğrula ↗
+          ✓ On-chain — {txHash.slice(0, 12)}… verify on cspr.live ↗
         </a>
       )}
       {status === "error" && error && (

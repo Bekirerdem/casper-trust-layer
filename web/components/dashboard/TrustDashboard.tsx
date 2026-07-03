@@ -10,6 +10,8 @@ import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
 
 const SCORE_MAX = 500;
 
+type LiveRep = { scoreBps: number; jobsCompleted: number };
+
 const CONTRACTS = [
   { name: "IdentityRegistry", pkg: "3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc" },
   { name: "ReputationEngine", pkg: "d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb" },
@@ -24,14 +26,19 @@ function short(h: string): string {
 
 function RegistryItem({
   agent,
+  live,
   selected,
   onSelect,
 }: {
   agent: AgentSnapshot;
+  live?: LiveRep;
   selected: boolean;
   onSelect: () => void;
 }) {
-  const pct = Math.min(100, (agent.scoreBps / SCORE_MAX) * 100);
+  // Live (post-hire / read-live) values override the build-time snapshot.
+  const scoreBps = live?.scoreBps ?? agent.scoreBps;
+  const jobsCompleted = live?.jobsCompleted ?? agent.jobsCompleted;
+  const pct = Math.min(100, (scoreBps / SCORE_MAX) * 100);
   return (
     <button
       onClick={onSelect}
@@ -44,8 +51,9 @@ function RegistryItem({
       <div className="flex items-center justify-between">
         <span className="font-mono text-sm font-bold text-white">Agent #{agent.agentId}</span>
         <span className="font-mono text-lg font-black tabular-nums text-white">
-          {agent.scoreBps}
+          {scoreBps}
           <span className="text-[10px] font-medium text-[#8E8E93] ml-1">bps</span>
+          {live && <span className="ml-1.5 text-[9px] font-medium text-green-400 align-middle">● live</span>}
         </span>
       </div>
       <div className="mt-3 h-1 w-full rounded-full bg-white/10 overflow-hidden">
@@ -55,17 +63,17 @@ function RegistryItem({
         />
       </div>
       <div className="mt-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-        <span>{agent.jobsCompleted} {agent.jobsCompleted === 1 ? "job" : "jobs"} settled</span>
+        <span>{jobsCompleted} {jobsCompleted === 1 ? "job" : "jobs"} settled</span>
         <span
           className={
-            agent.scoreBps >= 100
+            scoreBps >= 100
               ? "text-green-400"
-              : agent.scoreBps > 0
+              : scoreBps > 0
                 ? "text-orange-400"
                 : "text-[#8E8E93]"
           }
         >
-          {agent.scoreBps >= 100 ? "trusted" : agent.scoreBps > 0 ? "earning" : "unproven"}
+          {scoreBps >= 100 ? "trusted" : scoreBps > 0 ? "earning" : "unproven"}
         </span>
       </div>
     </button>
@@ -99,13 +107,14 @@ export function TrustDashboard() {
   const snapshot = loadSnapshot();
   const wallet = useCasperWallet();
   const [selectedId, setSelectedId] = useState(0);
-  const [live, setLive] = useState<Record<number, number>>({});
+  const [live, setLive] = useState<Record<number, LiveRep>>({});
   const [loading, setLoading] = useState(false);
 
   const agents = snapshot.agents;
   const selected = agents.find((a) => a.agentId === selectedId) ?? agents[0];
-  const liveScore = live[selectedId];
+  const liveScore = live[selectedId]?.scoreBps;
   const shownScore = liveScore ?? selected.scoreBps;
+  const shownJobs = live[selectedId]?.jobsCompleted ?? selected.jobsCompleted;
 
   const agentSettlements = useMemo(
     () => snapshot.settlements.filter((s) => s.to === selectedId || s.from === selectedId),
@@ -117,8 +126,8 @@ export function TrustDashboard() {
     try {
       const res = await fetch(`/api/trust/${selectedId}`, { cache: "no-store" });
       if (res.ok) {
-        const d = (await res.json()) as { scoreBps: number };
-        setLive((prev) => ({ ...prev, [selectedId]: d.scoreBps }));
+        const d = (await res.json()) as LiveRep;
+        setLive((prev) => ({ ...prev, [selectedId]: { scoreBps: d.scoreBps, jobsCompleted: d.jobsCompleted } }));
       }
     } catch {
       /* keep snapshot value */
@@ -181,6 +190,7 @@ export function TrustDashboard() {
               <RegistryItem
                 key={a.agentId}
                 agent={a}
+                live={live[a.agentId]}
                 selected={a.agentId === selectedId}
                 onSelect={() => setSelectedId(a.agentId)}
               />
@@ -201,7 +211,7 @@ export function TrustDashboard() {
                     <span className="font-mono text-[10px] text-green-400">✓ live</span>
                   )}
                 </div>
-                <span className="font-mono text-xs text-[#8E8E93]">{selected.jobsCompleted} jobs settled</span>
+                <span className="font-mono text-xs text-[#8E8E93]">{shownJobs} {shownJobs === 1 ? "job" : "jobs"} settled</span>
               </div>
               <button
                 onClick={refreshLive}
@@ -274,7 +284,11 @@ export function TrustDashboard() {
 
         {wallet.publicKey && (
           <>
-            <HirePanel publicKey={wallet.publicKey} agents={agents} />
+            <HirePanel
+              publicKey={wallet.publicKey}
+              agents={agents}
+              onSettled={(providerId, rep) => setLive((prev) => ({ ...prev, [providerId]: rep }))}
+            />
             <RegisterPanel publicKey={wallet.publicKey} />
           </>
         )}

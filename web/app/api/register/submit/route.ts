@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       publicKeyHex: string;
     };
     if (!txJson || !signatureHex || !publicKeyHex) {
-      return NextResponse.json({ error: "txJson, signatureHex, publicKeyHex gerekli" }, { status: 400 });
+      return NextResponse.json({ error: "txJson, signatureHex, publicKeyHex required" }, { status: 400 });
     }
 
     const tx = Transaction.fromJSON(txJson);

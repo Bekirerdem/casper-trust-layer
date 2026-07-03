@@ -33,7 +33,7 @@ export async function registerAgent(opts: {
   bondMotes: string;
 }): Promise<{ txHash: string }> {
   const provider = getProvider();
-  if (!provider) throw new Error("Casper Wallet bulunamadı");
+  if (!provider) throw new Error("Casper Wallet not found");
 
   // 1. build (server)
   const buildRes = await fetch("/api/register/build", {
@@ -47,12 +47,12 @@ export async function registerAgent(opts: {
 
   // 2. sign (wallet)
   const signFn = provider.signTransaction ?? provider.sign;
-  if (!signFn) throw new Error("cüzdan signTransaction desteklemiyor");
+  if (!signFn) throw new Error("wallet does not support signTransaction");
   const signed = await signFn.call(provider, JSON.stringify(txJson), opts.publicKeyHex);
-  if (signed?.cancelled) throw new Error("imza iptal edildi");
+  if (signed?.cancelled) throw new Error("signature cancelled");
   const signatureHex =
     signed?.signatureHex ?? (signed?.signature ? bytesToHex(signed.signature) : null);
-  if (!signatureHex) throw new Error("cüzdan imza döndürmedi");
+  if (!signatureHex) throw new Error("wallet returned no signature");
 
   // 3. submit (server, token-safe)
   const subRes = await fetch("/api/register/submit", {
