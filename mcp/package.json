@@ -1,0 +1,42 @@
+{
+  "name": "casper-trust-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing on-chain Casper agent trust (casper-trust) to AI agents — check a counterparty's earned reputation before paying it",
+  "license": "MIT",
+  "author": "Bekir Erdem",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bekirerdem/casper-trust-layer.git",
+    "directory": "mcp"
+  },
+  "keywords": [
+    "mcp",
+    "casper",
+    "x402",
+    "ai-agent",
+    "trust",
+    "reputation"
+  ],
+  "bin": {
+    "casper-trust-mcp": "dist/index.cjs"
+  },
+  "main": "dist/index.cjs",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "esbuild index.mjs --bundle --platform=node --target=node18 --format=cjs --outfile=dist/index.cjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "casper-trust": "^0.1.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

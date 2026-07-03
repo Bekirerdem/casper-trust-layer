@@ -53,6 +53,7 @@ On-chain trust is only useful if something *acts* on it. The [`casper-trust`](ht
 
 - **Wallet-free, gas-free reads.** Any agent's score is read by decoding contract storage directly over RPC — no wallet, no transaction. One line: `checkTrust(client, agentId)`.
 - **Trust-gated x402 payments.** `pay()` reads the provider's on-chain score *before* spending a cent. Below the bar → `TrustGateError`, nothing leaves the wallet. Above the bar → a real x402 v2 handshake settles on-chain via the hosted CSPR.cloud facilitator.
+- **Native to AI agents via MCP.** [`casper-trust-mcp`](mcp/) exposes `check_trust` / `get_reputation` / `get_agent` as MCP tools, so Claude, Cursor, or any MCP client can ask *"should I pay this agent?"* against live chain state before spending.
 
 ```ts
 import { createTrustClient, pay } from "casper-trust";
@@ -140,7 +141,7 @@ No claim in this README requires trusting us:
 |---|---|---|
 | **Technical quality** | 5 contracts live and wired on `casper-test`; 50 OdraVM tests (incl. the adversarial reputation suite) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
 | **Innovation** | Reputation derived *objectively* from settled escrow payments, hardened with anti-gaming math (per-edge caps, trust conservation, value concavity); to our knowledge the category's only npm-published SDK | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
-| **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent; SDK-first integration today, MCP server on the [roadmap](#launch-plan) | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
+| **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 | **DeFi / RWA applicability** | AgentTreasury — a capped on-chain spending envelope (per-task + daily) with a protocol-level reputation gate; CEP-18 escrow rails | [AgentTreasury](https://testnet.cspr.live/contract-package/abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c) · [`contracts/src`](contracts/src) |
 | **UX** | Wallet-free, gas-free score reads; live console + dashboard; in-browser wallet-signed registration | [live demo](https://casper-trust-layer.vercel.app) · [live API](https://casper-trust-layer.vercel.app/api/trust/0) |
 | **Working contracts** | All 5 deployed, wired, and exercised end-to-end: settlements, slashing, treasury pay | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
@@ -215,13 +216,12 @@ DEPLOYMENT.md                live addresses + tx proofs
 
 ## Launch plan
 
-**Already shipped** — distribution is live, not hypothetical: [`casper-trust`](https://www.npmjs.com/package/casper-trust) is installable from npm today, and the [live dashboard](https://casper-trust-layer.vercel.app) exposes the registry to anyone, no wallet required.
+**Already shipped** — distribution is live, not hypothetical: [`casper-trust`](https://www.npmjs.com/package/casper-trust) is installable from npm today; the [live dashboard](https://casper-trust-layer.vercel.app) exposes the registry to anyone, no wallet required; the in-browser [hire flow](https://casper-trust-layer.vercel.app/app) lets any visitor fund → deliver → approve and watch a score move on-chain; and [`casper-trust-mcp`](mcp/) plugs on-chain trust into Claude/Cursor.
 
 **Qualification → final**
 
-- `casper-trust-mcp` — an MCP server wrapping `checkTrust` / `getReputation` / `getAgent`, so LLM agents (Claude, Cursor) query on-chain trust natively
+- Publish `casper-trust-mcp` to npm (`npx casper-trust-mcp`)
 - AgentTreasury support in the SDK (bounded spend + reservations)
-- An in-browser hire flow: fund → deliver → approve, and watch the score move live
 
 **Mainnet path** — three blockers, in order:
 

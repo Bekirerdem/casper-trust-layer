@@ -10,28 +10,31 @@
 > Sıra: iyileştirmeler → demo video → submit (Bekir kararı).
 > Kontrat DEĞİŞMEZ (redeploy = tüm ağ sıfırlanır; slash-griefing bulgusu dokümante edilir, fix v2).
 
-### Faz 1 — Credibility pass `[risk: düşük]` (tek commit)
-- [ ] README test sayısı 31→50 (3 yer: badge satır 13, 147, 181) · doğrula: grep "31" temiz
-- [ ] `web/lib/content.ts` kod örnekleri gerçek API imzasına (`getReputation(client,id)`, `pay(client,{url,providerAgentId,minScore})`, `gateByTrust`) · doğrula: örnekler sdk/src export'larıyla birebir
-- [ ] `sdk/src/x402/index.ts` bayat "not exercised" yorumu güncelle (repo'da; npm patch sonra)
-- [ ] `sdk/README.md:67` `.git/sdd` referansı kaldır; `contracts/CHANGELOG.md` flipper kalıntısı; `web/README.md` boilerplate → gerçek açıklama
-- [ ] AI-brief artefakt yorumları temizle (treasury.rs:1 "present per brief", config.ts "Task 3")
+### Faz 1 — Credibility pass `[risk: düşük]` — ✅ TAMAM (commit aaa4845, push'lu)
+- [x] README test sayısı 31→50 (3 yer) · doğrulandı: grep temiz
+- [x] `web/lib/content.ts` kod örnekleri gerçek API imzasına · doğrulandı: sdk export'larıyla birebir, tsc temiz
+- [x] `sdk/src/x402/index.ts` bayat "not exercised" yorumu → live-verified settle tx referansları
+- [x] `sdk/README.md` `.git/sdd` referansı; `contracts/CHANGELOG.md` gerçek içerik; `web/README.md` gerçek açıklama
+- [x] AI-brief artefakt yorumları temizlendi (treasury.rs, config.ts)
 
-### Faz 2 — HIRE DÖNGÜSÜ (kullanıcı-odaklı yapı) `[risk: orta]` — ANA İŞ
-> Ziyaretçi: register (VAR) → AGT faucet → agent kirala (2 imza: CEP-18 approve + create_job) → provider (bizim agent) submit_work (server-side) → ziyaretçi approve (3. imza) → skor zincirde değişir, UI before/after gösterir.
-> Mimari: register'ın "server build → browser sign → server submit" pattern'i; create_job payable DEĞİL → düz ContractCallBuilder, 5 CSPR gas, deadline MİLİSANİYE.
-- [ ] 2.1 `/api/faucet` — deployer key'den AGT transfer (CEP-18), basit rate-limit + max miktar · doğrula: yeni cüzdana AGT düşüyor · risk düşük
-- [ ] 2.2 `/api/hire/build` + `/api/hire/submit` — approve(escrow, amount) ve create_job(client_id, provider, amount, deadline_ms) tx'leri · doğrula: canlı testnet'te cüzdan-imzalı job açılıyor (JobCreated) · risk orta
-- [ ] 2.3 `/api/hire/work` — provider key (server) ile submit_work(job_id, hash); "agent işi teslim etti" · doğrula: job state Submitted · risk düşük
-- [ ] 2.4 approve(job_id) build/submit — settle tetiklenir · doğrula: JobReleased + provider skoru arttı (canlı /api/trust) · risk düşük
-- [ ] 2.5 UI — /app "Hire an Agent" wizard: register-kontrol → faucet → provider seç + amount/deadline → imzalar → progress → skor before/after + cspr.live linkleri · doğrula: uçtan uca Freighter değil Casper Wallet ile Brave'de · risk orta
-- [ ] 2.6 Gas notu UI'da: testnet CSPR faucet linki (kullanıcı gas öder)
-- NOT: refund/slash UI'a KONMAZ (griefing yüzeyi açılmaz)
+### Faz 2 — HIRE DÖNGÜSÜ (kullanıcı-odaklı yapı) — ✅ CANLI (commit 77c5a8b + ead9670, prod'da doğrulandı)
+> Ziyaretçi: register → AGT faucet → agent kirala (approve + create_job imzaları) → provider (bizim agent) submit_work (server) → ziyaretçi approve → skor zincirde değişir, UI before/after gösterir.
+- [x] 2.1 `/api/faucet` · doğrulandı: PROD'da taze hesaba on-chain AGT düştü (tx 6e3f6d3c…)
+- [x] 2.2 `/api/hire/build` + `/api/tx/submit` (generic) · doğrulandı: canlı job #11 açıldı (tx 86019b2a…)
+- [x] 2.3 `/api/hire/work` · doğrulandı: server-signed submit_work (tx 81c04dae…)
+- [x] 2.4 approve_job · doğrulandı: settlement tx 04cea776…, provider #2 100→200 bps, jobs 1→2
+- [x] 2.5 UI — HirePanel wizard (/app): agents/mine otomatik tespit + step tracker + before/after skor + explorer linkleri · build yeşil, prod'da canlı
+- [x] +ekstra: `/api/tx/status` finality polling, `/api/agents/mine` cüzdan→agent eşleme, snapshot 8 settlement
+- [x] Uçtan uca test: `sdk/scripts/test-hire-api.mts` (cüzdanı operator key oynayarak, canlı testnet)
+- [ ] 2.7 🔴 BEKİR: Brave + Casper Wallet ile /app'te gerçek kullanıcı testi (agent #4 ile hire) — cüzdan-imza katmanının son doğrulaması
+- NOT: refund/slash UI'a KONMADI (griefing yüzeyi açılmaz) · env fix: DEPLOYER_SECRET_PEM BOM temizliği (serverSigner)
 
-### Faz 3 — MCP server `[risk: düşük]`
-- [ ] `casper-trust-mcp` — 3 tool: checkTrust / getReputation / getAgent (SDK'yı sarar) · doğrula: Claude Code'a takıp gerçek sorgu
-- [ ] README bölümü: "Plug into Claude/Cursor" + config örneği
-- [ ] 30sn kayıt: Claude ödeme öncesi checkTrust çağırıp karar veriyor (videoya girer)
+### Faz 3 — MCP server — ✅ ÇALIŞIYOR (mcp/ dizini)
+- [x] `casper-trust-mcp` — 3 tool: check_trust / get_reputation / get_agent · doğrulandı: JSON-RPC el sıkışması + canlı zincir okuma (check_trust(2)→200bps)
+- [x] esbuild bundle (dist/index.cjs, tek dosya) — casper-trust ESM↔casper-js-sdk CJS interop sorunu bundle ile çözüldü
+- [x] mcp/README.md: kurulum + Claude Code/Desktop/Cursor config + örnek diyalog; ana README 3 yerde güncellendi
+- [ ] 30sn kayıt: Claude ödeme öncesi check_trust çağırıp karar veriyor (video aşamasında)
+- [ ] (final round) npm publish: `npx casper-trust-mcp` (Bekir 2FA-bypass token)
 
 ### Faz 4 — Dokümanlar `[risk: düşük]` (Faz 2 ile paralel)
 - [ ] `docs/reputation-formula.md` → İngilizce + §7 threat model'e ekle: slash-griefing (accepted risk, v2: accept_job), var-olmayan-provider fon kilidi, slashed-agent-skoru-treasury-gate tutarsızlığı
