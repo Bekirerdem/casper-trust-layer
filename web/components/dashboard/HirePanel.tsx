@@ -66,9 +66,9 @@ export function HirePanel({
     setFaucetState("pending");
     setFaucetMsg(null);
     try {
-      const { txHash } = await claimFaucet(publicKey);
+      const res = await claimFaucet(publicKey);
       setFaucetState("done");
-      setFaucetMsg(txHash);
+      setFaucetMsg(res.skipped ? null : (res.txHash ?? null));
     } catch (e) {
       setFaucetState("error");
       setFaucetMsg(e instanceof Error ? e.message : "faucet failed");
@@ -199,7 +199,7 @@ export function HirePanel({
               className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10 disabled:opacity-50"
             >
               <span className={`h-1.5 w-1.5 rounded-full bg-green-400 ${faucetState === "pending" ? "animate-ping" : ""}`} />
-              {faucetState === "pending" ? "Sending…" : faucetState === "done" ? "✓ AGT received" : "1 · Get test AGT"}
+              {faucetState === "pending" ? "Sending…" : faucetState === "done" ? "✓ AGT ready" : "1 · Get test AGT"}
             </button>
             <button
               onClick={onHire}

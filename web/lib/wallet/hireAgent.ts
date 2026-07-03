@@ -89,10 +89,13 @@ async function walletStep(
   return { txHash, nextJobId: built.nextJobId };
 }
 
-export async function claimFaucet(publicKeyHex: string): Promise<{ txHash: string }> {
-  const { txHash } = await postJson<{ txHash: string }>("/api/faucet", { publicKeyHex });
-  await waitForTx(txHash);
-  return { txHash };
+export async function claimFaucet(
+  publicKeyHex: string,
+): Promise<{ txHash?: string; skipped?: boolean }> {
+  const res = await postJson<{ txHash?: string; skipped?: boolean }>("/api/faucet", { publicKeyHex });
+  if (res.skipped) return res; // operator wallet already holds the AGT supply
+  await waitForTx(res.txHash!);
+  return res;
 }
 
 export type HirePhase = "approve" | "create_job" | "work" | "approve_job";

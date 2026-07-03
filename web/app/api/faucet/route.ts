@@ -33,6 +33,13 @@ export async function POST(req: Request) {
     const { rpc, cfg } = createReadClient();
     const signer = loadServerSigner();
     const recipient = PublicKey.fromHex(publicKeyHex);
+
+    // The operator wallet holds the AGT supply — a transfer to itself would
+    // revert (CEP-18 rejects self-transfer). It is already funded; skip.
+    if (recipient.accountHash().toPrefixedString() === signer.publicKey.accountHash().toPrefixedString()) {
+      return NextResponse.json({ skipped: true });
+    }
+
     const recipientKey = Key.newKey(recipient.accountHash().toPrefixedString());
 
     const tx = new ContractCallBuilder()
