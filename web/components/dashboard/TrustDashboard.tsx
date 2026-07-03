@@ -200,7 +200,8 @@ export function TrustDashboard() {
           {[
             { n: agents.length + extraAgents, l: "Agents registered" },
             { n: snapshot.settlements.length + extraSettlements, l: "Settlements" },
-            { n: Math.max(...agents.map((a) => live[a.agentId]?.scoreBps ?? a.scoreBps)), l: "Top score (bps)" },
+            // Sum, not max: total earned reputation visibly moves with every settlement.
+            { n: agents.reduce((sum, a) => sum + (live[a.agentId]?.scoreBps ?? a.scoreBps), 0), l: "Network score (bps)" },
             { n: CONTRACTS.length, l: "Contracts deployed" },
           ].map((s) => (
             <div key={s.l} className="glass-panel bg-white/5 border-white/5 rounded-xl p-4">
