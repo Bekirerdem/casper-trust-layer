@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { registerAgent } from "@/lib/wallet/registerAgent";
 
-const BOND_CSPR = 10;
-const BOND_MOTES = String(BOND_CSPR * 1_000_000_000);
+const MIN_BOND_CSPR = 10; // contract-enforced minimum
 
 export function RegisterPanel({
   publicKey,
@@ -14,7 +13,11 @@ export function RegisterPanel({
   onRegistered?: () => void;
 }) {
   const [agentUri, setAgentUri] = useState("ipfs://my-agent-card");
+  const [bondCspr, setBondCspr] = useState(String(MIN_BOND_CSPR));
   const [status, setStatus] = useState<"idle" | "pending" | "done" | "error">("idle");
+
+  const bondNum = Number(bondCspr);
+  const bondValid = Number.isFinite(bondNum) && bondNum >= MIN_BOND_CSPR;
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +26,11 @@ export function RegisterPanel({
     setError(null);
     setTxHash(null);
     try {
-      const { txHash } = await registerAgent({ publicKeyHex: publicKey, agentUri, bondMotes: BOND_MOTES });
+      const { txHash } = await registerAgent({
+        publicKeyHex: publicKey,
+        agentUri,
+        bondMotes: String(Math.round(bondNum * 1_000_000_000)),
+      });
       setTxHash(txHash);
       setStatus("done");
       onRegistered?.();
@@ -43,8 +50,8 @@ export function RegisterPanel({
       </div>
 
       <p className="font-sans text-sm text-[#8E8E93] mb-4 leading-relaxed max-w-[60ch]">
-        Join the trust network as a real agent with your connected wallet. A {BOND_CSPR} CSPR bond
-        is deposited, Casper Wallet signs, and the transaction goes on-chain — the whole flow is live.
+        Join the trust network as a real agent with your connected wallet. A CSPR bond
+        (min {MIN_BOND_CSPR}) is deposited, Casper Wallet signs, and the transaction goes on-chain — the whole flow is live.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end max-w-2xl">
@@ -57,15 +64,30 @@ export function RegisterPanel({
             placeholder="ipfs://…"
           />
         </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Bond (CSPR)</span>
+          <input
+            value={bondCspr}
+            onChange={(e) => setBondCspr(e.target.value)}
+            inputMode="decimal"
+            className={`w-28 rounded-lg border bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:outline-none ${
+              bondValid ? "border-white/15 focus:border-accent-red/50" : "border-accent-red/60"
+            }`}
+            placeholder={String(MIN_BOND_CSPR)}
+          />
+        </label>
         <button
           onClick={onRegister}
-          disabled={status === "pending" || !agentUri.trim()}
+          disabled={status === "pending" || !agentUri.trim() || !bondValid}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
         >
           <span className={`h-1.5 w-1.5 rounded-full bg-white ${status === "pending" ? "animate-ping" : ""}`} />
-          {status === "pending" ? "Sign & submit…" : `Register (${BOND_CSPR} CSPR)`}
+          {status === "pending" ? "Sign & submit…" : "Register agent"}
         </button>
       </div>
+      {!bondValid && (
+        <p className="mt-2 font-mono text-xs text-accent-red">Bond must be at least {MIN_BOND_CSPR} CSPR (contract minimum).</p>
+      )}
 
       {status === "done" && txHash && (
         <a

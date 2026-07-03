@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { loadSnapshot } from "@/lib/data/snapshot";
 import { WalletButton } from "@/components/dashboard/WalletButton";
 import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
@@ -118,6 +118,35 @@ export function TrustDashboard() {
   const shownScore = liveScore ?? selected.scoreBps;
   const shownJobs = live[selectedId]?.jobsCompleted ?? selected.jobsCompleted;
 
+  // On load, refresh every agent from chain (sequentially — cspr.cloud rate-limits
+  // bursts) so the console never shows a stale snapshot. Failures keep the snapshot.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const a of snapshot.agents) {
+        if (cancelled) return;
+        try {
+          const res = await fetch(`/api/trust/${a.agentId}`, { cache: "no-store" });
+          if (res.ok) {
+            const d = (await res.json()) as LiveRep;
+            if (!cancelled) {
+              setLive((prev) => ({
+                ...prev,
+                [a.agentId]: { scoreBps: d.scoreBps, jobsCompleted: d.jobsCompleted },
+              }));
+            }
+          }
+        } catch {
+          /* keep snapshot values */
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const agentSettlements = useMemo(
     () => snapshot.settlements.filter((s) => s.to === selectedId || s.from === selectedId),
     [snapshot.settlements, selectedId],
@@ -172,7 +201,7 @@ export function TrustDashboard() {
             { n: agents.length + extraAgents, l: "Agents registered" },
             { n: snapshot.settlements.length + extraSettlements, l: "Settlements" },
             { n: Math.max(...agents.map((a) => live[a.agentId]?.scoreBps ?? a.scoreBps)), l: "Top score (bps)" },
-            { n: CONTRACTS.length, l: "Live contracts" },
+            { n: CONTRACTS.length, l: "Contracts deployed" },
           ].map((s) => (
             <div key={s.l} className="glass-panel bg-white/5 border-white/5 rounded-xl p-4">
               <div className="font-mono text-3xl font-black tabular-nums text-white">{s.n}</div>

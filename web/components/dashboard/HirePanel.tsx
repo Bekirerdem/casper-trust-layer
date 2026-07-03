@@ -4,8 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { claimFaucet, hireAgent, type HirePhase } from "@/lib/wallet/hireAgent";
 import type { AgentSnapshot } from "@/lib/casper/types";
 
-const JOB_AMOUNT_MOTES = "1000000"; // 0.001 AGT (9 decimals) — same as the live demo jobs
 const explorer = (h: string) => `https://testnet.cspr.live/transaction/${h}`;
+
+/** AGT has 9 decimals; the faucet grants 0.01 AGT. */
+function agtToMotes(agt: string): string | null {
+  const n = Number(agt);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return String(Math.round(n * 1_000_000_000));
+}
 
 type Phase = "idle" | HirePhase | "done" | "error";
 
@@ -26,7 +32,9 @@ export function HirePanel({
   onSettled?: (providerId: number, rep: { scoreBps: number; jobsCompleted: number }) => void;
 }) {
   const [myAgentIds, setMyAgentIds] = useState<number[] | null>(null);
+  const [clientId, setClientId] = useState<number | null>(null);
   const [providerId, setProviderId] = useState<number | null>(null);
+  const [amountAgt, setAmountAgt] = useState("0.001");
   const [phase, setPhase] = useState<Phase>("idle");
   const [txs, setTxs] = useState<Partial<Record<HirePhase, string>>>({});
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +54,13 @@ export function HirePanel({
     };
   }, [publicKey]);
 
-  const myAgentId = myAgentIds?.[0];
+  const myAgentId = clientId ?? myAgentIds?.[0];
   const providers = useMemo(
     () => agents.filter((a) => a.agentId !== myAgentId),
     [agents, myAgentId],
   );
   const provider = providers.find((a) => a.agentId === providerId) ?? providers[0];
+  const amountMotes = agtToMotes(amountAgt);
 
   async function onFaucet() {
     setFaucetState("pending");
@@ -67,7 +76,7 @@ export function HirePanel({
   }
 
   async function onHire() {
-    if (myAgentId === undefined || !provider) return;
+    if (myAgentId === undefined || !provider || !amountMotes) return;
     setPhase("approve");
     setTxs({});
     setError(null);
@@ -77,7 +86,7 @@ export function HirePanel({
         publicKeyHex: publicKey,
         clientId: myAgentId,
         providerId: provider.agentId,
-        amountMotes: JOB_AMOUNT_MOTES,
+        amountMotes,
         onPhase: (p, txHash) => {
           setPhase(p);
           if (txHash) setTxs((t) => ({ ...t, [p]: txHash }));
@@ -132,14 +141,23 @@ export function HirePanel({
 
       {myAgentId !== undefined && (
         <div className="flex flex-col gap-5">
-          {/* Setup row */}
+          {/* Setup row — every field is a real input */}
           <div className="flex flex-col md:flex-row gap-4 md:items-end">
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Your agent</span>
-              <span className="rounded-lg border border-white/15 bg-black/40 px-4 py-2.5 font-mono text-sm text-white">
-                Agent #{myAgentId}
-              </span>
-            </div>
+            <label className="flex flex-col gap-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Your agent (client)</span>
+              <select
+                value={myAgentId ?? ""}
+                onChange={(e) => setClientId(Number(e.target.value))}
+                disabled={running}
+                className="rounded-lg border border-white/15 bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:border-accent-red/50 focus:outline-none"
+              >
+                {(myAgentIds ?? []).map((id) => (
+                  <option key={id} value={id}>
+                    Agent #{id}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="flex flex-col gap-1.5 flex-1 max-w-xs">
               <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Hire (provider)</span>
               <select
@@ -155,13 +173,23 @@ export function HirePanel({
                 ))}
               </select>
             </label>
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Job amount</span>
-              <span className="rounded-lg border border-white/15 bg-black/40 px-4 py-2.5 font-mono text-sm text-white">
-                0.001 AGT
-              </span>
-            </div>
+            <label className="flex flex-col gap-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Job amount (AGT)</span>
+              <input
+                value={amountAgt}
+                onChange={(e) => setAmountAgt(e.target.value)}
+                disabled={running}
+                inputMode="decimal"
+                className={`w-32 rounded-lg border bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:outline-none ${
+                  amountMotes ? "border-white/15 focus:border-accent-red/50" : "border-accent-red/60"
+                }`}
+                placeholder="0.001"
+              />
+            </label>
           </div>
+          {!amountMotes && (
+            <p className="font-mono text-xs text-accent-red -mt-2">Enter a positive AGT amount (the faucet grants 0.01).</p>
+          )}
 
           {/* Faucet + hire actions */}
           <div className="flex flex-wrap gap-3">
@@ -175,7 +203,7 @@ export function HirePanel({
             </button>
             <button
               onClick={onHire}
-              disabled={running || !provider}
+              disabled={running || !provider || !amountMotes}
               className="inline-flex items-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
             >
               <span className={`h-1.5 w-1.5 rounded-full bg-white ${running ? "animate-ping" : ""}`} />

@@ -120,6 +120,27 @@ const KNOWN_SETTLEMENTS: SettlementProof[] = [
     scoreAfter: 183,
   },
   {
+    // 0->3 vouch — the on-chain source of agent #3's 4 bps (trust-conserved grant)
+    txHash:
+      "16931dc72f12d37db3db55ecb1b30a19a78bae69503db40b681c4eb81e1c8436",
+    from: 0,
+    to: 3,
+    amount: "1000000",
+    scoreBefore: 0,
+    scoreAfter: 4,
+  },
+  {
+    // 0->1 — settled but conferred +0: agent #0's grant budget was exhausted
+    // (trust conservation). Explains agent #1's first completed job.
+    txHash:
+      "bd968a263834a730c7daaea731a1764ad3d7201dfff343fb4d4688bf2b015492",
+    from: 0,
+    to: 1,
+    amount: "1000000",
+    scoreBefore: 0,
+    scoreAfter: 0,
+  },
+  {
     txHash:
       "1328ffa50300aa01e816a010ebbfe15e096f3ae8616f643a42612b55da18e167",
     from: 1,
