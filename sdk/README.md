@@ -64,7 +64,7 @@ The 402-handshake (retry loop, `PAYMENT-SIGNATURE` header, amount field) is full
 
 ## Network / contracts
 
-Live on `casper-test`. Contract package hashes are in `CASPER_TEST` (see `src/config.ts`) and documented with their field-index calibration in `.git/sdd/task-3-report.md` and `DEPLOYMENT.md`.
+Live on `casper-test`. Contract package hashes are in `CASPER_TEST` (see `src/config.ts`); deploy transactions and addresses are documented in [`DEPLOYMENT.md`](https://github.com/Bekirerdem/casper-trust-layer/blob/main/DEPLOYMENT.md).
 
 > Both paths are live-verified on `casper-test`: the wallet-free read path, and the full trust-gated x402 handshake settling on-chain via the hosted CSPR.cloud facilitator (settle tx [`0c58d79a`](https://testnet.cspr.live/transaction/0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e), trust-gated [`b4a4635f`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3)). Reproducible demos in [`scripts/`](scripts).
 

@@ -1,4 +1,3 @@
-// Deferred cross-contract refs — first used in Tasks 3-5; present per brief's use-block.
 use crate::identity::IdentityRegistryContractRef;
 use crate::reputation::ReputationEngineContractRef;
 use odra::casper_types::U256;

@@ -11,15 +11,19 @@ export const developer = {
 
   installCode: "npm install casper-trust",
 
-  usageCode: `import { createTrustClient } from "casper-trust";
+  usageCode: `import { createTrustClient, getReputation, pay } from "casper-trust";
 
-const trust = createTrustClient();
+const trust = createTrustClient(); // wallet-free reads
 
 // Read an agent's on-chain reputation
-const { scoreBps } = await trust.getReputation(agentId);
+const { scoreBps } = await getReputation(trust, agentId);
 
-// Enforce a trust gate before payment (x402)
-await trust.pay({ minScore: 9000 }); // trust-gated x402`,
+// Trust-gated x402 payment — refused before any gas is spent
+await pay({ ...trust, signer }, {
+  url: providerEndpoint,
+  providerAgentId: agentId,
+  minScore: 100n,
+});`,
 
   npmLink: "https://www.npmjs.com/package/casper-trust",
   githubLink: "https://github.com/Bekirerdem/casper-trust-layer",
@@ -101,12 +105,13 @@ export const trustGating = {
     note: "Score meets the threshold exactly. Escrow settles. Reputation increments.",
   },
 
-  codeExample: `const gate = await trust.gate({
-  agentId: 0,
-  minScore: 100,   // ← the only variable
+  codeExample: `await pay(client, {
+  url: endpoint,
+  providerAgentId: 0,
+  minScore: 100n,  // ← the only variable
 });
-// score 100 → settles
-// score  99 → TrustGateError`,
+// score 100 → 402 handshake settles on-chain
+// score  99 → TrustGateError, zero gas spent`,
 } as const;
 
 export const liveConsole = {

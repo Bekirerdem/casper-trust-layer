@@ -4,7 +4,7 @@ export interface NetworkConfig {
   chainName: string;
   facilitatorUrl: string;
   packages: { identity: string; reputation: string; escrow: string; cep18: string };
-  /** Odra field indices — CALIBRATED against live data in Task 3, not assumed from source. */
+  /** Odra field indices — CALIBRATED against live testnet data, not assumed from source. */
   fields: {
     identity: { escrowVarIndex: number; agents: number; count: number };
     reputation: { escrowVarIndex: number; identityVarIndex: number; reps: number; pairs: number };
@@ -25,9 +25,9 @@ export const CASPER_TEST: NetworkConfig = {
     escrow: "fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c",
     cep18: "f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6",
   },
-  // Indices CALIBRATED live against testnet in Task 3 — uniform +1 offset from source order.
+  // Indices CALIBRATED live against testnet — uniform +1 offset from source order.
   // Evidence: all three contracts store the admin Address at live idx 0; declared fields
-  // shift up by 1.  See task-3-report.md for the full scan log.
+  // shift up by 1.
   fields: {
     //                      source-order  →  live idx (offset +1 confirmed on all 3 contracts)
     identity: {

@@ -2,6 +2,50 @@
 
 > Mimari KİLİTLİ (memory: `project-casper-buildathon`). TDD (OdraVM host env). Süre tahmini yok; her madde **risk** etiketli (düşük/orta/yüksek) + **doğrulama** kriterli.
 
+---
+
+## 🔥 FINAL SPRINT — Submit'e kadar (deadline 7 Temmuz 23:59 UTC)
+
+> Kaynak: 2026-07-03 Fable 5 review — 131 BUIDL rakip analizi + repo audit.
+> Sıra: iyileştirmeler → demo video → submit (Bekir kararı).
+> Kontrat DEĞİŞMEZ (redeploy = tüm ağ sıfırlanır; slash-griefing bulgusu dokümante edilir, fix v2).
+
+### Faz 1 — Credibility pass `[risk: düşük]` (tek commit)
+- [ ] README test sayısı 31→50 (3 yer: badge satır 13, 147, 181) · doğrula: grep "31" temiz
+- [ ] `web/lib/content.ts` kod örnekleri gerçek API imzasına (`getReputation(client,id)`, `pay(client,{url,providerAgentId,minScore})`, `gateByTrust`) · doğrula: örnekler sdk/src export'larıyla birebir
+- [ ] `sdk/src/x402/index.ts` bayat "not exercised" yorumu güncelle (repo'da; npm patch sonra)
+- [ ] `sdk/README.md:67` `.git/sdd` referansı kaldır; `contracts/CHANGELOG.md` flipper kalıntısı; `web/README.md` boilerplate → gerçek açıklama
+- [ ] AI-brief artefakt yorumları temizle (treasury.rs:1 "present per brief", config.ts "Task 3")
+
+### Faz 2 — HIRE DÖNGÜSÜ (kullanıcı-odaklı yapı) `[risk: orta]` — ANA İŞ
+> Ziyaretçi: register (VAR) → AGT faucet → agent kirala (2 imza: CEP-18 approve + create_job) → provider (bizim agent) submit_work (server-side) → ziyaretçi approve (3. imza) → skor zincirde değişir, UI before/after gösterir.
+> Mimari: register'ın "server build → browser sign → server submit" pattern'i; create_job payable DEĞİL → düz ContractCallBuilder, 5 CSPR gas, deadline MİLİSANİYE.
+- [ ] 2.1 `/api/faucet` — deployer key'den AGT transfer (CEP-18), basit rate-limit + max miktar · doğrula: yeni cüzdana AGT düşüyor · risk düşük
+- [ ] 2.2 `/api/hire/build` + `/api/hire/submit` — approve(escrow, amount) ve create_job(client_id, provider, amount, deadline_ms) tx'leri · doğrula: canlı testnet'te cüzdan-imzalı job açılıyor (JobCreated) · risk orta
+- [ ] 2.3 `/api/hire/work` — provider key (server) ile submit_work(job_id, hash); "agent işi teslim etti" · doğrula: job state Submitted · risk düşük
+- [ ] 2.4 approve(job_id) build/submit — settle tetiklenir · doğrula: JobReleased + provider skoru arttı (canlı /api/trust) · risk düşük
+- [ ] 2.5 UI — /app "Hire an Agent" wizard: register-kontrol → faucet → provider seç + amount/deadline → imzalar → progress → skor before/after + cspr.live linkleri · doğrula: uçtan uca Freighter değil Casper Wallet ile Brave'de · risk orta
+- [ ] 2.6 Gas notu UI'da: testnet CSPR faucet linki (kullanıcı gas öder)
+- NOT: refund/slash UI'a KONMAZ (griefing yüzeyi açılmaz)
+
+### Faz 3 — MCP server `[risk: düşük]`
+- [ ] `casper-trust-mcp` — 3 tool: checkTrust / getReputation / getAgent (SDK'yı sarar) · doğrula: Claude Code'a takıp gerçek sorgu
+- [ ] README bölümü: "Plug into Claude/Cursor" + config örneği
+- [ ] 30sn kayıt: Claude ödeme öncesi checkTrust çağırıp karar veriyor (videoya girer)
+
+### Faz 4 — Dokümanlar `[risk: düşük]` (Faz 2 ile paralel)
+- [ ] `docs/reputation-formula.md` → İngilizce + §7 threat model'e ekle: slash-griefing (accepted risk, v2: accept_job), var-olmayan-provider fon kilidi, slashed-agent-skoru-treasury-gate tutarsızlığı
+- [ ] README: "paid ≠ good work" rebuttal (bizim adjudication trust-minimized; LLM-jüri/trusted-verifier yazması DEĞİL — Vouch'un tersi)
+- [ ] README: jüri-kriteri tablosu (Trust Rail/Cinder pattern'i) + "Verify It Yourself" explorer tablosu + Launch Plan bölümü (npm canlı = kanıt; roadmap: mainnet 3 blocker, MCP, treasury SDK)
+- [ ] "2% burn" söylemi → "retained/locked" (escrow.rs:199 gerçeği)
+
+### Faz 5 — Canlı aktivite + video + submit
+- [ ] network-boost loop: submit gününe kadar taze settlement'lar (Cinder/Claros'a karşı "ölü ağ" görüntüsünü kır) · risk düşük
+- [ ] Demo video: hire döngüsü (cüzdanla kirala→skor değişimi) + MCP kaydı + trust-gate REFUSED/APPROVED + cspr.live · risk orta
+- [ ] DoraHacks BUIDL formu (Bekir hesabı) + YouTube upload (Bekir) — **7 Temmuz'u BEKLEME, video biter bitmez**
+
+---
+
 ## Milestone 0 — Setup
 - [x] Toolchain audit (Rust 1.96, Node 24, wasm target eklendi)
 - [x] Odra v2.8.1 API grounding (subagent)

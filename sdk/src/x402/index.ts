@@ -89,9 +89,10 @@ export interface X402TrustClient extends TrustClient {
  *    - Retries with PAYMENT-SIGNATURE header (x402 v2 wire name; v1 was X-PAYMENT)
  *    - Uses amount field from paymentRequirements (x402 v2 — not maxAmountRequired)
  *
- * Integration note: live facilitator not exercised here; the 402-loop is
- * verified at the unit level via the gating tests. The handshake will be
- * exercised end-to-end in the dashboard/demo task.
+ * Live-verified: the full 402-handshake settles on-chain via the hosted
+ * CSPR.cloud facilitator on casper-test (settle tx 0c58d79a…, trust-gated
+ * run b4a4635f…). Reproducible demos: sdk/scripts/x402-handshake.mts and
+ * sdk/scripts/trust-gated-x402.mts.
  */
 export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response> {
   if (!c.signer) throw new Error("pay() requires a signer-bearing client; build it as { ...createTrustClient(overrides), signer }");

@@ -10,7 +10,7 @@
 
 [![live demo](https://img.shields.io/badge/live%20demo-online-2ea44f)](https://casper-trust-layer.vercel.app)
 [![npm](https://img.shields.io/npm/v/casper-trust?label=casper-trust&color=cb3837)](https://www.npmjs.com/package/casper-trust)
-[![contracts](https://img.shields.io/badge/OdraVM%20tests-31%20passing-2ea44f)](contracts/src)
+[![contracts](https://img.shields.io/badge/OdraVM%20tests-50%20passing-2ea44f)](contracts/src)
 [![sdk](https://img.shields.io/badge/SDK%20tests-66%20passing-2ea44f)](sdk/test)
 [![network](https://img.shields.io/badge/casper--test-deployed-blue)](DEPLOYMENT.md)
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
@@ -144,7 +144,7 @@ Casper contract tooling runs on Linux; on Windows use WSL2 (see [`tasks/lessons.
 
 ```bash
 cd contracts
-cargo odra test                 # 31 passing on the OdraVM (no node needed)
+cargo odra test                 # 50 passing on the OdraVM (no node needed)
 
 export PATH=~/binaryen-latest/bin:$PATH
 cargo odra build                # -> Casper-VM-compatible wasm/*.wasm (needs wabt + binaryen v130+)
@@ -178,7 +178,7 @@ DEPLOYMENT.md                live addresses + tx proofs
 - **Token:** CEP-18 (`odra-modules`); payments in WCSPR (CEP-3009 `transfer_with_authorization`)
 - **SDK:** TypeScript · `casper-js-sdk` 5 · `@make-software/casper-x402` · `@x402/fetch` — published as [`casper-trust`](https://www.npmjs.com/package/casper-trust)
 - **Payments:** x402 v2 over the hosted [CSPR.cloud facilitator](https://x402-facilitator.cspr.cloud) (gasless for the payer)
-- **Testing:** OdraVM (31 contract tests incl. adversarial reputation cases) + Vitest (66 SDK tests)
+- **Testing:** OdraVM (50 contract tests incl. adversarial reputation cases) + Vitest (66 SDK tests)
 - **Deploy:** `cargo-odra` + cspr.cloud (via a small auth proxy), patched for the Condor account model
 
 ## Notes
