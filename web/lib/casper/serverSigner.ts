@@ -8,6 +8,11 @@ import { PrivateKey, KeyAlgorithm } from "casper-js-sdk";
 export function loadServerSigner(): PrivateKey {
   const pem = process.env.DEPLOYER_SECRET_PEM;
   if (!pem) throw new Error("DEPLOYER_SECRET_PEM not configured");
-  // Tolerate \n-escaped single-line env values (Vercel dashboard paste).
-  return PrivateKey.fromPem(pem.replace(/\\n/g, "\n"), KeyAlgorithm.SECP256K1);
+  // Tolerate \n-escaped single-line values and invisible junk (BOM/zero-width/CR)
+  // that env tooling injects — a PEM is printable ASCII + newlines, nothing else.
+  const cleaned = pem
+    .replace(/\\r/g, "")
+    .replace(/\\n/g, "\n")
+    .replace(/[^\x20-\x7E\n]/g, "");
+  return PrivateKey.fromPem(cleaned, KeyAlgorithm.SECP256K1);
 }
