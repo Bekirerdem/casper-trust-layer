@@ -21,16 +21,20 @@ export function Developer() {
   };
 
   const codeLines = [
-    <span key="1"><span className="text-orange-400">import</span> {"{"} createTrustClient {"}"} <span className="text-orange-400">from</span> <span className="text-green-400">&quot;casper-trust&quot;</span>;</span>,
+    <span key="1"><span className="text-orange-400">import</span> {"{"} createTrustClient, getReputation, pay {"}"} <span className="text-orange-400">from</span> <span className="text-green-400">&quot;casper-trust&quot;</span>;</span>,
     <span key="2" className="text-white/20"></span>,
-    <span key="3"><span className="text-orange-400">const</span> trust = <span className="text-yellow-400">createTrustClient</span>();</span>,
+    <span key="3"><span className="text-orange-400">const</span> trust = <span className="text-yellow-400">createTrustClient</span>(); <span className="text-[#8E8E93]">{"// wallet-free reads"}</span></span>,
     <span key="4" className="text-white/20"></span>,
     <span key="5" className="text-[#8E8E93]">{"// Read an agent's on-chain reputation"}</span>,
-    <span key="6"><span className="text-orange-400">const</span> {"{"} scoreBps {"}"} = <span className="text-orange-400">await</span> trust.<span className="text-yellow-400">getReputation</span>(agentId);</span>,
+    <span key="6"><span className="text-orange-400">const</span> {"{"} scoreBps {"}"} = <span className="text-orange-400">await</span> <span className="text-yellow-400">getReputation</span>(trust, agentId);</span>,
     <span key="7" className="text-white/20"></span>,
-    <span key="8" className="text-[#8E8E93]">{"// Enforce a trust gate before payment (x402)"}</span>,
-    <span key="9">
-      <span className="text-orange-400">await</span> trust.<span className="text-yellow-400">pay</span>({"{"} minScore: <span className="text-cyan-400">9000</span> {"}"}); <span className="text-[#8E8E93]">{"// trust-gated x402"}</span>
+    <span key="8" className="text-[#8E8E93]">{"// Trust-gated x402 — refused before any gas is spent"}</span>,
+    <span key="9"><span className="text-orange-400">await</span> <span className="text-yellow-400">pay</span>({"{"} ...trust, signer {"}"}, {"{"}</span>,
+    <span key="10">{"  "}url: providerEndpoint,</span>,
+    <span key="11">{"  "}providerAgentId: agentId,</span>,
+    <span key="12">{"  "}minScore: <span className="text-cyan-400">100n</span>,</span>,
+    <span key="13">
+      {"}"});
       <span className="inline-block w-1.5 h-3.5 bg-accent-red ml-1 align-middle animate-pulse" />
     </span>
   ];

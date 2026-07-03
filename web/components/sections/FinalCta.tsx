@@ -49,15 +49,23 @@ export function FinalCta() {
             <div className="lg:col-span-4 flex flex-col gap-4 w-full justify-center">
               <Reveal delay={0.16} className="w-full flex flex-col gap-3">
                 <a
+                  href="/app"
+                  className="inline-flex items-center justify-between w-full px-6 py-4 bg-accent-red hover:bg-white hover:text-black rounded-xl text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:scale-102 shadow-lg shadow-accent-red/10 group"
+                >
+                  <span>Open the Trust Console</span>
+                  <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
+                </a>
+
+                <a
                   href="https://www.npmjs.com/package/casper-trust"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-between w-full px-6 py-4 bg-accent-red hover:bg-white hover:text-black rounded-xl text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:scale-102 shadow-lg shadow-accent-red/10 group"
+                  className="inline-flex items-center justify-between w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white rounded-xl text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:scale-102 group"
                 >
                   <span>Install from NPM</span>
                   <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
                 </a>
-                
+
                 <a
                   href="https://github.com/Bekirerdem/casper-trust-layer"
                   target="_blank"

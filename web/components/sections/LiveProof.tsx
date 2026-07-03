@@ -192,11 +192,12 @@ export function LiveProof() {
         <Reveal delay={0.4}>
           <div className="mt-12 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6 border-t border-white/5 pt-8">
             <p className="font-sans text-sm text-[#8E8E93] leading-relaxed max-w-[56ch]">
-              {liveProof.footerNote}
+              {liveProof.footerNote(snapshot.settlements.length, snapshot.agents.length)}
             </p>
             <div className="flex flex-col items-start sm:items-end text-xs font-mono text-[#8E8E93]/60">
               <span>Network: {snapshot.network}</span>
-              <span className="mt-1">Captured: {new Date(snapshot.capturedAt).toLocaleDateString()}</span>
+              {/* ISO date: locale-dependent formatting here breaks hydration (React #418) */}
+              <span className="mt-1">Captured: {new Date(snapshot.capturedAt).toISOString().slice(0, 10)}</span>
             </div>
           </div>
         </Reveal>

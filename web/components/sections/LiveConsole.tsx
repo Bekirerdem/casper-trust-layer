@@ -176,10 +176,10 @@ export function LiveConsole() {
                   </span>
                   <pre className="font-mono text-left leading-relaxed text-xs">
                     <code>
-                      <span className="text-orange-400">await</span> trust.
-                      <span className="text-yellow-400">gate</span>({"{"}
-                      {"\n"}  agentId: <span className="text-cyan-400">{agentId}</span>,
-                      {"\n"}  minScore: <span className="text-cyan-400">{minScore}</span>,
+                      <span className="text-orange-400">await</span>{" "}
+                      <span className="text-yellow-400">pay</span>(client, {"{"}
+                      {"\n"}  providerAgentId: <span className="text-cyan-400">{agentId}</span>,
+                      {"\n"}  minScore: <span className="text-cyan-400">{minScore}n</span>,
                       {"\n"}{"}"}); <span className="text-[#8E8E93]">{`// score ${score} → ${approved ? "settles" : "TrustGateError"}`}</span>
                     </code>
                   </pre>

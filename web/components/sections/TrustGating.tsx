@@ -187,12 +187,13 @@ export function TrustGating() {
                     <span className="text-[#8E8E93] text-[10px] block mb-3 font-bold uppercase tracking-widest">API Call</span>
                     <pre className="font-mono text-left leading-relaxed text-xs">
                       <code>
-                        <span className="text-orange-400">const</span> gate = <span className="text-orange-400">await</span> trust.<span className="text-yellow-400">gate</span>({"{"}
-                        {"\n"}  agentId: <span className="text-cyan-400">0</span>,
-                        {"\n"}  minScore: <span className="text-cyan-400">100</span>, <span className="text-[#8E8E93]">{"// \u2190 the only variable"}</span>
+                        <span className="text-orange-400">await</span> <span className="text-yellow-400">pay</span>(client, {"{"}
+                        {"\n"}  url: endpoint,
+                        {"\n"}  providerAgentId: <span className="text-cyan-400">0</span>,
+                        {"\n"}  minScore: <span className="text-cyan-400">100n</span>, <span className="text-[#8E8E93]">{"// \u2190 the only variable"}</span>
                         {"\n"}{"}"});
-                        {"\n"}<span className="text-[#8E8E93]">{"// score 100 \u2192 settles"}</span>
-                        {"\n"}<span className="text-[#8E8E93]">{"// score  99 \u2192 TrustGateError"}</span>
+                        {"\n"}<span className="text-[#8E8E93]">{"// score 100 \u2192 settles on-chain"}</span>
+                        {"\n"}<span className="text-[#8E8E93]">{"// score  99 \u2192 TrustGateError, zero gas"}</span>
                       </code>
                     </pre>
                   </div>

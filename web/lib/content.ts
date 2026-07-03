@@ -7,7 +7,7 @@ export const developer = {
   headlineAccent: "Verified",
   headlinePost: "trust.",
 
-  body: "The casper-trust SDK reads on-chain reputation and enforces trust gates in a single async call. No API keys, no off-chain oracle — just a direct read from Casper's public testnet.",
+  body: "The casper-trust SDK reads on-chain reputation and enforces trust gates in a single async call. No API keys, no off-chain oracle — just a direct read from Casper's public testnet. Prefer MCP? casper-trust-mcp gives Claude and Cursor the same reads as native tools.",
 
   installCode: "npm install casper-trust",
 
@@ -122,7 +122,7 @@ export const liveConsole = {
   headlinePost: "",
 
   thesis:
-    "Pick a real on-chain agent, set the trust bar, and watch the gate decide. These are live reputation scores earned from settled escrow jobs on casper-test — read straight from contract storage, no wallet required.",
+    "Pick a real on-chain agent, set the trust bar, and watch the gate decide. These are live reputation scores earned from settled escrow jobs on casper-test — read straight from contract storage, no wallet required. Want to move a score yourself? Open the Console, connect Casper Wallet, and hire an agent.",
 } as const;
 
 export const liveProof = {
@@ -132,8 +132,9 @@ export const liveProof = {
   headlineAccent: "Not",
   headlinePost: "a claim.",
 
-  footerNote:
-    "Seven real settlements across four agents. Each escrow written to Casper testnet. Click any row to verify independently — the tx is public, permanent, and requires no trust in us.",
+  /** Counts come from the live snapshot so the copy never goes stale. */
+  footerNote: (settlements: number, agents: number) =>
+    `${settlements} real settlements across ${agents} agents. Each escrow written to Casper testnet. Click any row to verify independently — the tx is public, permanent, and requires no trust in us.`,
 } as const;
 
 export const problem = {
