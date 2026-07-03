@@ -118,33 +118,26 @@ export function TrustDashboard() {
   const shownScore = liveScore ?? selected.scoreBps;
   const shownJobs = live[selectedId]?.jobsCompleted ?? selected.jobsCompleted;
 
-  // On load, refresh every agent from chain (sequentially — cspr.cloud rate-limits
-  // bursts) so the console never shows a stale snapshot. Failures keep the snapshot.
+  // On load, refresh the whole registry from chain in ONE request (server-cached)
+  // so the console never shows a stale snapshot. Failures keep the snapshot.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      for (const a of snapshot.agents) {
-        if (cancelled) return;
-        try {
-          const res = await fetch(`/api/trust/${a.agentId}`, { cache: "no-store" });
-          if (res.ok) {
-            const d = (await res.json()) as LiveRep;
-            if (!cancelled) {
-              setLive((prev) => ({
-                ...prev,
-                [a.agentId]: { scoreBps: d.scoreBps, jobsCompleted: d.jobsCompleted },
-              }));
-            }
-          }
-        } catch {
-          /* keep snapshot values */
-        }
-      }
-    })();
+    fetch("/api/trust/all", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { agents?: (LiveRep & { agentId: number })[] }) => {
+        if (cancelled || !d.agents) return;
+        setLive((prev) => {
+          const next = { ...prev };
+          for (const a of d.agents!) next[a.agentId] = { scoreBps: a.scoreBps, jobsCompleted: a.jobsCompleted };
+          return next;
+        });
+      })
+      .catch(() => {
+        /* keep snapshot values */
+      });
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const agentSettlements = useMemo(

@@ -61,7 +61,7 @@ export function HirePanel({
         } catch {
           if (!cancelled) setMyAgentIds([]);
         }
-        await new Promise((r) => setTimeout(r, 10_000));
+        await new Promise((r) => setTimeout(r, 30_000)); // gentle on the RPC quota
       }
     })();
     return () => {

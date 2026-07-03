@@ -6,8 +6,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SCAN_LIMIT = 24;
+const CACHE_MS = 20_000; // page-refresh spam protection; short enough for post-register rescans
 
 const hex64 = (s: string) => s.toLowerCase().match(/[0-9a-f]{64}/)?.[0] ?? null;
+const cache = new Map<string, { at: number; agentIds: number[] }>();
 
 /**
  * Finds the agent ids owned by a wallet: GET /api/agents/mine?publicKey=<hex>
@@ -18,6 +20,11 @@ export async function GET(req: Request) {
   if (!publicKey) return NextResponse.json({ error: "publicKey required" }, { status: 400 });
 
   try {
+    const hit = cache.get(publicKey);
+    if (hit && Date.now() - hit.at < CACHE_MS) {
+      return NextResponse.json({ agentIds: hit.agentIds, cached: true });
+    }
+
     const walletHash = hex64(PublicKey.fromHex(publicKey).accountHash().toPrefixedString());
     const client = createTrustClient();
 
@@ -28,6 +35,7 @@ export async function GET(req: Request) {
       if (agent.status === "Active" && hex64(agent.wallet) === walletHash) mine.push(id);
     }
 
+    cache.set(publicKey, { at: Date.now(), agentIds: mine });
     return NextResponse.json({ agentIds: mine });
   } catch (e) {
     const message = e instanceof Error ? e.message : "scan failed";
