@@ -31,7 +31,10 @@ export function WalletButton({ connecting, publicKey, error, connect, disconnect
     );
   }
 
-  const notFound = !!error && /bulunamad|not detected|not found/i.test(error);
+  // Not-found AND hang/timeout both point the user to the same fix: open the
+  // extension and unlock it, then retry.
+  const needsExtensionAction =
+    !!error && /bulunamad|not detected|not found|did not respond|timed out/i.test(error);
 
   return (
     <div className="flex flex-col items-end gap-1">
@@ -43,14 +46,14 @@ export function WalletButton({ connecting, publicKey, error, connect, disconnect
         <span className={`h-1.5 w-1.5 rounded-full bg-white ${connecting ? "animate-ping" : ""}`} />
         {connecting ? "Bağlanıyor…" : "Connect Casper Wallet"}
       </button>
-      {notFound ? (
+      {needsExtensionAction ? (
         <a
           href="https://www.casperwallet.io/"
           target="_blank"
           rel="noopener noreferrer"
           className="font-mono text-[10px] text-[#8E8E93] hover:text-white transition-colors"
         >
-          Extension not found — install / unlock ↗
+          Install or unlock the Casper Wallet extension, then retry ↗
         </a>
       ) : (
         error && <span className="font-mono text-[10px] text-accent-red">{error}</span>
