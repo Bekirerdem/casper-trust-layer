@@ -40,6 +40,17 @@ function getProvider(): CasperWalletProvider | null {
   }
 }
 
+// The extension can hang indefinitely (locked, or a stale pending request from a
+// prior session) — requestConnection() then never resolves and the button stays
+// stuck on "Connecting…". Race it against a timeout so the user gets a recoverable
+// error instead of a dead spinner.
+function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+}
+
 // event.detail may be a JSON string OR an object depending on extension version.
 function parseDetail(detail: unknown): { activeKey?: string; isConnected?: boolean; isUnlocked?: boolean } {
   if (!detail) return {};
@@ -127,8 +138,12 @@ export function useCasperWallet() {
     }
     setState((s) => ({ ...s, available: true, connecting: true, error: null }));
     try {
-      const ok = await provider.requestConnection();
-      const key = ok ? await provider.getActivePublicKey() : null;
+      const ok = await withTimeout(
+        provider.requestConnection(),
+        25_000,
+        "Wallet did not respond — open the Casper Wallet extension, unlock it, then try again.",
+      );
+      const key = ok ? await withTimeout(provider.getActivePublicKey(), 10_000, "connection timed out") : null;
       setState((s) => ({ ...s, connecting: false, publicKey: key, error: ok ? null : "connection rejected" }));
     } catch (e) {
       setState((s) => ({
