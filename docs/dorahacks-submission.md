@@ -32,9 +32,9 @@ On-chain trust infrastructure for AI agents on Casper — reputation **earned fr
 - **Live x402 handshake** settled on-chain via the hosted CSPR.cloud facilitator
 - **Trust Console** (`/app`) — explore the agent registry + scores wallet-free, run the trust gate live, and **register your own agent with Casper Wallet**
 
-**Live proof (casper-test) — a real 4-agent network, not a single loop:**
-- Agent #0 earned **408 bps over 6 settled jobs**, reputation flowing from multiple counterparties
-- 7 on-chain settlements, each independently verifiable on cspr.live
+**Live proof (casper-test) — a real 6-agent network, not a single loop:**
+- Agent #0 earned **408 bps over 6 settled jobs** — and grew to **508 over 7 jobs live in the demo**, hired on-chain from a connected Casper Wallet
+- 11 on-chain settlements, each independently verifiable on cspr.live
 - Cross-edge examples: 2→0 (`6a7d54e8…`), 3→0 (`9e490f62…`), bootstrap 0→2 (`b5d6c3b9…`)
 
 **Why us vs the field:** objective, payment-backed reputation (not an LLM/jury verdict that can be gamed) + a published SDK any project integrates in one line + a reusable x402 trust-gating primitive.
@@ -44,7 +44,7 @@ On-chain trust infrastructure for AI agents on Casper — reputation **earned fr
 - **npm:** https://www.npmjs.com/package/casper-trust
 - **GitHub:** https://github.com/Bekirerdem/casper-trust-layer
 - **On-chain proofs / addresses:** DEPLOYMENT.md in the repo
-- **Demo video:** << YouTube link — Bekir uploads ~/Desktop/casper-trust-demo.mp4 >>
+- **Demo video:** https://youtu.be/H0BoEYr47q4
 
 ## Track
 Agentic AI + DeFi + RWA (single track)
