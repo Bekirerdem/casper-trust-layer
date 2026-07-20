@@ -31,3 +31,8 @@ keys/
 .DS_Store
 Thumbs.db
 *.log
+
+# Media captures — never belong in the repo (demo videos live on YouTube)
+*.mp4
+*.mov
+*.mkv
