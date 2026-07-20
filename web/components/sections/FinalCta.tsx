@@ -45,35 +45,39 @@ export function FinalCta() {
               </Reveal>
             </div>
 
-            {/* Right CTAs (4 cols) */}
+            {/* Right: two doors, one per persona (4 cols) */}
             <div className="lg:col-span-4 flex flex-col gap-4 w-full justify-center">
               <Reveal delay={0.16} className="w-full flex flex-col gap-3">
+                {finalCta.doors.map((door) => (
+                  <a
+                    key={door.href}
+                    href={door.href}
+                    {...(door.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className={`flex flex-col gap-1.5 w-full px-6 py-4 rounded-xl transition-all duration-300 hover:scale-102 group ${
+                      door.primary
+                        ? "bg-accent-red hover:bg-white text-white hover:text-black shadow-lg shadow-accent-red/10"
+                        : "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white text-white"
+                    }`}
+                  >
+                    <span className={`font-mono text-[9px] uppercase tracking-[0.2em] ${door.primary ? "text-white/70 group-hover:text-black/60" : "text-accent-red"}`}>
+                      {door.audience}
+                    </span>
+                    <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-widest">
+                      <span>{door.title}</span>
+                      <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
+                    </span>
+                    <span className={`font-sans text-xs normal-case tracking-normal ${door.primary ? "text-white/70 group-hover:text-black/60" : "text-[#8E8E93]"}`}>
+                      {door.body}
+                    </span>
+                  </a>
+                ))}
                 <a
-                  href="/app"
-                  className="inline-flex items-center justify-between w-full px-6 py-4 bg-accent-red hover:bg-white hover:text-black rounded-xl text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:scale-102 shadow-lg shadow-accent-red/10 group"
-                >
-                  <span>Open the Trust Console</span>
-                  <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
-                </a>
-
-                <a
-                  href="https://www.npmjs.com/package/casper-trust"
+                  href={finalCta.tertiaryLink.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-between w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white rounded-xl text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:scale-102 group"
+                  className="self-start font-mono text-[10px] text-[#8E8E93] hover:text-white transition-colors mt-1"
                 >
-                  <span>Install from NPM</span>
-                  <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
-                </a>
-
-                <a
-                  href="https://github.com/Bekirerdem/casper-trust-layer"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-between w-full px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white rounded-xl text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:scale-102 group"
-                >
-                  <span>GitHub Repository</span>
-                  <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
+                  {finalCta.tertiaryLink.label}
                 </a>
               </Reveal>
             </div>

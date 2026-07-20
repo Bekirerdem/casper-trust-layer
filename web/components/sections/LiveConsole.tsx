@@ -197,7 +197,7 @@ export function LiveConsole() {
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-                      Gate decision
+                      Clearance
                     </span>
                     <span className="relative flex h-2 w-2">
                       <span

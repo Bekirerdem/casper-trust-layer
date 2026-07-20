@@ -247,7 +247,7 @@ export function HirePanel({
                       : "todo";
                 const tx = txs[s.key];
                 return (
-                  <div key={s.key} className="flex items-center gap-3 font-mono text-xs">
+                  <div key={s.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs">
                     <span
                       className={
                         st === "done"

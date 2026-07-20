@@ -3,9 +3,16 @@
 import { useState } from "react";
 import { howItWorks } from "@/lib/content";
 import { Reveal } from "@/components/motion/Reveal";
+import { loadSnapshot } from "@/lib/data/snapshot";
+import { useLiveAgents, mergeLiveAgents } from "@/lib/data/useLiveAgents";
+
+// Real on-chain reference values for the step mockups (live, snapshot fallback).
+const REGISTRY_PKG_FULL = "3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc";
 
 export function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
+  const snapshot = mergeLiveAgents(loadSnapshot(), useLiveAgents());
+  const agent0 = snapshot.agents.find((a) => a.agentId === 0);
 
   return (
     <section
@@ -38,6 +45,10 @@ export function HowItWorks() {
               <div
                 key={step.number}
                 onMouseEnter={() => setActiveStep(idx)}
+                onClick={() => setActiveStep(idx)}
+                onFocus={() => setActiveStep(idx)}
+                role="button"
+                tabIndex={0}
                 className={`relative flex flex-col justify-between p-8 rounded-2xl border transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer group overflow-hidden ${
                   isActive
                     ? "flex-[3] bg-white/10 border-accent-red/40 shadow-xl shadow-accent-red/5"
@@ -96,7 +107,7 @@ export function HowItWorks() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
                               </svg>
                               <span className="font-mono text-[10px] text-white font-bold">Node Identity Registered</span>
-                              <span className="font-mono text-[8px] text-[#8E8E93] mt-1 break-all select-all">0x3b8d1a49f50e90c42171cb29fa8c18ea7220268a</span>
+                              <span className="font-mono text-[8px] text-[#8E8E93] mt-1 break-all select-all">{REGISTRY_PKG_FULL}</span>
                             </div>
 
                             <div className="flex items-center justify-between text-[8px] font-mono text-[#8E8E93]/60 pt-2 border-t border-white/5">
@@ -116,7 +127,7 @@ export function HowItWorks() {
                             <div className="flex flex-col justify-center my-auto py-2 gap-3 text-left">
                               <div className="flex justify-between items-center text-[9px]">
                                 <span className="text-[#8E8E93]">Client Deposit</span>
-                                <span className="text-white font-mono font-bold">15,000 CSPR</span>
+                                <span className="text-white font-mono font-bold">100 AGT</span>
                               </div>
                               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                 <div className="h-full bg-accent-red rounded-full w-[75%] animate-pulse" />
@@ -147,12 +158,12 @@ export function HowItWorks() {
                                   <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="3" className="text-white/5" fill="transparent" />
                                   <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="3.5" className="text-accent-red" fill="transparent" strokeDasharray="163" strokeDashoffset="16" />
                                 </svg>
-                                <span className="absolute font-mono text-[10px] font-bold text-white">9,850</span>
+                                <span className="absolute font-mono text-[10px] font-bold text-white">{agent0?.scoreBps ?? 508}</span>
                               </div>
-                              
+
                               <div className="flex flex-col gap-1 text-left">
                                 <span className="font-mono text-[9px] text-[#8E8E93]">Basis Points</span>
-                                <span className="font-mono text-[9px] text-green-400">100% Delivery</span>
+                                <span className="font-mono text-[9px] text-green-400">{agent0?.jobsCompleted ?? 7} Jobs Settled</span>
                                 <span className="font-mono text-[9px] text-[#8E8E93]">0 Defaults</span>
                               </div>
                             </div>
@@ -186,7 +197,7 @@ export function HowItWorks() {
                     {/* Bottom ornament */}
                     <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
                       <span className="font-mono text-[9px] uppercase tracking-widest text-[#8E8E93]/40 group-hover:text-[#8E8E93]/80 transition-colors">
-                        HOVER TO VIEW
+                        VIEW
                       </span>
                       <span className="font-mono text-xs text-[#8E8E93]">→</span>
                     </div>
@@ -232,7 +243,7 @@ export function HowItWorks() {
                         </svg>
                         <div className="flex flex-col min-w-0">
                           <span className="font-mono text-[9px] text-white font-bold">Node Registered</span>
-                          <span className="font-mono text-[8px] text-[#8E8E93] truncate">0x3b8d1a49f50e90c42171cb29fa8c18ea7220268a</span>
+                          <span className="font-mono text-[8px] text-[#8E8E93] truncate">{REGISTRY_PKG_FULL}</span>
                         </div>
                       </div>
                     </div>
@@ -248,7 +259,7 @@ export function HowItWorks() {
                       <div className="flex flex-col gap-2 py-1">
                         <div className="flex justify-between items-center text-[9px]">
                           <span className="text-[#8E8E93]">Client Deposit</span>
-                          <span className="text-white font-mono font-bold">15,000 CSPR</span>
+                          <span className="text-white font-mono font-bold">100 AGT</span>
                         </div>
                         <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                           <div className="h-full bg-accent-red rounded-full w-[75%]" />
@@ -270,10 +281,10 @@ export function HowItWorks() {
                             <circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="2.5" className="text-white/5" fill="transparent" />
                             <circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="3" className="text-accent-red" fill="transparent" strokeDasharray="113" strokeDashoffset="11" />
                           </svg>
-                          <span className="absolute font-mono text-[8px] font-bold text-white">9.8k</span>
+                          <span className="absolute font-mono text-[8px] font-bold text-white">{agent0?.scoreBps ?? 508}</span>
                         </div>
                         <div className="flex flex-col gap-0.5 text-right">
-                          <span className="font-mono text-[9px] text-green-400">100% Delivery</span>
+                          <span className="font-mono text-[9px] text-green-400">{agent0?.jobsCompleted ?? 7} Jobs Settled</span>
                           <span className="font-mono text-[8px] text-[#8E8E93]">0 Defaults</span>
                         </div>
                       </div>

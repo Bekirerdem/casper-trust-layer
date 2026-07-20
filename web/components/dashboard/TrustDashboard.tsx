@@ -91,12 +91,12 @@ function SettlementRow({ s, agentId }: { s: SettlementProof; agentId: number }) 
       className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 font-mono text-xs transition-colors hover:border-white/15 hover:bg-white/5"
     >
       <span className={`shrink-0 text-[9px] uppercase tracking-widest ${earned ? "text-green-400" : "text-[#8E8E93]"}`}>
-        {earned ? `from #${s.from}` : `vouched #${s.to}`}
+        {earned ? `earned · from #${s.from}` : `paid → #${s.to}`}
       </span>
       <span className="text-white">{short(s.txHash)}</span>
       {/* An outgoing row's delta belongs to the counterparty — show it neutral, not as a gain */}
       <span className={`font-bold ${earned && delta > 0 ? "text-green-400" : "text-[#8E8E93]"}`}>
-        {earned ? `${delta > 0 ? "+" : ""}${delta} bps` : `+${delta} bps → #${s.to}`}
+        {earned ? `${delta > 0 ? "+" : ""}${delta} bps` : `#${s.to} gains +${delta} bps`}
       </span>
       <span className="text-accent-red">↗</span>
     </a>
@@ -250,7 +250,7 @@ export function TrustDashboard() {
 
             <div className="flex flex-col gap-2">
               <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-                Settlement history ({agentSettlements.length})
+                Track record · settled escrows ({agentSettlements.length})
               </span>
               <div className="flex flex-col gap-2">
                 {agentSettlements.length > 0 ? (
@@ -307,7 +307,7 @@ export function TrustDashboard() {
           </section>
         </div>
 
-        {wallet.publicKey && (
+        {wallet.publicKey ? (
           <>
             <HirePanel
               publicKey={wallet.publicKey}
@@ -323,6 +323,55 @@ export function TrustDashboard() {
               onRegistered={() => setExtraAgents((n) => n + 1)}
             />
           </>
+        ) : (
+          /* Locked preview — the console's strongest features must be visible
+             BEFORE a wallet is connected, or first-time visitors never learn
+             they exist. */
+          <section className="glass-panel bg-white/5 border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
+                Hire &amp; register · live on-chain flows
+              </h2>
+              <span className="font-mono text-[10px] text-[#8E8E93]">○ wallet not connected</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                <span className="font-mono text-xs text-white font-bold block mb-1.5">Hire an agent</span>
+                <p className="font-sans text-xs text-[#8E8E93] leading-relaxed">
+                  Pick a provider, lock AGT in escrow, approve delivery — and watch its
+                  reputation move on-chain from a transaction <span className="text-white">you</span> signed.
+                  A test-token faucet is built in.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                <span className="font-mono text-xs text-white font-bold block mb-1.5">Register your agent</span>
+                <p className="font-sans text-xs text-[#8E8E93] leading-relaxed">
+                  Join the trust network: deposit a CSPR bond, sign with Casper Wallet, and
+                  start earning a track record from settled jobs.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-2">
+              <button
+                onClick={wallet.connect}
+                disabled={wallet.connecting}
+                className="inline-flex items-center gap-2.5 rounded-full bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white shadow-md shadow-accent-red/20 transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-60"
+              >
+                <span className={`h-1.5 w-1.5 rounded-full bg-white ${wallet.connecting ? "animate-ping" : ""}`} />
+                {wallet.connecting ? "Connecting…" : "Connect Casper Wallet to unlock"}
+              </button>
+              {!wallet.available && (
+                <a
+                  href="https://www.casperwallet.io/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-[10px] text-[#8E8E93] hover:text-white transition-colors"
+                >
+                  Casper Wallet extension not detected — install it first ↗
+                </a>
+              )}
+            </div>
+          </section>
         )}
       </div>
     </main>

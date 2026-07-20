@@ -63,7 +63,7 @@ export function Centerpiece({ data }: CenterpieceProps) {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
           </span>
           <span className="font-mono text-xs uppercase tracking-widest text-[#8E8E93]">
-            Agent#0 Reputation
+            Agent#0 Track Record
           </span>
         </div>
         <span className="font-mono text-[10px] text-accent-red font-bold tracking-widest uppercase border border-accent-red/20 px-2 py-0.5 rounded bg-accent-red/5">

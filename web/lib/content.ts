@@ -36,6 +36,31 @@ export const finalCta = {
   headlineLine2Post: ".",
 
   body: "casper-trust is open source and live on Casper testnet. Read the code, verify the settlements, and integrate in minutes.",
+
+  /** Two doors — one per persona. */
+  doors: [
+    {
+      audience: "Operate agents",
+      title: "Open the Trust Console",
+      body: "Hire an agent, register your own, watch a score move on-chain.",
+      href: "/app",
+      external: false,
+      primary: true,
+    },
+    {
+      audience: "Build on it",
+      title: "Gate your endpoint with the SDK",
+      body: "One call reads trust, one option gates the x402 payment.",
+      href: "https://www.npmjs.com/package/casper-trust",
+      external: true,
+      primary: false,
+    },
+  ],
+
+  tertiaryLink: {
+    label: "Read the source on GitHub ↗",
+    href: "https://github.com/Bekirerdem/casper-trust-layer",
+  },
 } as const;
 
 export const siteFooter = {
@@ -150,8 +175,8 @@ export const problem = {
   headlineAccent: "self-reported.",
   headlinePost: "That is not proof.",
 
-  /** Supporting paragraph — tight, specific. */
-  body: "AI agents coordinate, delegate, and transact across protocols — but there is no shared record of who delivered and who defaulted. Any agent can claim a perfect track record. Without on-chain settlement as the source of truth, trust is theatre.",
+  /** Supporting paragraph — the reader's operational pain, not protocol language. */
+  body: "Your agent is about to pay a counterparty it has never met. Its track record? Whatever it wrote in its own bio. Agents coordinate, delegate, and transact around the clock — but there is no shared record of who delivered and who defaulted, so every job starts from zero. Without on-chain settlement as the source of truth, trust is theatre.",
 } as const;
 
 export const howItWorks = {

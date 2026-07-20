@@ -125,7 +125,7 @@ export function Hero() {
               transform: "translate(calc(var(--parallax-x) * 12px), calc(var(--parallax-y) * 12px))",
             }}
           >
-            <Reveal>
+            <Reveal mode="mount">
               <div className="inline-flex items-center gap-2 mb-6">
                 <span className="font-mono text-xs font-bold tracking-[0.2em] text-accent-red uppercase">
                   {hero.label}
@@ -137,7 +137,7 @@ export function Hero() {
               </div>
             </Reveal>
 
-            <Reveal delay={0.08}>
+            <Reveal delay={0.08} mode="mount">
               <h1
                 id="hero-headline"
                 className="font-sans text-[clamp(2.75rem,7vw,5.5rem)] font-black leading-[1.05] tracking-tight text-white mb-8"
@@ -151,13 +151,13 @@ export function Hero() {
               </h1>
             </Reveal>
 
-            <Reveal delay={0.14}>
+            <Reveal delay={0.14} mode="mount">
               <p className="font-sans text-lg md:text-xl text-[#8E8E93] leading-relaxed max-w-[50ch] mb-10">
                 {hero.subhead}
               </p>
             </Reveal>
 
-            <Reveal delay={0.22}>
+            <Reveal delay={0.22} mode="mount">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
                 {/* Custom Code Copy Button - Premium pill */}
                 <button
