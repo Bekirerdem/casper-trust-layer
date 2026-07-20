@@ -17,7 +17,7 @@ export function WalletButton({ connecting, publicKey, error, connect, disconnect
       <button
         onClick={disconnect}
         className="group inline-flex items-center gap-2.5 rounded-full border border-green-500/30 bg-green-500/5 px-4 py-2 font-mono text-xs text-white transition-all duration-300 hover:border-accent-red/40 hover:bg-accent-red/5"
-        title="Bağlantıyı kes"
+        title="Disconnect"
       >
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-70" />
@@ -44,7 +44,7 @@ export function WalletButton({ connecting, publicKey, error, connect, disconnect
         className="inline-flex items-center gap-2.5 rounded-full bg-accent-red px-5 py-2 font-mono text-xs font-semibold uppercase tracking-widest text-white shadow-md shadow-accent-red/20 transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-60"
       >
         <span className={`h-1.5 w-1.5 rounded-full bg-white ${connecting ? "animate-ping" : ""}`} />
-        {connecting ? "Bağlanıyor…" : "Connect Casper Wallet"}
+        {connecting ? "Connecting…" : "Connect Casper Wallet"}
       </button>
       {needsExtensionAction ? (
         <a

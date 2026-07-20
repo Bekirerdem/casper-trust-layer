@@ -1,7 +1,7 @@
 /** Single source of truth for all landing-page copy. */
 
 export const developer = {
-  label: "06 / BUILD",
+  label: "07 / BUILD",
 
   headlinePre: "One call.",
   headlineAccent: "Verified",
@@ -53,6 +53,11 @@ export const siteFooter = {
     {
       label: "GitHub",
       href: "https://github.com/Bekirerdem/casper-trust-layer",
+      external: true,
+    },
+    {
+      label: "X / building in public",
+      href: "https://x.com/l3ekirerdem",
       external: true,
     },
     {
@@ -126,7 +131,7 @@ export const liveConsole = {
 } as const;
 
 export const liveProof = {
-  label: "05 / PROOF",
+  label: "06 / PROOF",
 
   headlinePre: "Verifiable on-chain.",
   headlineAccent: "Not",
