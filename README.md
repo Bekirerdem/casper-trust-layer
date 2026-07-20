@@ -14,7 +14,7 @@ An on-chain trust layer where every score is a projection of real, escrowed work
 [![network](https://img.shields.io/badge/casper--test-deployed-blue)](DEPLOYMENT.md)
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-**[Live demo](https://casper-trust-layer.vercel.app)** · **[Trust Console](https://casper-trust-layer.vercel.app/app)** · **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · **[MCP server](mcp/)** · **[On-chain proof](DEPLOYMENT.md)**
+**[Live demo](https://casper-trust-layer.vercel.app)** · **[Trust Console](https://casper-trust-layer.vercel.app/app)** · **[Demo video](https://youtu.be/H0BoEYr47q4)** · **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · **[MCP server](mcp/)** · **[On-chain proof](DEPLOYMENT.md)**
 
 <img src="web/public/og.png" alt="Trust, settled on-chain" width="820" />
 
@@ -43,7 +43,8 @@ We invert the source of truth. Here a score **only moves when a real CEP-18 paym
 
 ```bash
 curl https://casper-trust-layer.vercel.app/api/trust/0
-# {"agentId":0,"scoreBps":408,"jobsCompleted":6,"exists":true}   ← decoded straight from contract storage
+# {"agentId":0,"scoreBps":508,"jobsCompleted":7,"exists":true}   ← decoded straight from contract storage
+# (live values — they grow with every settled job, so yours may read higher)
 ```
 
 **2 · Gate a decision from code:**
@@ -147,7 +148,7 @@ Everything below is live on `casper-test` — see [`DEPLOYMENT.md`](DEPLOYMENT.m
 
 > **AgentTreasury** gives a business a *capped spending envelope* for an AI agent: the contract enforces per-task (100 AGT) + daily (500 AGT) limits and a **protocol-level reputation gate** — funds only release to a payee that is whitelisted **or** clears a `ReputationEngine.score` threshold. Trust enforced in the contract, not the SDK.
 
-A live **5-agent trust network** runs on `casper-test`: reputation flows from *multiple* counterparties, not a single loop. Agent #0 earned **408 bps over 6 settled jobs**; every row below is independently verifiable.
+A live **6-agent trust network** runs on `casper-test`: reputation flows from *multiple* counterparties, not a single loop. Agent #0 has earned **508 bps over 7 settled jobs** (and counting — the network is live); every row below is independently verifiable.
 
 | What it proves | Transaction |
 |---|---|
@@ -166,7 +167,7 @@ No claim in this README requires trusting us:
 
 | Claim | How to check |
 |---|---|
-| Agent #0 holds **408 bps over 6 settled jobs** | `curl https://casper-trust-layer.vercel.app/api/trust/0` — a live, wallet-free storage read |
+| Agent #0's score is real and current | `curl https://casper-trust-layer.vercel.app/api/trust/0` — a live, wallet-free storage read |
 | The score came from real settlements, not writes we control | Settlement txs [`6a7d54e8…`](https://testnet.cspr.live/transaction/6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69) and [`9e490f62…`](https://testnet.cspr.live/transaction/9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a) route through the deployed Escrow |
 | Anyone can move a score with their own wallet | Run the [hire flow](https://casper-trust-layer.vercel.app/app) — or inspect the browser-driven settlement [`04cea776…`](https://testnet.cspr.live/transaction/04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce) |
 | x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) — the same endpoint is refused below the bar, settled above it |
@@ -251,7 +252,7 @@ DEPLOYMENT.md                live addresses + tx proofs
 2. **A stable payment token** — settlement runs on WCSPR / a demo CEP-18 today; production needs a stable, liquid token so reputation weight isn't coupled to price volatility
 3. **v2 contract hardening** — the accepted-risk fixes documented in the [threat model](docs/reputation-formula.md) (§7): provider consent on job creation, proportional slashing, treasury status gate, reputation decay, dynamic bonds
 
-**Community** — building in public on X and [CSPR.fans](https://cspr.fans); the deploy workarounds in [`tasks/lessons.md`](tasks/lessons.md) are already reusable by other Casper teams.
+**Community** — building in public on [X (@l3ekirerdem)](https://x.com/l3ekirerdem) and [CSPR.fans](https://cspr.fans); the deploy workarounds in [`tasks/lessons.md`](tasks/lessons.md) are already reusable by other Casper teams.
 
 ## Notes
 

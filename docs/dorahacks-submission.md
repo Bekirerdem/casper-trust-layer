@@ -1,7 +1,8 @@
 # DoraHacks BUIDL — submission copy (paste-ready)
 
-> Casper Agentic Buildathon 2026 · deadline **7 Temmuz 2026 23:59 UTC**
-> Submit: dorahacks.io/hackathon/2202/buidl · Bekir hesabı
+> Casper Agentic Buildathon 2026 · **FINAL ROUND** · deadline **26 July 2026 23:59 UTC**
+> Submit: dorahacks.io/hackathon/casper-agentic-buildathon-finals/buidl
+> Qualified via the Builder Merit Path (working testnet prototype). Jury criteria: technical execution, innovation, agentic AI use, real-world applicability, UX & design, working contracts, long-term launch plans, ecosystem impact.
 
 ---
 
