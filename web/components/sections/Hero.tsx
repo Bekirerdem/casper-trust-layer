@@ -1,6 +1,7 @@
 "use client";
 
 import { loadSnapshot } from "@/lib/data/snapshot";
+import { useLiveAgents, mergeLiveAgents } from "@/lib/data/useLiveAgents";
 import { hero } from "@/lib/content";
 import { Reveal } from "@/components/motion/Reveal";
 import { Centerpiece } from "@/components/sections/Centerpiece";
@@ -8,7 +9,8 @@ import { HeroCanvas } from "@/components/sections/HeroCanvas";
 import { useState, useEffect, useRef } from "react";
 
 export function Hero() {
-  const snapshot = loadSnapshot();
+  // Live chain read overlays the build-time snapshot (falls back silently).
+  const snapshot = mergeLiveAgents(loadSnapshot(), useLiveAgents());
   // Real on-chain values for the showcase slides (no fabricated data).
   const latestSettle = snapshot.settlements[0];
   const settleDelta = latestSettle ? latestSettle.scoreAfter - latestSettle.scoreBefore : 0;

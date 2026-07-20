@@ -1,6 +1,7 @@
 "use client";
 
 import { loadSnapshot } from "@/lib/data/snapshot";
+import { useLiveAgents, mergeLiveAgents } from "@/lib/data/useLiveAgents";
 import { liveProof } from "@/lib/content";
 import { Reveal } from "@/components/motion/Reveal";
 import { useState } from "react";
@@ -46,7 +47,7 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
               {shortHash(s.txHash)}
             </span>
             <span className="font-mono text-[10px] text-[#8E8E93] uppercase tracking-wider mt-0.5">
-              Casper Testnet Deploy
+              Escrow settlement · casper-test
             </span>
           </div>
         </div>
@@ -80,8 +81,10 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
 }
 
 export function LiveProof() {
-  const snapshot = loadSnapshot();
+  const live = useLiveAgents();
+  const snapshot = mergeLiveAgents(loadSnapshot(), live);
   const agent0 = snapshot.agents.find((a) => a.agentId === 0);
+  const isLive = Object.keys(live).length > 0;
   const [coordsRep, setCoordsRep] = useState({ x: 0, y: 0 });
 
   const handleMouseMoveRep = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -197,7 +200,11 @@ export function LiveProof() {
             <div className="flex flex-col items-start sm:items-end text-xs font-mono text-[#8E8E93]/60">
               <span>Network: {snapshot.network}</span>
               {/* ISO date: locale-dependent formatting here breaks hydration (React #418) */}
-              <span className="mt-1">Captured: {new Date(snapshot.capturedAt).toISOString().slice(0, 10)}</span>
+              <span className="mt-1">
+                {isLive
+                  ? "Scores: live · read from chain"
+                  : `Captured: ${new Date(snapshot.capturedAt).toISOString().slice(0, 10)}`}
+              </span>
             </div>
           </div>
         </Reveal>

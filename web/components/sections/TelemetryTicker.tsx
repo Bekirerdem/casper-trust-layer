@@ -1,6 +1,8 @@
 "use client";
 
 import { loadSnapshot } from "@/lib/data/snapshot";
+import { useLiveAgents, mergeLiveAgents } from "@/lib/data/useLiveAgents";
+import type { TrustSnapshot } from "@/lib/casper/types";
 
 interface TickerItem {
   id: string;
@@ -9,9 +11,8 @@ interface TickerItem {
   type: "success" | "warning" | "info" | "error";
 }
 
-// Every line is derived from the real on-chain snapshot — no fabricated values.
-function buildItems(): TickerItem[] {
-  const s = loadSnapshot();
+// Every line is derived from the real on-chain state — no fabricated values.
+function buildItems(s: TrustSnapshot): TickerItem[] {
   const items: TickerItem[] = [
     { id: "net", label: "NETWORK", value: "CASPER-TESTNET ACTIVE", type: "info" },
   ];
@@ -45,7 +46,7 @@ function buildItems(): TickerItem[] {
 }
 
 export function TelemetryTicker() {
-  const items = buildItems();
+  const items = buildItems(mergeLiveAgents(loadSnapshot(), useLiveAgents()));
   // Double the list to support seamless infinite scrolling
   const scrollItems = [...items, ...items];
 
