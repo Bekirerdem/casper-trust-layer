@@ -25,6 +25,7 @@ export function Navbar() {
     { label: "Trust-Gating", href: "#trust-gating" },
     { label: "Live Proof", href: "#live-proof" },
     { label: "Developer", href: "#developer" },
+    { label: "Docs", href: "/docs" },
   ];
 
   // The dashboard (/app) has its own header — hide the marketing navbar there.
