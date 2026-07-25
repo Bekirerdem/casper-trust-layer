@@ -50,15 +50,10 @@ export default function DocsPage() {
     <main className="min-h-screen bg-bg text-text">
       <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
 
-      <div className="relative mx-auto max-w-[1100px] px-6 md:px-10 py-12 md:py-16">
+      {/* Top padding clears the floating navbar, which stays visible here. */}
+      <div className="relative mx-auto max-w-[1100px] px-6 md:px-10 pt-32 pb-16">
         {/* Header */}
         <header className="flex flex-col gap-4 pb-10">
-          <Link
-            href="/"
-            className="font-mono text-xs tracking-[0.18em] text-[#8E8E93] uppercase hover:text-white transition-colors"
-          >
-            ← Casper <span className="text-accent-red">Trust</span> Layer
-          </Link>
           <h1 className="font-sans text-4xl md:text-5xl font-black tracking-tight text-white">Documentation</h1>
           <p className="font-sans text-lg text-[#8E8E93] max-w-[62ch] leading-relaxed">
             An owner hands an AI agent real money to spend. The contract — not the model&apos;s good
