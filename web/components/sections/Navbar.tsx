@@ -21,10 +21,9 @@ export function Navbar() {
   }, []);
 
   const navItems = [
-    { label: "Mechanism", href: "#how-it-works" },
-    { label: "Trust-Gating", href: "#trust-gating" },
-    { label: "Live Proof", href: "#live-proof" },
-    { label: "Developer", href: "#developer" },
+    { label: "The rules", href: "#rules" },
+    { label: "Proof", href: "#live-proof" },
+    { label: "Developers", href: "#developer" },
     { label: "Docs", href: "/docs" },
   ];
 

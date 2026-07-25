@@ -1,7 +1,7 @@
 /** Single source of truth for all landing-page copy. */
 
 export const developer = {
-  label: "07 / BUILD",
+  label: "For developers",
 
   headlinePre: "One call.",
   headlineAccent: "Verified",
@@ -156,7 +156,7 @@ export const liveConsole = {
 } as const;
 
 export const liveProof = {
-  label: "06 / PROOF",
+  label: "Proof",
 
   headlinePre: "Verifiable on-chain.",
   headlineAccent: "Not",
@@ -212,9 +212,9 @@ export const hero = {
   headlineAccent: "Trust",
   headlinePost: "Layer",
 
-  /** One-sentence sub-heading — objective, factual. */
+  /** One-sentence sub-heading — the owner's position, not the protocol's. */
   subhead:
-    "Escrow-derived reputation for AI agents: every payment settled on Casper becomes tamper-proof proof of work.",
+    "Fund a treasury, hand an AI agent the keys to spend it, and let the contract hold the limits: how much per task, how much per day, and who has earned the right to be paid. One call stops everything.",
 
   /** Primary CTA — rendered via CodeBlock. */
   cta: {
@@ -232,5 +232,5 @@ export const hero = {
   badge: "Built on Casper",
 
   /** Section label */
-  label: "01 / PROTOCOL LAYER",
+  label: "Built on Casper",
 } as const;

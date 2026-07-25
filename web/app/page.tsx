@@ -1,38 +1,23 @@
 import { Hero } from "@/components/sections/Hero";
-import { TelemetryTicker } from "@/components/sections/TelemetryTicker";
-import { Problem } from "@/components/sections/Problem";
-import { HowItWorks } from "@/components/sections/HowItWorks";
-import { TrustGating } from "@/components/sections/TrustGating";
-import { LiveConsole } from "@/components/sections/LiveConsole";
+import { ThreeRules } from "@/components/sections/ThreeRules";
 import { LiveProof } from "@/components/sections/LiveProof";
 import { Developer } from "@/components/sections/Developer";
 import { FinalCta } from "@/components/sections/FinalCta";
 import { SiteFooter } from "@/components/sections/SiteFooter";
-import { Divider } from "@/components/ui/Divider";
 
 export default function Home() {
   return (
-    <main className="bg-bg min-h-screen pt-20 relative overflow-hidden">
-      {/* Background Grids & Glows */}
-      <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none z-0" />
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-glow-red pointer-events-none z-0" />
-      <div className="absolute top-3/4 right-0 w-[500px] h-[500px] bg-glow-red pointer-events-none z-0" />
-      
+    <main className="relative min-h-screen overflow-hidden bg-bg pt-24">
+      {/* Atmosphere: one grid, one glow behind the hero. Anything more competes
+          with the live card, which is the only thing that should pull the eye. */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-grid opacity-[0.18]" />
+      <div className="pointer-events-none absolute -top-40 right-0 z-0 h-[620px] w-[620px] bg-glow-red opacity-70" />
+
       <div className="relative z-10">
         <Hero />
-        <TelemetryTicker />
-        <Problem />
-        <Divider />
-        <HowItWorks />
-        <Divider />
-        <TrustGating />
-        <Divider />
-        <LiveConsole />
-        <Divider />
+        <ThreeRules />
         <LiveProof />
-        <Divider />
         <Developer />
-        <Divider />
         <FinalCta />
         <SiteFooter />
       </div>
