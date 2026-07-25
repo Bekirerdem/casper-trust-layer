@@ -1,8 +1,5 @@
-import {
-  ParamDictionaryIdentifier,
-  ParamDictionaryIdentifierContractNamedKey,
-  type RpcClient,
-} from "casper-js-sdk";
+import type { RpcClient } from "casper-js-sdk";
+import { sdk } from "../casperSdk.js";
 
 /**
  * Reads a single Odra dictionary item from the "state" named key on a contract.
@@ -18,12 +15,12 @@ export async function readOdraValue(
   itemKeyHex: string,
 ): Promise<Uint8Array | null> {
   // contractNamedKey must be a proper class instance (TypedJSON rejects plain objects)
-  const contractNamedKey = new ParamDictionaryIdentifierContractNamedKey(
+  const contractNamedKey = new sdk.ParamDictionaryIdentifierContractNamedKey(
     `hash-${contractHashHex}`,
     "state",
     itemKeyHex,
   );
-  const id = new ParamDictionaryIdentifier(undefined, contractNamedKey, undefined, undefined);
+  const id = new sdk.ParamDictionaryIdentifier(undefined, contractNamedKey, undefined, undefined);
 
   try {
     const res = await rpc.getDictionaryItemByIdentifier(null, id);

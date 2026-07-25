@@ -16,16 +16,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import {
-  ContractCallBuilder,
-  SessionBuilder,
-  Args,
-  CLValue,
-  CLTypeUInt8,
-  Key,
-  type PrivateKey,
-  type Transaction,
-} from "casper-js-sdk";
+import type { Args, PrivateKey, Transaction } from "casper-js-sdk";
+import { sdk } from "../casperSdk.js";
 import type { NetworkConfig } from "../config.js";
 
 // ---------------------------------------------------------------------------
@@ -61,7 +53,7 @@ function buildCall(
   args: Args,
   gasMotes: number = CALL_GAS_MOTES,
 ): Transaction {
-  const tx = new ContractCallBuilder()
+  const tx = new sdk.ContractCallBuilder()
     .from(signer.publicKey)
     .byPackageHash(pkgHash)
     .entryPoint(entry)
@@ -99,8 +91,8 @@ export function buildRegister(
   const wasm = loadProxyCallerWasm();
 
   // CL-serialise the inner args that proxy_caller forwards to identity::register.
-  const innerArgs = Args.fromMap({
-    agent_uri: CLValue.newCLString(agentUri),
+  const innerArgs = sdk.Args.fromMap({
+    agent_uri: sdk.CLValue.newCLString(agentUri),
   });
   const innerBytes: Uint8Array = innerArgs.toBytes();
 
@@ -120,21 +112,21 @@ export function buildRegister(
   // as a Key both yield ApiError::InvalidArgument on register. The host's typed
   // get_named_arg rejects any CLType mismatch before the entry point runs.
   const pkgBytes = Uint8Array.from(Buffer.from(cfg.packages.identity, "hex"));
-  const innerArgsList = CLValue.newCLList(
-    CLTypeUInt8,
-    Array.from(innerBytes, (b) => CLValue.newCLUint8(b)),
+  const innerArgsList = sdk.CLValue.newCLList(
+    sdk.CLTypeUInt8,
+    Array.from(innerBytes, (b) => sdk.CLValue.newCLUint8(b)),
   );
 
-  const tx = new SessionBuilder()
+  const tx = new sdk.SessionBuilder()
     .from(signer.publicKey)
     .wasm(wasm)
     .runtimeArgs(
-      Args.fromMap({
-        package_hash: CLValue.newCLByteArray(pkgBytes),
-        entry_point: CLValue.newCLString("register"),
+      sdk.Args.fromMap({
+        package_hash: sdk.CLValue.newCLByteArray(pkgBytes),
+        entry_point: sdk.CLValue.newCLString("register"),
         args: innerArgsList,
-        attached_value: CLValue.newCLUInt512(bond),
-        amount: CLValue.newCLUInt512(bond),
+        attached_value: sdk.CLValue.newCLUInt512(bond),
+        amount: sdk.CLValue.newCLUInt512(bond),
       }),
     )
     .chainName(cfg.chainName)
@@ -160,15 +152,15 @@ export function buildApproveToken(
   amount: bigint,
 ): Transaction {
   // CEP-18 approve expects `spender` as a Key (package/hash variant).
-  const spenderKey = Key.newKey("hash-" + spenderPackageHash);
+  const spenderKey = sdk.Key.newKey("hash-" + spenderPackageHash);
   return buildCall(
     cfg,
     signer,
     cfg.packages.cep18,
     "approve",
-    Args.fromMap({
-      spender: CLValue.newCLKey(spenderKey),
-      amount: CLValue.newCLUInt256(amount.toString()),
+    sdk.Args.fromMap({
+      spender: sdk.CLValue.newCLKey(spenderKey),
+      amount: sdk.CLValue.newCLUInt256(amount.toString()),
     }),
   );
 }
@@ -194,11 +186,11 @@ export function buildCreateJob(
     signer,
     cfg.packages.escrow,
     "create_job",
-    Args.fromMap({
-      client_id: CLValue.newCLUInt32(p.clientId),
-      provider: CLValue.newCLUInt32(p.provider),
-      amount: CLValue.newCLUInt256(p.amount.toString()),
-      deadline: CLValue.newCLUint64(p.deadline),
+    sdk.Args.fromMap({
+      client_id: sdk.CLValue.newCLUInt32(p.clientId),
+      provider: sdk.CLValue.newCLUInt32(p.provider),
+      amount: sdk.CLValue.newCLUInt256(p.amount.toString()),
+      deadline: sdk.CLValue.newCLUint64(p.deadline),
     }),
   );
 }
@@ -218,9 +210,9 @@ export function buildSubmitWork(
     signer,
     cfg.packages.escrow,
     "submit_work",
-    Args.fromMap({
-      job_id: CLValue.newCLUint64(jobId.toString()),
-      result_hash: CLValue.newCLString(resultHash),
+    sdk.Args.fromMap({
+      job_id: sdk.CLValue.newCLUint64(jobId.toString()),
+      result_hash: sdk.CLValue.newCLString(resultHash),
     }),
   );
 }
@@ -239,8 +231,8 @@ export function buildApproveJob(
     signer,
     cfg.packages.escrow,
     "approve",
-    Args.fromMap({
-      job_id: CLValue.newCLUint64(jobId.toString()),
+    sdk.Args.fromMap({
+      job_id: sdk.CLValue.newCLUint64(jobId.toString()),
     }),
   );
 }
