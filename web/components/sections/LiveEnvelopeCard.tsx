@@ -9,24 +9,24 @@ type Envelope = {
   paused: boolean;
 };
 
-type Phase = "idle" | "sending" | "pending" | "reverted" | "settled" | "error";
-
-const REVERT_MEANING: Record<string, string> = {
-  "4": "not whitelisted, and no reputation policy is active",
-  "5": "earned score is below the owner's bar",
-  "6": "over the per-task cap",
-  "7": "over the daily cap",
-  "8": "no unlocked funds left",
-  "12": "the owner has pulled the brake",
-};
-
-const agt = (motes: string) => Math.round(Number(motes) / 1e9).toLocaleString("en-US");
+type Phase = "idle" | "sending" | "pending" | "blocked" | "sent" | "error";
 
 /**
- * The hero's proof: the owner's live spending rules, and a button that asks the
- * contract to break one of them. The refusal is a real transaction — that is the
- * whole argument of the product, made in the first screen instead of described.
+ * Why a payment was refused, in the words of the person whose money it is.
+ * Keyed by the contract's error codes, which nobody outside this repo should
+ * ever have to read.
  */
+const BLOCKED_BECAUSE: Record<string, string> = {
+  "4": "this vendor isn't on your approved list",
+  "5": "this vendor has no completed jobs yet",
+  "6": "it's over your per-job limit",
+  "7": "it's over your daily limit",
+  "8": "there isn't enough left in the account",
+  "12": "you've frozen spending",
+};
+
+const money = (raw: string) => `$${Math.round(Number(raw) / 1e9).toLocaleString("en-US")}`;
+
 export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number }) {
   const [env, setEnv] = useState<Envelope | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -41,7 +41,7 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
         if (!cancelled && d && !("error" in d)) setEnv(d);
       })
       .catch(() => {
-        /* card degrades to its labels */
+        /* card falls back to its labels */
       });
     return () => {
       cancelled = true;
@@ -61,7 +61,7 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
       const d = await res.json();
       if (!res.ok) {
         setPhase("error");
-        setReason(d.error ?? "attempt failed");
+        setReason(d.error ?? "Something went wrong. Try again in a moment.");
         return;
       }
       setTxHash(d.txHash);
@@ -72,19 +72,19 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
         const s = await fetch(`/api/tx/status?hash=${d.txHash}`, { cache: "no-store" }).then((r) => r.json());
         if (!s.executed) continue;
         if (s.success) {
-          setPhase("settled");
+          setPhase("sent");
         } else {
           const code = String(s.error ?? "").match(/User error: (\d+)/)?.[1];
-          setReason((code && REVERT_MEANING[code]) || s.error);
-          setPhase("reverted");
+          setReason((code && BLOCKED_BECAUSE[code]) || "your rules didn't allow it");
+          setPhase("blocked");
         }
         return;
       }
       setPhase("error");
-      setReason("still pending — open it on the explorer");
-    } catch (e) {
+      setReason("Still processing — check the receipt.");
+    } catch {
       setPhase("error");
-      setReason(e instanceof Error ? e.message : "attempt failed");
+      setReason("Something went wrong. Try again in a moment.");
     }
   }
 
@@ -93,67 +93,71 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
   return (
     <div className="glass-panel relative rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-7 shadow-2xl">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8E8E93]">
-          The envelope
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
-          casper-test
+        <span className="font-sans text-sm font-bold text-white">Spending limits</span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+          Demo account
         </span>
       </div>
 
-      {/* The owner's rules, read from the contract */}
-      <dl className="grid grid-cols-3 gap-4 py-6">
-        {[
-          { k: "Per task", v: env ? `${agt(env.perTaskLimit)} AGT` : "—" },
-          { k: "Per day", v: env ? `${agt(env.dailyLimit)} AGT` : "—" },
-          { k: "Min. trust", v: env ? `${env.minReputation} bps` : "—" },
-        ].map((r) => (
-          <div key={r.k} className="flex flex-col gap-1">
-            <dt className="font-mono text-[9px] uppercase tracking-widest text-[#8E8E93]">{r.k}</dt>
-            <dd className="font-sans text-xl md:text-2xl font-black tabular-nums text-white">{r.v}</dd>
-          </div>
-        ))}
+      <dl className="grid grid-cols-2 gap-5 py-6">
+        <div className="flex flex-col gap-1">
+          <dt className="font-sans text-xs text-[#8E8E93]">Per job</dt>
+          <dd className="font-sans text-2xl font-black tabular-nums text-white">
+            {env ? money(env.perTaskLimit) : "—"}
+          </dd>
+        </div>
+        <div className="flex flex-col gap-1">
+          <dt className="font-sans text-xs text-[#8E8E93]">Per day</dt>
+          <dd className="font-sans text-2xl font-black tabular-nums text-white">
+            {env ? money(env.dailyLimit) : "—"}
+          </dd>
+        </div>
       </dl>
 
-      <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-2.5">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Brake</span>
-        <span
-          className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
-            env?.paused ? "text-accent-red" : "text-green-400"
-          }`}
-        >
-          {env ? (env.paused ? "◼ halted" : "● spending allowed") : "—"}
-        </span>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-2.5">
+          <span className="font-sans text-xs text-[#8E8E93]">Who can be paid</span>
+          <span className="font-sans text-xs font-semibold text-white">
+            Vendors with completed jobs
+          </span>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-2.5">
+          <span className="font-sans text-xs text-[#8E8E93]">Spending</span>
+          <span
+            className={`font-sans text-xs font-semibold ${
+              env?.paused ? "text-accent-red" : "text-green-400"
+            }`}
+          >
+            {env ? (env.paused ? "Frozen" : "Active") : "—"}
+          </span>
+        </div>
       </div>
 
-      {/* The proof */}
+      {/* The demo: ask it to break a rule */}
       <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5">
-        <p className="font-sans text-sm text-[#8E8E93] leading-relaxed">
-          Agent&nbsp;#{unprovenAgentId} has never been paid — nothing earned, nothing proven. Ask the
-          treasury to pay it anyway.
+        <p className="font-sans text-sm leading-relaxed text-[#8E8E93]">
+          Your agent found a vendor nobody has ever paid. Tell it to send money anyway.
         </p>
 
         <button
           onClick={attempt}
           disabled={running || !env}
-          className="inline-flex items-center justify-center gap-2.5 rounded-full bg-accent-red px-6 py-3 font-mono text-xs font-semibold uppercase tracking-widest text-white shadow-lg shadow-accent-red/20 transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2.5 rounded-full bg-accent-red px-6 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-accent-red/20 transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
         >
           <span className={`h-1.5 w-1.5 rounded-full bg-current ${running ? "animate-ping" : ""}`} />
-          {phase === "sending"
-            ? "Signing…"
-            : phase === "pending"
-              ? "On-chain…"
-              : "Try to pay an unproven agent"}
+          {phase === "sending" ? "Sending…" : phase === "pending" ? "Checking…" : "Pay an unknown vendor"}
         </button>
 
         {phase !== "idle" && (
-          <div className="font-mono text-[11px] leading-relaxed">
-            {phase === "pending" && <span className="text-[#8E8E93]">submitted — waiting for the chain…</span>}
-            {phase === "reverted" && (
-              <span className="text-accent-red font-bold">✕ Refused by the contract — {reason}</span>
+          <div className="font-sans text-[13px] leading-relaxed">
+            {phase === "pending" && <span className="text-[#8E8E93]">Checking your rules…</span>}
+            {phase === "blocked" && (
+              <span className="font-semibold text-accent-red">
+                Blocked — {reason}. Your money didn&apos;t move.
+              </span>
             )}
-            {phase === "settled" && (
-              <span className="text-green-400 font-bold">✓ Settled — this one cleared the bar</span>
+            {phase === "sent" && (
+              <span className="font-semibold text-green-400">Sent — this vendor cleared your rules.</span>
             )}
             {phase === "error" && <span className="text-[#8E8E93]">{reason}</span>}
             {txHash && (
@@ -161,9 +165,9 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
                 href={`https://testnet.cspr.live/transaction/${txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 block break-all text-[#8E8E93] underline decoration-white/20 transition-colors hover:text-white"
+                className="mt-1 block text-[#8E8E93] underline decoration-white/20 transition-colors hover:text-white"
               >
-                {txHash.slice(0, 18)}… — read it on cspr.live ↗
+                See the receipt ↗
               </a>
             )}
           </div>

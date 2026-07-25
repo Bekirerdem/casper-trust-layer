@@ -27,9 +27,9 @@ function fromMotes(motes: string, maxFractionDigits = 3): string {
 }
 
 function clearance(scoreBps: number): { label: string; tone: string } {
-  if (scoreBps >= 100) return { label: "TRUSTED", tone: "text-green-400 border-green-400/30 bg-green-400/5" };
-  if (scoreBps > 0) return { label: "EARNING", tone: "text-orange-400 border-orange-400/30 bg-orange-400/5" };
-  return { label: "UNPROVEN", tone: "text-[#8E8E93] border-white/10 bg-white/5" };
+  if (scoreBps >= 100) return { label: "Trusted", tone: "text-green-400 border-green-400/30 bg-green-400/5" };
+  if (scoreBps > 0) return { label: "Building", tone: "text-orange-400 border-orange-400/30 bg-orange-400/5" };
+  return { label: "New", tone: "text-[#8E8E93] border-white/10 bg-white/5" };
 }
 
 export function MyAgentPanel({
@@ -109,28 +109,27 @@ export function MyAgentPanel({
     <section className="glass-panel bg-white/5 border-white/10 rounded-2xl p-6 md:p-8 mt-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
-          My Agent · this wallet
+          Your agent
         </h2>
         {owned && (
           <button
             onClick={() => copyProfile(agentId)}
             className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] hover:text-white transition-colors"
           >
-            {copied ? "✓ link copied" : "Copy profile link ↗"}
+            {copied ? "✓ link copied" : "Copy public link"}
           </button>
         )}
       </div>
 
       {scanning && (
-        <p className="font-mono text-xs text-[#8E8E93]">Scanning the registry for your agent…</p>
+        <p className="font-mono text-xs text-[#8E8E93]">Looking for your agent…</p>
       )}
 
       {!scanning && !owned && (
         <div className="flex flex-col gap-3">
           <p className="font-sans text-sm text-[#8E8E93] max-w-[62ch] leading-relaxed">
-            No agent is registered to this wallet yet. Your identity, your bond and the track
-            record you earn all live on-chain — <span className="text-white">register below</span> and
-            this panel becomes your agent&apos;s passport.
+            You have not set up an agent yet. Once you do, its deposit and its record of finished
+            work show up here — and other people can check it before paying you.
           </p>
         </div>
       )}
@@ -140,13 +139,16 @@ export function MyAgentPanel({
           {/* Identity + earned score */}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex flex-col gap-2">
-              <span className="font-mono text-sm font-bold text-white">Agent #{agentId}</span>
+              <span className="font-sans text-sm text-[#8E8E93]">Agent #{agentId}</span>
+              {/* Finished work is the number a customer would judge this on —
+                  the raw score is an implementation detail. */}
               <div className="flex items-baseline gap-3">
-                <span className="font-mono text-5xl font-black tabular-nums text-white">
-                  {passport?.scoreBps ?? "—"}
+                <span className="font-sans text-5xl font-black tabular-nums text-white">
+                  {passport?.jobsCompleted ?? "—"}
                 </span>
-                <span className="font-mono text-sm font-bold uppercase text-green-400">bps</span>
-                {passport && <span className="font-mono text-[10px] text-green-400">● live</span>}
+                <span className="font-sans text-sm font-semibold text-green-400">
+                  {passport?.jobsCompleted === 1 ? "job finished" : "jobs finished"}
+                </span>
               </div>
             </div>
             <span
@@ -167,10 +169,10 @@ export function MyAgentPanel({
           {passport && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { v: passport.jobsCompleted, l: "Jobs settled" },
-                { v: passport.distinctClients, l: "Distinct clients" },
-                { v: fromMotes(passport.totalVolume), l: "AGT earned" },
-                { v: fromMotes(passport.bond, 0), l: "CSPR bonded" },
+                { v: passport.jobsCompleted, l: "Jobs finished" },
+                { v: passport.distinctClients, l: "Customers" },
+                { v: fromMotes(passport.totalVolume), l: "Earned" },
+                { v: fromMotes(passport.bond, 0), l: "Deposit" },
               ].map((s) => (
                 <div key={s.l}>
                   <div className="font-mono text-2xl font-black tabular-nums text-white">{s.v}</div>
@@ -182,26 +184,23 @@ export function MyAgentPanel({
             </div>
           )}
 
-          {/* Clearance — what this score actually unlocks */}
+          {/* What this unlocks — what this score actually unlocks */}
           <div className="rounded-xl border border-white/10 bg-black/30 p-4 flex flex-col gap-3">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-              Clearance
+              What this unlocks
             </span>
             <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
-              <span className="text-white">
-                Treasury reputation gate{" "}
-                <span className="text-[#8E8E93]">(score ≥ {TREASURY_MIN_SCORE} bps)</span>
-              </span>
+              <span className="text-white">Can receive payments from limited accounts</span>
               <span
                 className={
                   (passport?.scoreBps ?? 0) >= TREASURY_MIN_SCORE ? "text-green-400" : "text-accent-red"
                 }
               >
-                {(passport?.scoreBps ?? 0) >= TREASURY_MIN_SCORE ? "✓ CLEARS" : "✕ BELOW BAR"}
+                {(passport?.scoreBps ?? 0) >= TREASURY_MIN_SCORE ? "Yes" : "Not yet"}
               </span>
             </div>
             <p className="font-sans text-xs text-[#8E8E93] leading-relaxed">
-              Per-task 100 AGT · daily 500 AGT · payouts release only to a payee that is whitelisted{" "}
+              Accounts that require a track record will pay this agent{" "}
               <span className="text-white">or</span> clears this gate — enforced in the contract, not the SDK.
             </p>
           </div>

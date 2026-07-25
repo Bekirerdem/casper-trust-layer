@@ -13,30 +13,33 @@ export type Envelope = {
 };
 
 type Verdict = {
-  state: "sending" | "pending" | "settled" | "reverted" | "error";
+  state: "sending" | "pending" | "sent" | "blocked" | "error";
   txHash?: string;
   message?: string;
 };
 
-/** AgentTreasury error codes — contracts/src/treasury.rs. */
-const REVERT_MEANING: Record<string, string> = {
-  "3": "amount was zero",
-  "4": "payee is not whitelisted and no reputation policy is active",
-  "5": "payee's earned score is below the owner's bar",
-  "6": "amount exceeds the per-task cap",
-  "7": "amount exceeds the daily cap",
-  "8": "treasury has no unlocked funds left",
+/** Contract error codes, translated into the account owner's language. */
+const BLOCKED_BECAUSE: Record<string, string> = {
+  "3": "the amount was zero",
+  "4": "this vendor isn't on your approved list",
+  "5": "this vendor has no completed jobs yet",
+  "6": "it's more than one job is allowed to cost",
+  "7": "it's more than today's total allows",
+  "8": "there isn't enough left in the account",
+  "12": "you've frozen spending",
 };
 
-const agt = (motes: string) => (Number(motes) / 1e9).toLocaleString("en-US", { maximumFractionDigits: 3 });
-const tx = (h: string) => `https://testnet.cspr.live/transaction/${h}`;
+const money = (raw: string) => {
+  const n = Number(raw) / 1e9;
+  return `$${n.toLocaleString("en-US", { maximumFractionDigits: n < 1 ? 2 : 0 })}`;
+};
+const receipt = (h: string) => `https://testnet.cspr.live/transaction/${h}`;
 
-function Scenario({
+function Attempt({
   title,
   subtitle,
   tone,
-  amount,
-  payee,
+  buttonLabel,
   disabled,
   onRun,
   verdict,
@@ -44,8 +47,7 @@ function Scenario({
   title: string;
   subtitle: string;
   tone: "pass" | "fail";
-  amount: string;
-  payee: number;
+  buttonLabel: string;
   disabled: boolean;
   onRun: () => void;
   verdict?: Verdict;
@@ -53,35 +55,46 @@ function Scenario({
   const running = verdict?.state === "sending" || verdict?.state === "pending";
   return (
     <div
-      className={`flex flex-col gap-3 rounded-xl border p-4 ${
+      className={`flex flex-col gap-3 rounded-xl border p-5 ${
         tone === "pass" ? "border-green-500/20 bg-green-500/[0.03]" : "border-accent-red/20 bg-accent-red/[0.03]"
       }`}
     >
-      <div className="flex flex-col gap-1">
-        <span className="font-mono text-xs font-bold text-white">{title}</span>
-        <span className="font-mono text-[10px] text-[#8E8E93] leading-relaxed">{subtitle}</span>
+      <div className="flex flex-col gap-1.5">
+        <span className="font-sans text-sm font-bold text-white">{title}</span>
+        <span className="font-sans text-xs leading-relaxed text-[#8E8E93]">{subtitle}</span>
       </div>
 
       <button
         onClick={onRun}
         disabled={disabled || running}
-        className="inline-flex items-center gap-2 self-start rounded-lg border border-white/15 bg-white/5 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10 disabled:opacity-40"
+        className="inline-flex items-center gap-2 self-start rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-sans text-xs font-semibold text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10 disabled:opacity-40"
       >
-        <span className={`h-1.5 w-1.5 rounded-full ${tone === "pass" ? "bg-green-400" : "bg-accent-red"} ${running ? "animate-ping" : ""}`} />
-        {running ? "On-chain…" : `Pay ${amount} AGT to #${payee}`}
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${tone === "pass" ? "bg-green-400" : "bg-accent-red"} ${running ? "animate-ping" : ""}`}
+        />
+        {running ? "Checking…" : buttonLabel}
       </button>
 
       {verdict && verdict.state !== "sending" && (
-        <div className="flex flex-col gap-1 font-mono text-[10px]">
-          {verdict.state === "pending" && <span className="text-[#8E8E93]">submitted — waiting for finality…</span>}
-          {verdict.state === "settled" && <span className="text-green-400 font-bold">✓ SETTLED — funds left the envelope</span>}
-          {verdict.state === "reverted" && (
-            <span className="text-accent-red font-bold">✕ REVERTED — {verdict.message}</span>
+        <div className="flex flex-col gap-1 font-sans text-xs">
+          {verdict.state === "pending" && <span className="text-[#8E8E93]">Checking your rules…</span>}
+          {verdict.state === "sent" && (
+            <span className="font-semibold text-green-400">Sent — this one cleared your rules.</span>
+          )}
+          {verdict.state === "blocked" && (
+            <span className="font-semibold text-accent-red">
+              Blocked — {verdict.message}. Your money didn&apos;t move.
+            </span>
           )}
           {verdict.state === "error" && <span className="text-[#8E8E93]">{verdict.message}</span>}
           {verdict.txHash && (
-            <a href={tx(verdict.txHash)} target="_blank" rel="noopener noreferrer" className="text-[#8E8E93] hover:text-white transition-colors break-all">
-              {verdict.txHash.slice(0, 16)}… ↗ verify on cspr.live
+            <a
+              href={receipt(verdict.txHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#8E8E93] underline decoration-white/20 transition-colors hover:text-white"
+            >
+              See the receipt ↗
             </a>
           )}
         </div>
@@ -95,15 +108,14 @@ export function SpendingEnvelope({
   env,
 }: {
   agents: AgentSnapshot[];
-  /** Read once by the console so the registry can badge agents against the same rule. */
+  /** Read once by the console so the vendor list can use the same rule. */
   env: Envelope | null;
 }) {
   const [verdicts, setVerdicts] = useState<Record<string, Verdict>>({});
 
-  // Pick a real proven counterparty and a real unproven one from live scores.
-  const proven = [...agents].sort((a, b) => b.scoreBps - a.scoreBps)[0];
-  const unproven = agents.find((a) => a.scoreBps === 0);
-  const bar = env?.minReputation ?? 1;
+  const trusted = [...agents].sort((a, b) => b.scoreBps - a.scoreBps)[0];
+  const unknown = agents.find((a) => a.scoreBps === 0);
+  const perJob = env ? Number(env.perTaskLimit) / 1e9 : 100;
 
   async function attempt(key: string, payee: number, amountAgt: string) {
     setVerdicts((v) => ({ ...v, [key]: { state: "sending" } }));
@@ -120,151 +132,135 @@ export function SpendingEnvelope({
       }
       setVerdicts((v) => ({ ...v, [key]: { state: "pending", txHash: d.txHash } }));
 
-      // Poll until the chain reports a verdict.
       for (let i = 0; i < 40; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         const s = await fetch(`/api/tx/status?hash=${d.txHash}`, { cache: "no-store" }).then((r) => r.json());
         if (!s.executed) continue;
         if (s.success) {
-          setVerdicts((v) => ({ ...v, [key]: { state: "settled", txHash: d.txHash } }));
+          setVerdicts((v) => ({ ...v, [key]: { state: "sent", txHash: d.txHash } }));
         } else {
           const code = String(s.error ?? "").match(/User error: (\d+)/)?.[1];
           setVerdicts((v) => ({
             ...v,
-            [key]: { state: "reverted", txHash: d.txHash, message: (code && REVERT_MEANING[code]) || s.error },
+            [key]: {
+              state: "blocked",
+              txHash: d.txHash,
+              message: (code && BLOCKED_BECAUSE[code]) || "your rules didn't allow it",
+            },
           }));
         }
         return;
       }
-      setVerdicts((v) => ({ ...v, [key]: { state: "error", message: "still pending — check the explorer", txHash: d.txHash } }));
+      setVerdicts((v) => ({
+        ...v,
+        [key]: { state: "error", message: "Still processing — check the receipt.", txHash: d.txHash },
+      }));
     } catch (e) {
-      setVerdicts((v) => ({ ...v, [key]: { state: "error", message: e instanceof Error ? e.message : "attempt failed" } }));
+      setVerdicts((v) => ({
+        ...v,
+        [key]: { state: "error", message: e instanceof Error ? e.message : "Something went wrong." },
+      }));
     }
   }
 
   return (
     <section className="glass-panel bg-white/5 border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
-          The envelope · what your agent may spend
-        </h2>
-        <span className="font-mono text-[10px] text-[#8E8E93]">enforced in AgentTreasury, not the SDK</span>
+        <h2 className="font-sans text-lg font-bold text-white">Spending limits</h2>
+        <span className="font-sans text-xs text-[#8E8E93]">Demo account · test funds</span>
       </div>
 
-      <p className="font-sans text-sm text-[#8E8E93] mb-6 leading-relaxed max-w-[70ch]">
-        An owner funds this treasury and delegates spending to an agent. The contract holds the
-        rules: a per-task ceiling, a daily ceiling, and a counterparty bar. The agent cannot argue
-        its way past any of them — and neither can we.
+      <p className="font-sans text-sm text-[#8E8E93] mb-6 leading-relaxed max-w-[68ch]">
+        You decide what your agent can spend and who it may pay. The account holds those rules
+        itself, so the agent cannot talk its way past them — and neither can we.
       </p>
 
-      {/* The rules, live from chain */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {[
-          { v: env ? `${agt(env.perTaskLimit)} AGT` : "—", l: "Per-task cap" },
-          { v: env ? `${agt(env.dailyLimit)} AGT` : "—", l: "Daily cap" },
-          { v: env ? `${bar} bps` : "—", l: "Counterparty bar" },
-          { v: env ? `${agt(env.locked)} AGT` : "—", l: "Locked in reservations" },
+          { v: env ? money(env.perTaskLimit) : "—", l: "Per job" },
+          { v: env ? money(env.dailyLimit) : "—", l: "Per day" },
+          { v: "Completed jobs", l: "Vendors must have" },
+          { v: env ? money(env.locked) : "—", l: "Set aside" },
         ].map((s) => (
           <div key={s.l} className="rounded-xl border border-white/10 bg-black/30 p-4">
-            <div className="font-mono text-xl font-black tabular-nums text-white">{s.v}</div>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mt-1">{s.l}</div>
+            <div className="font-sans text-xl font-black tabular-nums text-white">{s.v}</div>
+            <div className="font-sans text-xs text-[#8E8E93] mt-1">{s.l}</div>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-black/30 p-4 mb-4">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] block mb-1.5">
-          Counterparty rule
-        </span>
-        <p className="font-mono text-xs text-white">
-          Pay anyone <span className="text-[#8E8E93]">whitelisted</span>{" "}
-          <span className="text-accent-red">OR</span> proven{" "}
-          <span className="text-green-400">≥ {bar} bps</span> of earned, settlement-backed trust.
-        </p>
-      </div>
-
-      {/* The brake — what makes delegating spend reversible */}
+      {/* Freeze */}
       <div
-        className={`rounded-xl border p-4 mb-6 ${
+        className={`rounded-xl border p-4 mb-7 ${
           env?.paused ? "border-accent-red/40 bg-accent-red/5" : "border-white/10 bg-black/30"
         }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-            The brake
-          </span>
+          <span className="font-sans text-sm font-semibold text-white">Freeze</span>
           <span
-            className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
-              env?.paused ? "text-accent-red" : "text-green-400"
-            }`}
+            className={`font-sans text-xs font-semibold ${env?.paused ? "text-accent-red" : "text-green-400"}`}
           >
-            {env ? (env.paused ? "◼ HALTED — every spend reverts" : "● live — spending allowed") : "—"}
+            {env ? (env.paused ? "Frozen — nothing can be paid" : "Active — spending allowed") : "—"}
           </span>
         </div>
         <p className="font-sans text-xs text-[#8E8E93] mt-2 leading-relaxed">
-          One owner-only call halts every payment and reservation without moving a token. Whatever
-          the agent has been talked into doing, this ends it — and existing funds stay put.{" "}
+          One switch stops every payment instantly. Nothing leaves the account and nothing has to be
+          undone.{" "}
           <a
-            href={tx("c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8")}
+            href={receipt("c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8")}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white hover:text-accent-red transition-colors underline decoration-white/20"
+            className="text-white underline decoration-white/20 transition-colors hover:text-accent-red"
           >
-            See a payment revert while paused ↗
+            See a payment refused while frozen ↗
           </a>
         </p>
       </div>
 
-      {/* THE TEST */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-mono text-[10px] uppercase tracking-widest text-white">
-          Try to spend · the contract decides, live
-        </h3>
-        <span className="font-mono text-[10px] text-[#8E8E93]">no wallet needed</span>
+        <h3 className="font-sans text-sm font-bold text-white">Try to break the rules</h3>
+        <span className="font-sans text-xs text-[#8E8E93]">No wallet needed</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {proven && (
-          <Scenario
-            title="Proven counterparty"
-            subtitle={`Agent #${proven.agentId} earned ${proven.scoreBps} bps over ${proven.jobsCompleted} settled jobs — clears the bar.`}
+        {trusted && (
+          <Attempt
+            title="A vendor with history"
+            subtitle={`This one has finished ${trusted.jobsCompleted} paid ${trusted.jobsCompleted === 1 ? "job" : "jobs"} for other customers.`}
             tone="pass"
-            amount="0.001"
-            payee={proven.agentId}
+            buttonLabel="Send $1"
             disabled={!env}
-            onRun={() => attempt("proven", proven.agentId, "0.001")}
-            verdict={verdicts.proven}
+            onRun={() => attempt("trusted", trusted.agentId, "1")}
+            verdict={verdicts.trusted}
           />
         )}
-        {unproven && (
-          <Scenario
-            title="Unproven counterparty"
-            subtitle={`Agent #${unproven.agentId} has never been paid — 0 bps, below the bar and not whitelisted.`}
+        {unknown && (
+          <Attempt
+            title="A vendor with none"
+            subtitle="Nobody has ever paid this one. It has no finished work behind it."
             tone="fail"
-            amount="0.001"
-            payee={unproven.agentId}
+            buttonLabel="Send $1 anyway"
             disabled={!env}
-            onRun={() => attempt("unproven", unproven.agentId, "0.001")}
-            verdict={verdicts.unproven}
+            onRun={() => attempt("unknown", unknown.agentId, "1")}
+            verdict={verdicts.unknown}
           />
         )}
-        {proven && env && (
-          <Scenario
-            title="Over the per-task cap"
-            subtitle={`Same trusted counterparty, but ${agt(env.perTaskLimit)} AGT is the ceiling for one task.`}
+        {trusted && env && (
+          <Attempt
+            title="More than one job allows"
+            subtitle={`Same trusted vendor, but your limit is ${money(env.perTaskLimit)} for a single job.`}
             tone="fail"
-            amount={String(Number(agt(env.perTaskLimit)) + 50)}
-            payee={proven.agentId}
+            buttonLabel={`Send $${Math.round(perJob) + 50}`}
             disabled={!env}
-            onRun={() => attempt("overcap", proven.agentId, String(Number(agt(env.perTaskLimit)) + 50))}
+            onRun={() => attempt("overcap", trusted.agentId, String(Math.round(perJob) + 50))}
             verdict={verdicts.overcap}
           />
         )}
       </div>
 
-      <p className="font-mono text-[10px] text-[#8E8E93] mt-4 leading-relaxed">
-        Every attempt is a real transaction on casper-test — a rejection costs gas and is written to
-        the chain, which is what makes it evidence rather than a claim.
+      <p className="font-sans text-xs text-[#8E8E93] mt-5 leading-relaxed">
+        Every attempt is real. A refusal is recorded the same way a payment is, which is why you can
+        open its receipt instead of taking our word for it.
       </p>
     </section>
   );

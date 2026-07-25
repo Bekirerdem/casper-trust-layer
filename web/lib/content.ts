@@ -30,27 +30,27 @@ await pay({ ...trust, signer }, {
 } as const;
 
 export const finalCta = {
-  headlineLine1: "Trust earned on-chain.",
-  headlineLine2Pre: "Not",
-  headlineLine2Accent: "claimed",
+  headlineLine1: "Let it spend.",
+  headlineLine2Pre: "Keep the",
+  headlineLine2Accent: "keys",
   headlineLine2Post: ".",
 
-  body: "casper-trust is open source and live on Casper testnet. Read the code, verify the settlements, and integrate in minutes.",
+  body: "Open the demo account and try to break its rules — send too much, pay a vendor with no history, or freeze it mid-payment. Nothing is simulated; every attempt leaves a receipt.",
 
   /** Two doors — one per persona. */
   doors: [
     {
-      audience: "Operate agents",
-      title: "Open the Trust Console",
-      body: "Hire an agent, register your own, watch a score move on-chain.",
+      audience: "See it work",
+      title: "Open the demo account",
+      body: "Set a limit, try to overspend, watch the payment get refused.",
       href: "/app",
       external: false,
       primary: true,
     },
     {
-      audience: "Build on it",
-      title: "Gate your endpoint with the SDK",
-      body: "One call reads trust, one option gates the x402 payment.",
+      audience: "Put it in your product",
+      title: "Add it with one call",
+      body: "Check a vendor before you pay, in a single line of code.",
       href: "https://www.npmjs.com/package/casper-trust",
       external: true,
       primary: false,
@@ -67,7 +67,7 @@ export const siteFooter = {
   wordmark: "Casper Trust Layer",
 
   tagline:
-    "Escrow-derived reputation for AI agents. Every settlement is permanent, public, and verifiable by any protocol.",
+    "Spending limits your AI agent cannot argue with. Every payment, and every refusal, leaves a receipt.",
 
   links: [
     {
@@ -98,21 +98,21 @@ export const siteFooter = {
   ],
 
   footerQuote:
-    "In a world of self-reported credentials, on-chain settlement is the only proof that does not lie.",
+    "A vendor's history is what it was paid for, not what it says about itself.",
 
   version: "casper-trust v0.1.2 · casper-test · 2026",
 } as const;
 
 export const liveProof = {
-  label: "Proof",
+  label: "Receipts",
 
-  headlinePre: "Verifiable on-chain.",
-  headlineAccent: "Not",
-  headlinePost: "a claim.",
+  headlinePre: "Every payment leaves",
+  headlineAccent: "a receipt",
+  headlinePost: "you can open.",
 
   /** Counts come from the live snapshot so the copy never goes stale. */
   footerNote: (settlements: number, agents: number) =>
-    `${settlements} real settlements across ${agents} agents. Each escrow written to Casper testnet. Click any row to verify independently — the tx is public, permanent, and requires no trust in us.`,
+    `${settlements} paid jobs across ${agents} vendors. Every one of them has a receipt anyone can open — including the payments that were refused. You do not have to take our word for any number on this page.`,
 } as const;
 
 export const hero = {
@@ -124,9 +124,9 @@ export const hero = {
   headlineAccent: "Trust",
   headlinePost: "Layer",
 
-  /** One-sentence sub-heading — the owner's position, not the protocol's. */
+  /** Written for the person whose money it is — no protocol vocabulary. */
   subhead:
-    "Fund a treasury, hand an AI agent the keys to spend it, and let the contract hold the limits: how much per task, how much per day, and who has earned the right to be paid. One call stops everything.",
+    "Give it a budget instead of your wallet. Set what it can spend per job and per day, let it pay only vendors that have finished paid work before, and freeze everything the moment you want to.",
 
   /** Primary CTA — rendered via CodeBlock. */
   cta: {

@@ -13,7 +13,8 @@ function shortHash(hash: string): string {
 
 function formatScoreDelta(before: number, after: number): string {
   const delta = after - before;
-  return delta > 0 ? `+${delta} bps` : `${delta} bps`;
+  // Shown to the account owner, who does not think in basis points.
+  return delta > 0 ? "Track record grew" : "No change";
 }
 
 // Sub-component for individual spotlight transaction rows
@@ -47,7 +48,7 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
               {shortHash(s.txHash)}
             </span>
             <span className="font-mono text-[10px] text-[#8E8E93] uppercase tracking-wider mt-0.5">
-              Escrow settlement · casper-test
+              Paid job · receipt on file
             </span>
           </div>
         </div>
@@ -59,7 +60,7 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
               {formatScoreDelta(s.scoreBefore, s.scoreAfter)}
             </span>
             <span className="font-mono text-[9px] text-[#8E8E93] uppercase tracking-widest mt-0.5">
-              Reputation Delta
+              After this job
             </span>
           </div>
 
@@ -70,7 +71,7 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
             className="inline-flex items-center justify-center p-2.5 bg-white/5 hover:bg-accent-red hover:text-white rounded-lg text-xs font-semibold text-white transition-all duration-300 group"
             aria-label={`View transaction ${s.txHash} on cspr.live`}
           >
-            <span className="font-sans text-[10px] uppercase tracking-widest mr-1">Verify</span>
+            <span className="font-sans text-[10px] uppercase tracking-widest mr-1">Receipt</span>
             <span className="font-mono text-xs transform group-hover:translate-x-0.5 transition-transform">↗</span>
           </a>
         </div>
@@ -138,19 +139,19 @@ export function LiveProof() {
                 <div className="spotlight-bg" />
                 
                 <div className="flex flex-col gap-2 relative z-10">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-                    Active Tracker
-                  </span>
-                  <h3 className="font-sans text-xl font-bold text-white">Agent#0 Node</h3>
+                  <span className="font-sans text-xs text-[#8E8E93]">Most trusted</span>
+                  <h3 className="font-sans text-xl font-bold text-white">Top vendor</h3>
                 </div>
-                
+
                 <div className="py-6 border-y border-white/5 flex flex-col gap-3 relative z-10">
+                  {/* The count of finished, paid work — the thing an owner would
+                      actually judge a vendor on. */}
                   <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-6xl font-black text-white tracking-tight tabular-nums">
-                      {agent0?.scoreBps ?? 0}
+                    <span className="font-sans text-6xl font-black text-white tracking-tight tabular-nums">
+                      {agent0?.jobsCompleted ?? 0}
                     </span>
-                    <span className="font-mono text-xs text-green-400 font-bold uppercase tracking-wider">
-                      BPS
+                    <span className="font-sans text-sm font-semibold text-green-400">
+                      jobs finished
                     </span>
                   </div>
                   {/* Real-time validator telemetry line */}
@@ -171,9 +172,14 @@ export function LiveProof() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs font-mono text-[#8E8E93] relative z-10">
-                  <span>Total Jobs:</span>
-                  <span className="text-white font-bold">{agent0?.jobsCompleted ?? 0}</span>
+                <div className="flex items-center justify-between font-sans text-xs text-[#8E8E93] relative z-10">
+                  <span>Paid by</span>
+                  <span className="font-semibold text-white">
+                    {new Set(
+                      snapshot.settlements.filter((s) => s.to === (agent0?.agentId ?? 0)).map((s) => s.from),
+                    ).size}{" "}
+                    different customers
+                  </span>
                 </div>
               </div>
             </Reveal>
