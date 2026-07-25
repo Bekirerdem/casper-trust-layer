@@ -41,6 +41,12 @@ html {
   scroll-behavior: smooth;
 }
 
+/* The nav is a floating sticky pill, so an anchored section would land
+   underneath it — offset every jump target by its height plus breathing room. */
+section[id] {
+  scroll-margin-top: 7rem;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);

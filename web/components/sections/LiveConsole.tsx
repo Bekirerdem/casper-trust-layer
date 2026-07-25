@@ -3,13 +3,16 @@
 import { loadSnapshot } from "@/lib/data/snapshot";
 import { liveConsole } from "@/lib/content";
 import { Reveal } from "@/components/motion/Reveal";
+import { useLiveAgents, mergeLiveAgents } from "@/lib/data/useLiveAgents";
 import { useState } from "react";
 
 const MIN = 0;
 const MAX = 500;
 
 export function LiveConsole() {
-  const snapshot = loadSnapshot();
+  // Read the registry live, exactly like the hero and the Trust Console do —
+  // otherwise this section shows a stale score further down the same page.
+  const snapshot = mergeLiveAgents(loadSnapshot(), useLiveAgents());
   const agents = snapshot.agents;
 
   const [agentId, setAgentId] = useState(0);

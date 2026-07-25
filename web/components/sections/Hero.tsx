@@ -210,8 +210,8 @@ export function Hero() {
                 
                 {/* Slide 1: Reputation Ticker (Centerpiece) */}
                 <div
-                  className={`absolute inset-0 transition-all duration-500 ease-in-out ${
-                    activeSlide === 0 ? "opacity-100 translate-x-0 scale-100 z-10" : "opacity-0 translate-x-12 scale-95 pointer-events-none z-0"
+                  className={`absolute inset-0 transition-all ease-in-out ${
+                    activeSlide === 0 ? "opacity-100 translate-x-0 scale-100 z-10 duration-300 delay-200" : "opacity-0 translate-x-12 scale-95 pointer-events-none z-0 duration-200"
                   }`}
                 >
                   <Centerpiece data={snapshot} />
@@ -219,8 +219,8 @@ export function Hero() {
 
                 {/* Slide 2: Escrow Ledger Visuals */}
                 <div
-                  className={`absolute inset-0 transition-all duration-500 ease-in-out flex flex-col justify-between ${
-                    activeSlide === 1 ? "opacity-100 translate-x-0 scale-100 z-10" : "opacity-0 translate-x-12 scale-95 pointer-events-none z-0"
+                  className={`absolute inset-0 transition-all ease-in-out flex flex-col justify-between ${
+                    activeSlide === 1 ? "opacity-100 translate-x-0 scale-100 z-10 duration-300 delay-200" : "opacity-0 translate-x-12 scale-95 pointer-events-none z-0 duration-200"
                   }`}
                 >
                   <div className="flex flex-col gap-6 text-left">
@@ -262,8 +262,8 @@ export function Hero() {
 
                 {/* Slide 3: Identity Verification Visuals */}
                 <div
-                  className={`absolute inset-0 transition-all duration-500 ease-in-out flex flex-col justify-between ${
-                    activeSlide === 2 ? "opacity-100 translate-x-0 scale-100 z-10" : "opacity-0 translate-x-12 scale-95 pointer-events-none z-0"
+                  className={`absolute inset-0 transition-all ease-in-out flex flex-col justify-between ${
+                    activeSlide === 2 ? "opacity-100 translate-x-0 scale-100 z-10 duration-300 delay-200" : "opacity-0 translate-x-12 scale-95 pointer-events-none z-0 duration-200"
                   }`}
                 >
                   <div className="flex flex-col gap-6 text-left">

@@ -100,7 +100,7 @@ export const siteFooter = {
   footerQuote:
     "In a world of self-reported credentials, on-chain settlement is the only proof that does not lie.",
 
-  version: "v0.1.0-testnet · casper-trust · 2026",
+  version: "casper-trust v0.1.2 · casper-test · 2026",
 } as const;
 
 export const trustGating = {

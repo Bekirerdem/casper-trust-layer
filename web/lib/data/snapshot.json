@@ -1,17 +1,17 @@
 {
-  "capturedAt": "2026-07-03T19:10:27.634Z",
+  "capturedAt": "2026-07-25T03:39:08.867Z",
   "network": "casper-test",
   "agents": [
     {
       "agentId": 0,
-      "scoreBps": 408,
-      "jobsCompleted": 6,
+      "scoreBps": 508,
+      "jobsCompleted": 7,
       "exists": true
     },
     {
       "agentId": 1,
       "scoreBps": 100,
-      "jobsCompleted": 2,
+      "jobsCompleted": 3,
       "exists": true
     },
     {
@@ -34,6 +34,18 @@
     },
     {
       "agentId": 5,
+      "scoreBps": 0,
+      "jobsCompleted": 0,
+      "exists": true
+    },
+    {
+      "agentId": 6,
+      "scoreBps": 0,
+      "jobsCompleted": 0,
+      "exists": true
+    },
+    {
+      "agentId": 7,
       "scoreBps": 0,
       "jobsCompleted": 0,
       "exists": true
