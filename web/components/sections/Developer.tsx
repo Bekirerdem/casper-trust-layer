@@ -64,12 +64,10 @@ export function Developer() {
             <Reveal delay={0.08}>
               <h2
                 id="dev-headline"
-                className="font-sans text-[clamp(2.25rem,5vw,4.5rem)] font-black leading-[1.1] tracking-tight text-white mb-8"
+                className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-white mb-8"
               >
                 {developer.headlinePre}{" "}
-                <span className="text-transparent bg-clip-text bg-linear-to-r from-accent-red to-orange-500 font-extrabold">
-                  {developer.headlineAccent}
-                </span>{" "}
+                <span className="text-accent-red">{developer.headlineAccent}</span>{" "}
                 {developer.headlinePost}
               </h2>
             </Reveal>

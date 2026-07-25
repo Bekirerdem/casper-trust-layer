@@ -102,27 +102,24 @@ export function LiveProof() {
 
       <div className="mx-auto max-w-[1200px] px-6 md:px-12 relative z-10">
         
-        {/* Section Header */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2.5fr] gap-8 lg:gap-20 items-end mb-16 md:mb-24">
-          <Reveal>
-            <div className="flex flex-col gap-4">
-              <span className="font-mono text-xs font-bold tracking-[0.2em] text-accent-red uppercase">
-                {liveProof.label}
-              </span>
-              <div className="h-px w-10 bg-accent-red/40" />
-            </div>
-          </Reveal>
-
-          <Reveal delay={0.08}>
+        {/* Section header — left-aligned, same rhythm as the rest of the page.
+            The old split grid pushed the heading into the right column and left
+            half the viewport empty. */}
+        <Reveal>
+          <div className="flex max-w-[62ch] flex-col gap-4 mb-14">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-red">
+              {liveProof.label}
+            </span>
             <h2
               id="lp-headline"
-              className="font-sans text-[clamp(2.25rem,5vw,4.5rem)] font-black leading-[1.1] tracking-tight text-white"
+              className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-white"
             >
-              {liveProof.headlinePre} <span className="text-transparent bg-clip-text bg-linear-to-r from-accent-red to-orange-500 font-extrabold">{liveProof.headlineAccent}</span>{" "}
+              {liveProof.headlinePre}{" "}
+              <span className="text-accent-red">{liveProof.headlineAccent}</span>{" "}
               {liveProof.headlinePost}
             </h2>
-          </Reveal>
-        </div>
+          </div>
+        </Reveal>
 
         {/* Bento Grid: 12-column grid system */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch mt-12">
