@@ -3,12 +3,26 @@ export interface NetworkConfig {
   authToken?: string;
   chainName: string;
   facilitatorUrl: string;
-  packages: { identity: string; reputation: string; escrow: string; cep18: string };
+  packages: { identity: string; reputation: string; escrow: string; cep18: string; treasury: string };
   /** Odra field indices — CALIBRATED against live testnet data, not assumed from source. */
   fields: {
     identity: { escrowVarIndex: number; agents: number; count: number };
     reputation: { escrowVarIndex: number; identityVarIndex: number; reps: number; pairs: number };
     escrow: { identityVarIndex: number; reputationVarIndex: number; tokenVarIndex: number; jobs: number; count: number };
+    treasury: {
+      admin: number;
+      agent: number;
+      token: number;
+      identity: number;
+      dailyLimit: number;
+      perTaskLimit: number;
+      repRegistry: number;
+      minReputation: number;
+      whitelist: number;
+      daySpent: number;
+      taskSpent: number;
+      locked: number;
+    };
   };
 }
 
@@ -24,6 +38,7 @@ export const CASPER_TEST: NetworkConfig = {
     reputation: "d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb",
     escrow: "fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c",
     cep18: "f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6",
+    treasury: "abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c",
   },
   // Indices CALIBRATED live against testnet — uniform +1 offset from source order.
   // Evidence: all three contracts store the admin Address at live idx 0; declared fields
@@ -47,6 +62,24 @@ export const CASPER_TEST: NetworkConfig = {
       tokenVarIndex: 3,       // source 2 → live 3
       jobs: 4,                // Mapping source 3 → live 4
       count: 5,               // source 4 → live 5
+    },
+    // Calibrated live 2026-07-25 (scripts/calibrate-treasury.mts): every value
+    // matched its expected fingerprint — daily_limit read 500_000_000_000,
+    // per_task_limit 100_000_000_000, min_reputation 1, and admin/agent both
+    // resolved to the deployer account. Same +1 offset as the other contracts.
+    treasury: {
+      admin: 1,
+      agent: 2,
+      token: 3,
+      identity: 4,
+      dailyLimit: 5,
+      perTaskLimit: 6,
+      repRegistry: 7,
+      minReputation: 8,
+      whitelist: 9,   // Mapping<u32, bool>
+      daySpent: 10,   // Mapping<u64, U256> keyed by day bucket (block_time / 86_400_000)
+      taskSpent: 11,  // Mapping<u64, U256>
+      locked: 14,
     },
   },
 };

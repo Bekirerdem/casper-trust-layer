@@ -238,6 +238,83 @@ export function buildApproveJob(
 }
 
 // ---------------------------------------------------------------------------
+// AgentTreasury — the owner's spending envelope
+// ---------------------------------------------------------------------------
+
+export interface TreasuryPayParams {
+  /** Spend is accounted per task, so the per-task cap applies across calls with the same id. */
+  taskId: bigint;
+  /** Agent id of the payee — the contract resolves it to a wallet via IdentityRegistry. */
+  payee: number;
+  amount: bigint;
+}
+
+/**
+ * `AgentTreasury.pay` — the delegated agent spends from the owner's envelope.
+ *
+ * The contract, not the caller, decides: the payee must be whitelisted OR clear
+ * the reputation threshold, and the amount must fit the per-task cap, the UTC
+ * daily cap and the unlocked balance. A rejection reverts on-chain, which is
+ * itself the proof that the envelope is enforced.
+ *
+ * Must be signed by the treasury's `agent` key — any other signer reverts NotAgent.
+ */
+export function buildTreasuryPay(
+  cfg: NetworkConfig,
+  signer: PrivateKey,
+  p: TreasuryPayParams,
+): Transaction {
+  return buildCall(
+    cfg,
+    signer,
+    cfg.packages.treasury,
+    "pay",
+    sdk.Args.fromMap({
+      task_id: sdk.CLValue.newCLUint64(p.taskId.toString()),
+      payee: sdk.CLValue.newCLUInt32(p.payee),
+      amount: sdk.CLValue.newCLUInt256(p.amount.toString()),
+    }),
+  );
+}
+
+/** `AgentTreasury.set_reputation_policy` — admin-only; raises or lowers the counterparty bar. */
+export function buildSetReputationPolicy(
+  cfg: NetworkConfig,
+  signer: PrivateKey,
+  minReputation: bigint,
+): Transaction {
+  return buildCall(
+    cfg,
+    signer,
+    cfg.packages.treasury,
+    "set_reputation_policy",
+    sdk.Args.fromMap({
+      registry: sdk.CLValue.newCLKey(sdk.Key.newKey("hash-" + cfg.packages.reputation)),
+      min_reputation: sdk.CLValue.newCLUInt256(minReputation.toString()),
+    }),
+  );
+}
+
+/** CEP-18 `transfer` — used to fund the treasury from the deployer's supply. */
+export function buildTransferToken(
+  cfg: NetworkConfig,
+  signer: PrivateKey,
+  recipientHash: string,
+  amount: bigint,
+): Transaction {
+  return buildCall(
+    cfg,
+    signer,
+    cfg.packages.cep18,
+    "transfer",
+    sdk.Args.fromMap({
+      recipient: sdk.CLValue.newCLKey(sdk.Key.newKey("hash-" + recipientHash)),
+      amount: sdk.CLValue.newCLUInt256(amount.toString()),
+    }),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // attestSettlement — offline dry-run plan
 // ---------------------------------------------------------------------------
 
