@@ -103,58 +103,6 @@ export const siteFooter = {
   version: "casper-trust v0.1.2 · casper-test · 2026",
 } as const;
 
-export const trustGating = {
-  label: "04 / TRUST-GATING",
-
-  headlinePre: "Same endpoint.",
-  headlineAccent: "Different",
-  headlinePost: "outcome.",
-
-  thesis:
-    "A provider can set a minimum trust score before accepting a job. Agents below the threshold are refused before payment ever reaches the chain. No penalty, no gas waste — just a gate earned by track record.",
-
-  /** The core point line shown between heading and scenarios. */
-  pointLine: "Same endpoint. Same provider. The only variable is earned trust.",
-
-  scenarioA: {
-    tag: "Scenario A",
-    status: "Payment",
-    statusAccent: "refused.",
-    minScore: 101,
-    agentScore: 100,
-    error: "TrustGateError: score below threshold",
-    note: "Payment never hits the chain. The escrow transaction is not initiated. Zero gas spent.",
-  },
-
-  scenarioB: {
-    tag: "Scenario B",
-    status: "Payment settles.",
-    minScore: 100,
-    agentScore: 100,
-    result: "escrow settled · on-chain",
-    note: "Score meets the threshold exactly. Escrow settles. Reputation increments.",
-  },
-
-  codeExample: `await pay(client, {
-  url: endpoint,
-  providerAgentId: 0,
-  minScore: 100n,  // ← the only variable
-});
-// score 100 → 402 handshake settles on-chain
-// score  99 → TrustGateError, zero gas spent`,
-} as const;
-
-export const liveConsole = {
-  label: "05 / TRY IT LIVE",
-
-  headlinePre: "Run the gate",
-  headlineAccent: "yourself.",
-  headlinePost: "",
-
-  thesis:
-    "Pick a real on-chain agent, set the trust bar, and watch the gate decide. These are live reputation scores earned from settled escrow jobs on casper-test — read straight from contract storage, no wallet required. Want to move a score yourself? Open the Console, connect Casper Wallet, and hire an agent.",
-} as const;
-
 export const liveProof = {
   label: "Proof",
 
@@ -165,42 +113,6 @@ export const liveProof = {
   /** Counts come from the live snapshot so the copy never goes stale. */
   footerNote: (settlements: number, agents: number) =>
     `${settlements} real settlements across ${agents} agents. Each escrow written to Casper testnet. Click any row to verify independently — the tx is public, permanent, and requires no trust in us.`,
-} as const;
-
-export const problem = {
-  label: "02 / THE GAP",
-
-  /** Large Zodiak statement — split for AccentWord. */
-  headlinePre: "Reputation today is",
-  headlineAccent: "self-reported.",
-  headlinePost: "That is not proof.",
-
-  /** Supporting paragraph — the reader's operational pain, not protocol language. */
-  body: "Your agent is about to pay a counterparty it has never met. Its track record? Whatever it wrote in its own bio. Agents coordinate, delegate, and transact around the clock — but there is no shared record of who delivered and who defaulted, so every job starts from zero. Without on-chain settlement as the source of truth, trust is theatre.",
-} as const;
-
-export const howItWorks = {
-  label: "03 / THE MECHANISM",
-
-  headline: "Three steps from unknown agent to verified counterparty.",
-
-  steps: [
-    {
-      number: "01",
-      title: "Identity",
-      body: "Any agent — autonomous or human-operated — registers an on-chain identity on Casper. The registry is permissionless, deterministic, and verifiable by any third party without contacting the originator.",
-    },
-    {
-      number: "02",
-      title: "Escrow Settlement",
-      body: "Payment for each job is locked in a Casper escrow contract before work begins. On completion, the escrow settles: funds release, a settlement record is written on-chain. No off-chain invoice, no self-reported outcome.",
-    },
-    {
-      number: "03",
-      title: "Objective Reputation",
-      body: "A score — expressed in basis points — accumulates directly from settled escrows. It is derived from what happened on-chain, not from what the agent claims. The score is readable by any protocol via the casper-trust SDK in a single call.",
-    },
-  ],
 } as const;
 
 export const hero = {
