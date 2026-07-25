@@ -11,7 +11,13 @@ account `02035b3ea46df7a08c778d0ebfbe21f7ab2442030d038a7a55cd3058a452ba40f0c7`.
 | **ReputationEngine** | `contract-package-d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb` | [`bee038af…`](https://testnet.cspr.live/deploy/bee038aff4653c1921f0b677587939501251bfcbf7d287de533ffca08e77f5dd) |
 | **Cep18 (AGT token)** | `contract-package-f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6` | [`48b28270…`](https://testnet.cspr.live/deploy/48b28270f9d07bde9301707ec6ec7228a592097c599c18f8071a9f4efbfd6156) |
 | **Escrow** | `contract-package-fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c` | [`29883be2…`](https://testnet.cspr.live/deploy/29883be2b9945370b2b824a4f3bf70bdfeaee04b18869438710f9fbdfd226309) |
-| **AgentTreasury** | `contract-package-abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c` | [`df27440d…`](https://testnet.cspr.live/deploy/df27440d5e0294aa03258103ae585f1aac41b403e1d9a34a741b00b78154dd2f) |
+| **AgentTreasury** (v2) | `contract-package-95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a` | deployed 2026-07-25 |
+
+> **AgentTreasury v2** adds the owner's `pause()` / `unpause()`. Odra has no upgrade
+> path, so this is a fresh install; v1
+> (`contract-package-abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c`,
+> install [`df27440d…`](https://testnet.cspr.live/deploy/df27440d5e0294aa03258103ae585f1aac41b403e1d9a34a741b00b78154dd2f))
+> stays on-chain, unused.
 
 ## Wiring (post-deploy)
 
@@ -22,7 +28,21 @@ account `02035b3ea46df7a08c778d0ebfbe21f7ab2442030d038a7a55cd3058a452ba40f0c7`.
 | `AgentTreasury.set_reputation_policy(ReputationEngine, 1)` | [`d565a0bc…`](https://testnet.cspr.live/deploy/d565a0bcbd9bbe0b77e222f9663c60623cf048d2583931de2eb3430791c8f1ad) |
 
 The treasury enforces per-task (100 AGT) + daily (500 AGT) caps and a contract-level
-reputation gate (whitelist OR `ReputationEngine.score(payee) >= 1`).
+reputation gate (whitelist OR `ReputationEngine.score(payee) >= 1`), and the owner
+can halt every outflow with `pause()`.
+
+## The envelope, proven on-chain
+
+Same treasury, same payment — only the rule or the owner's decision changes.
+
+| What it proves | Transaction |
+|---|---|
+| Unproven payee (#7, 0 bps) is refused **before** the balance is even checked | [`19ddb53b…`](https://testnet.cspr.live/transaction/19ddb53be543487fe8d6e25eb8278231e59ec90ee0cd00d550294cd77d8c4d13) |
+| Proven payee (#0, 508 bps) clears the same gate and settles | [`64783cce…`](https://testnet.cspr.live/transaction/64783cce031a0516f0acf9658b4685fd3396c6fd66ba481413ebd88078562374) |
+| Owner pulls the brake — `pause()` | [`d9e87d8a…`](https://testnet.cspr.live/transaction/d9e87d8a0bfb1dc4d5580b8e40917bfce82d2c95790531e38fe56afaad2003c7) |
+| The **same** payment now reverts with `Paused` | [`c96cf67d…`](https://testnet.cspr.live/transaction/c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8) |
+| Owner releases it — `unpause()` | [`93bfa521…`](https://testnet.cspr.live/transaction/93bfa52145a64e865aee7d8856b95448e8d406a408ef01428928cbc46e36df7a) |
+| Payment settles again, unchanged | [`e03063e3…`](https://testnet.cspr.live/transaction/e03063e3c7c74efc75ce5ac9a9bf4ed6fa42986183573d6214429d5159d39319) |
 
 ## How to deploy
 

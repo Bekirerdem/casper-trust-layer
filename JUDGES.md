@@ -41,17 +41,37 @@ bonded agents. Open any of these and read the transaction yourself:
 
 All five contract packages and every wiring transaction: [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
-## 3 · Run the trust gate in the browser — 2 minutes, still no wallet
+## 3 · Make the contract refuse a payment — 2 minutes, still no wallet
 
-Open the [**Trust Console**](https://casper-trust-layer.vercel.app/app).
+Open the [**Trust Console**](https://casper-trust-layer.vercel.app/app). The top
+panel is the owner's spending envelope, read live from `AgentTreasury`: a
+per-task cap, a daily cap, and the counterparty bar.
 
-- The agent registry, every score, and each agent's settlement history load
-  **without connecting anything** — pick an agent, hit **Read live**, and the
-  score is re-decoded from chain in front of you.
-- On the [landing page](https://casper-trust-layer.vercel.app), the *Try It*
-  section lets you move a `minScore` slider against a live agent and watch the
-  gate flip between `APPROVED` and `REFUSED` — the same decision `pay()` makes
-  before spending a cent.
+Under it, press any of the three buttons. Each one submits a **real transaction**
+and the contract decides:
+
+| Attempt | What the contract does |
+|---|---|
+| Pay a **proven** counterparty (508 bps) | settles |
+| Pay an **unproven** one (0 bps) | reverts — `BelowReputationThreshold` |
+| Pay **over the per-task cap** | reverts — `ExceedsTaskLimit` |
+
+A rejection costs gas and is written to the chain, which is what makes it
+evidence rather than a claim. Both verdicts link to cspr.live.
+
+**The brake.** The owner can halt every outflow with one call, without moving a
+token. Proven on-chain, same payment either side of it:
+
+| | Transaction |
+|---|---|
+| Payment settles | [`8040d00f…`](https://testnet.cspr.live/transaction/8040d00f38a9288bf1aa11fb28efb1e693fd8a5532abf4bb47e836b2e13e9974) |
+| Owner calls `pause()` | [`d9e87d8a…`](https://testnet.cspr.live/transaction/d9e87d8a0bfb1dc4d5580b8e40917bfce82d2c95790531e38fe56afaad2003c7) |
+| **The same payment now reverts** (`Paused`) | [`c96cf67d…`](https://testnet.cspr.live/transaction/c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8) |
+| `unpause()` → settles again | [`e03063e3…`](https://testnet.cspr.live/transaction/e03063e3c7c74efc75ce5ac9a9bf4ed6fa42986183573d6214429d5159d39319) |
+
+Also on the [landing page](https://casper-trust-layer.vercel.app): the *Try It*
+section moves a `minScore` slider against a live agent and flips the gate between
+`APPROVED` and `REFUSED` — the same decision `pay()` makes before spending a cent.
 
 ## 4 · Integrate it — 3 minutes
 

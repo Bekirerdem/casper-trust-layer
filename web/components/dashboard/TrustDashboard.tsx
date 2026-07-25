@@ -6,7 +6,7 @@ import { WalletButton } from "@/components/dashboard/WalletButton";
 import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
 import { HirePanel } from "@/components/dashboard/HirePanel";
 import { MyAgentPanel } from "@/components/dashboard/MyAgentPanel";
-import { SpendingEnvelope } from "@/components/dashboard/SpendingEnvelope";
+import { SpendingEnvelope, type Envelope } from "@/components/dashboard/SpendingEnvelope";
 import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
 import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
 
@@ -31,12 +31,15 @@ function RegistryItem({
   live,
   selected,
   mine,
+  bar,
   onSelect,
 }: {
   agent: AgentSnapshot;
   live?: LiveRep;
   selected: boolean;
   mine?: boolean;
+  /** The owner's counterparty threshold, so each row says whether it is payable. */
+  bar?: number;
   onSelect: () => void;
 }) {
   // Live (post-hire / read-live) values override the build-time snapshot.
@@ -75,17 +78,16 @@ function RegistryItem({
       </div>
       <div className="mt-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
         <span>{jobsCompleted} {jobsCompleted === 1 ? "job" : "jobs"} settled</span>
-        <span
-          className={
-            scoreBps >= 100
-              ? "text-green-400"
-              : scoreBps > 0
-                ? "text-orange-400"
-                : "text-[#8E8E93]"
-          }
-        >
-          {scoreBps >= 100 ? "trusted" : scoreBps > 0 ? "earning" : "unproven"}
-        </span>
+        {/* Framed as the owner's decision, not an abstract label: can I pay this one? */}
+        {bar === undefined ? (
+          <span className={scoreBps > 0 ? "text-orange-400" : "text-[#8E8E93]"}>
+            {scoreBps > 0 ? "earning" : "unproven"}
+          </span>
+        ) : (
+          <span className={scoreBps >= bar ? "text-green-400" : "text-accent-red"}>
+            {scoreBps >= bar ? "✓ payable" : "✕ below your bar"}
+          </span>
+        )}
       </div>
     </button>
   );
@@ -119,6 +121,7 @@ export function TrustDashboard() {
   const wallet = useCasperWallet();
   const [selectedId, setSelectedId] = useState(0);
   const [myAgentId, setMyAgentId] = useState<number | null>(null);
+  const [envelope, setEnvelope] = useState<Envelope | null>(null);
   const [live, setLive] = useState<Record<number, LiveRep>>({});
   const [extraSettlements, setExtraSettlements] = useState(0);
   const [extraAgents, setExtraAgents] = useState(0);
@@ -146,6 +149,23 @@ export function TrustDashboard() {
       })
       .catch(() => {
         /* keep snapshot values */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // The owner's rule, read once — the envelope panel and the registry badges
+  // must judge every counterparty against the same live threshold.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/treasury", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: Envelope | null) => {
+        if (!cancelled && d && !("error" in d)) setEnvelope(d);
+      })
+      .catch(() => {
+        /* panel falls back to a minimal state */
       });
     return () => {
       cancelled = true;
@@ -221,7 +241,7 @@ export function TrustDashboard() {
         )}
 
         {/* The owner's envelope + the live proof that the contract enforces it */}
-        <SpendingEnvelope agents={agents.map((a) => ({ ...a, ...(live[a.agentId] ?? {}) }))} />
+        <SpendingEnvelope agents={agents.map((a) => ({ ...a, ...(live[a.agentId] ?? {}) }))} env={envelope} />
 
         {/* Stat strip — live actions (hire/register) update these in place */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
@@ -244,7 +264,7 @@ export function TrustDashboard() {
           {/* Registry */}
           <section className="flex flex-col gap-3">
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
-              Agent Registry · wallet-free read
+              Who you can pay · wallet-free read
             </h2>
             {agents.map((a) => (
               <RegistryItem
@@ -253,6 +273,7 @@ export function TrustDashboard() {
                 live={live[a.agentId]}
                 selected={a.agentId === selectedId}
                 mine={a.agentId === myAgentId}
+                bar={envelope?.minReputation}
                 onSelect={() => setSelectedId(a.agentId)}
               />
             ))}

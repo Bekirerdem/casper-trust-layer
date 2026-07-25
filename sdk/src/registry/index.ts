@@ -295,6 +295,27 @@ export function buildSetReputationPolicy(
   );
 }
 
+/**
+ * `AgentTreasury.pause` / `unpause` — the owner's brake, admin-only.
+ *
+ * Pausing halts every outflow (payments and new reservations) without moving a
+ * token: deposited funds stay put and existing reservations can still be
+ * released or refunded. This is what makes delegating spend reversible.
+ */
+export function buildSetPaused(
+  cfg: NetworkConfig,
+  signer: PrivateKey,
+  paused: boolean,
+): Transaction {
+  return buildCall(
+    cfg,
+    signer,
+    cfg.packages.treasury,
+    paused ? "pause" : "unpause",
+    sdk.Args.fromMap({}),
+  );
+}
+
 /** CEP-18 `transfer` — used to fund the treasury from the deployer's supply. */
 export function buildTransferToken(
   cfg: NetworkConfig,

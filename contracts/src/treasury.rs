@@ -47,6 +47,8 @@ pub enum Error {
     DeadlineNotReached = 10,
     /// Reservation already released or refunded.
     InvalidState = 11,
+    /// The owner pulled the brake: spending is halted until unpaused.
+    Paused = 12,
 }
 
 /// Non-custodial treasury: a business deposits CEP-18 funds and delegates
@@ -54,7 +56,7 @@ pub enum Error {
 /// gate (whitelist OR earned reputation), a per-task cap, and a UTC daily cap.
 /// Spend is accounted per task. Reservations lock funds for outcome-bound work.
 #[allow(dead_code)]
-#[odra::module(errors = Error, events = [Paid, Reserved, Released, Refunded])]
+#[odra::module(errors = Error, events = [Paid, Reserved, Released, Refunded, PauseChanged])]
 pub struct AgentTreasury {
     admin: Var<Address>,
     agent: Var<Address>,
@@ -70,6 +72,9 @@ pub struct AgentTreasury {
     reservations: Mapping<u64, Reservation>,
     next_reservation_id: Var<u64>,
     locked: Var<U256>,
+    /// Appended last on purpose: every earlier field keeps its storage index,
+    /// so the calibrated off-chain readers stay valid.
+    paused: Var<bool>,
 }
 
 #[odra::module]
@@ -131,6 +136,7 @@ impl AgentTreasury {
     /// wallet. Reverts roll back the accounting atomically.
     pub fn pay(&mut self, task_id: u64, payee: u32, amount: U256) {
         self.only_agent();
+        self.not_paused();
         if amount.is_zero() {
             self.env().revert(Error::ZeroAmount);
         }
@@ -172,6 +178,31 @@ impl AgentTreasury {
             .map(|r| (r, self.min_reputation.get_or_default()))
     }
 
+    // ---- the brake -------------------------------------------------------------
+
+    /// Halt every outflow — payments and new reservations — without moving a
+    /// single token. Deposited funds stay where they are and the owner can still
+    /// release or refund existing reservations; only new spending stops.
+    ///
+    /// This is the guarantee that makes delegation reversible: whatever the agent
+    /// has been convinced to do, one admin call ends it.
+    pub fn pause(&mut self) {
+        self.only_admin();
+        self.paused.set(true);
+        self.env().emit_event(PauseChanged { paused: true });
+    }
+
+    /// Resume spending under the same envelope.
+    pub fn unpause(&mut self) {
+        self.only_admin();
+        self.paused.set(false);
+        self.env().emit_event(PauseChanged { paused: false });
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.paused.get_or_default()
+    }
+
     // ---- reservation lifecycle -------------------------------------------------
 
     /// Agent reserves `amount` for `payee` against a future-delivered task. Funds
@@ -186,6 +217,7 @@ impl AgentTreasury {
         deadline: u64,
     ) -> u64 {
         self.only_agent();
+        self.not_paused();
         if amount.is_zero() {
             self.env().revert(Error::ZeroAmount);
         }
@@ -296,6 +328,12 @@ impl AgentTreasury {
         }
     }
 
+    fn not_paused(&self) {
+        if self.paused.get_or_default() {
+            self.env().revert(Error::Paused);
+        }
+    }
+
     /// Whitelist OR earned-reputation gate. A whitelisted payee always passes.
     /// Otherwise, when a reputation policy is set (`min > 0`), the payee passes
     /// iff its on-chain score meets the threshold.
@@ -373,6 +411,12 @@ pub struct Refunded {
     pub id: u64,
     pub payee: u32,
     pub amount: U256,
+}
+
+/// Emitted when the owner pulls or releases the brake.
+#[odra::event]
+pub struct PauseChanged {
+    pub paused: bool,
 }
 
 #[cfg(test)]
@@ -547,6 +591,58 @@ mod tests {
         w.env.set_caller(w.admin); // admin is not the agent
         let result = w.treasury.try_pay(1, provider, U256::from(10_000u64));
         assert_eq!(result, Err(super::Error::NotAgent.into()));
+    }
+
+    #[test]
+    fn pause_halts_payments_and_unpause_restores_them() {
+        let mut w = setup();
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        w.env.set_caller(w.admin);
+        w.treasury.add_payee(provider);
+        fund_treasury(&mut w, 100_000);
+
+        // The brake is off by default.
+        assert!(!w.treasury.is_paused());
+
+        w.env.set_caller(w.admin);
+        w.treasury.pause();
+        assert!(w.treasury.is_paused());
+
+        // An otherwise-valid payment now reverts: whitelisted payee, inside every cap.
+        w.env.set_caller(w.agent);
+        let blocked = w.treasury.try_pay(1, provider, U256::from(10_000u64));
+        assert_eq!(blocked, Err(super::Error::Paused.into()));
+
+        // Reservations are halted too — the brake covers every outflow path.
+        w.env.set_caller(w.agent);
+        let reserved = w.treasury.try_create_reservation(2, provider, U256::from(10_000u64), 1);
+        assert_eq!(reserved, Err(super::Error::Paused.into()));
+
+        w.env.set_caller(w.admin);
+        w.treasury.unpause();
+        assert!(!w.treasury.is_paused());
+
+        w.env.set_caller(w.agent);
+        assert!(w.treasury.try_pay(1, provider, U256::from(10_000u64)).is_ok());
+    }
+
+    #[test]
+    fn pause_is_admin_only() {
+        let mut w = setup();
+
+        // The delegated agent cannot brake — that authority belongs to the owner.
+        w.env.set_caller(w.agent);
+        assert_eq!(w.treasury.try_pause(), Err(super::Error::NotAdmin.into()));
+
+        w.env.set_caller(w.admin);
+        w.treasury.pause();
+
+        // Nor can it release the brake once pulled.
+        w.env.set_caller(w.agent);
+        assert_eq!(w.treasury.try_unpause(), Err(super::Error::NotAdmin.into()));
+        assert!(w.treasury.is_paused());
     }
 
     #[test]

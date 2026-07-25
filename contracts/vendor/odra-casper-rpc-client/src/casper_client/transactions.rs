@@ -291,7 +291,11 @@ impl super::CasperClient {
 
     async fn start_event_watcher(&self) -> Result<TransactionWatch> {
         let timeout = Duration::from_secs(TRANSACTION_WAIT_TIME * TRANSACTION_MAX_RETRIES);
-        let watcher = TransactionWatcher::new(self.configuration.events_url.clone(), timeout);
+        let watcher = TransactionWatcher::new(
+            self.configuration.events_url.clone(),
+            timeout,
+            self.configuration.cspr_cloud_auth_token.clone()
+        );
         watcher.start_watching().await
     }
 

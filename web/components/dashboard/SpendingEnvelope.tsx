@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { AgentSnapshot } from "@/lib/casper/types";
 
-type Envelope = {
+export type Envelope = {
   perTaskLimit: string;
   dailyLimit: string;
   minReputation: number;
   locked: string;
+  paused: boolean;
   package: string;
 };
 
@@ -89,24 +90,15 @@ function Scenario({
   );
 }
 
-export function SpendingEnvelope({ agents }: { agents: AgentSnapshot[] }) {
-  const [env, setEnv] = useState<Envelope | null>(null);
+export function SpendingEnvelope({
+  agents,
+  env,
+}: {
+  agents: AgentSnapshot[];
+  /** Read once by the console so the registry can badge agents against the same rule. */
+  env: Envelope | null;
+}) {
   const [verdicts, setVerdicts] = useState<Record<string, Verdict>>({});
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/treasury", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: Envelope | null) => {
-        if (!cancelled && d && !("error" in d)) setEnv(d);
-      })
-      .catch(() => {
-        /* the block simply stays minimal */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Pick a real proven counterparty and a real unproven one from live scores.
   const proven = [...agents].sort((a, b) => b.scoreBps - a.scoreBps)[0];
@@ -180,7 +172,7 @@ export function SpendingEnvelope({ agents }: { agents: AgentSnapshot[] }) {
         ))}
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-black/30 p-4 mb-6">
+      <div className="rounded-xl border border-white/10 bg-black/30 p-4 mb-4">
         <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] block mb-1.5">
           Counterparty rule
         </span>
@@ -188,6 +180,38 @@ export function SpendingEnvelope({ agents }: { agents: AgentSnapshot[] }) {
           Pay anyone <span className="text-[#8E8E93]">whitelisted</span>{" "}
           <span className="text-accent-red">OR</span> proven{" "}
           <span className="text-green-400">≥ {bar} bps</span> of earned, settlement-backed trust.
+        </p>
+      </div>
+
+      {/* The brake — what makes delegating spend reversible */}
+      <div
+        className={`rounded-xl border p-4 mb-6 ${
+          env?.paused ? "border-accent-red/40 bg-accent-red/5" : "border-white/10 bg-black/30"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+            The brake
+          </span>
+          <span
+            className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+              env?.paused ? "text-accent-red" : "text-green-400"
+            }`}
+          >
+            {env ? (env.paused ? "◼ HALTED — every spend reverts" : "● live — spending allowed") : "—"}
+          </span>
+        </div>
+        <p className="font-sans text-xs text-[#8E8E93] mt-2 leading-relaxed">
+          One owner-only call halts every payment and reservation without moving a token. Whatever
+          the agent has been talked into doing, this ends it — and existing funds stay put.{" "}
+          <a
+            href={tx("c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white hover:text-accent-red transition-colors underline decoration-white/20"
+          >
+            See a payment revert while paused ↗
+          </a>
         </p>
       </div>
 

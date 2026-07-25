@@ -21,10 +21,8 @@ import { resolvePackage } from "../src/rpc/resolve.js";
 import { readOdraValue } from "../src/odra/read.js";
 import { varKey } from "../src/odra/keys.js";
 
-const TREASURY_PKG =
-  "abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c";
-
 const cfg = CASPER_TEST;
+const TREASURY_PKG = process.env.TREASURY_PKG ?? cfg.packages.treasury;
 const rpc = makeRpcClient(cfg);
 
 const hex = (b: Uint8Array) => Buffer.from(b).toString("hex");

@@ -9,7 +9,7 @@ On-chain trust for AI agents: no LLM jury, no validator committee, no trusted ve
 
 [![live demo](https://img.shields.io/badge/live%20demo-online-2ea44f)](https://casper-trust-layer.vercel.app)
 [![npm](https://img.shields.io/npm/v/casper-trust?label=casper-trust&color=cb3837)](https://www.npmjs.com/package/casper-trust)
-[![contracts](https://img.shields.io/badge/OdraVM%20tests-50%20passing-2ea44f)](contracts/src)
+[![contracts](https://img.shields.io/badge/OdraVM%20tests-52%20passing-2ea44f)](contracts/src)
 [![sdk](https://img.shields.io/badge/SDK%20tests-66%20passing-2ea44f)](sdk/test)
 [![network](https://img.shields.io/badge/casper--test-deployed-blue)](DEPLOYMENT.md)
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
@@ -72,7 +72,7 @@ flowchart TD
     IR["IdentityRegistry<br/>ERC-8004 identity · CSPR bond · slash"]
     ES["Escrow<br/>fund → deliver → approve<br/>2% protocol fee locked"]
     RE["ReputationEngine<br/>objective score · anti-gaming math"]
-    AT["AgentTreasury<br/>capped spend envelope<br/>contract-level reputation gate"]
+    AT["AgentTreasury<br/>capped spend envelope · owner's brake<br/>contract-level reputation gate"]
     SDK["casper-trust SDK + MCP<br/>wallet-free reads · trust-gated pay"]
 
     ES -- "resolve wallet · slash bond" --> IR
@@ -145,7 +145,7 @@ Everything below is live on `casper-test` — see [`DEPLOYMENT.md`](DEPLOYMENT.m
 | IdentityRegistry | [`3a51cc5f…`](https://testnet.cspr.live/contract-package/3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc) |
 | ReputationEngine | [`d73fb111…`](https://testnet.cspr.live/contract-package/d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb) |
 | Escrow | [`fe6b0ddb…`](https://testnet.cspr.live/contract-package/fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c) |
-| AgentTreasury | [`abbdbdfd…`](https://testnet.cspr.live/contract-package/abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c) |
+| AgentTreasury (v2, pausable) | [`95a5cde8…`](https://testnet.cspr.live/contract-package/95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a) |
 | Cep18 (demo token) | [`f962076e…`](https://testnet.cspr.live/contract-package/f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6) |
 
 > **AgentTreasury** gives a business a *capped spending envelope* for an AI agent: the contract enforces per-task (100 AGT) + daily (500 AGT) limits and a **protocol-level reputation gate** — funds only release to a payee that is whitelisted **or** clears a `ReputationEngine.score` threshold. Trust enforced in the contract, not the SDK.
@@ -177,13 +177,13 @@ No claim in this README requires trusting us:
 | x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) — the same endpoint is refused below the bar, settled above it |
 | All 5 contracts are live and wired | Package hashes above; every install + wiring transaction linked in [`DEPLOYMENT.md`](DEPLOYMENT.md) |
 | The SDK is public and installable today | [`npm install casper-trust`](https://www.npmjs.com/package/casper-trust) |
-| The code does what we say | `cargo odra test` in `contracts/` (50 tests) · `npx vitest run` in `sdk/` (66 tests incl. live read assertions) |
+| The code does what we say | `cargo odra test` in `contracts/` (52 tests) · `npx vitest run` in `sdk/` (66 tests incl. live read assertions) |
 
 ## Judging criteria at a glance
 
 | Criterion | What ships | Evidence |
 |---|---|---|
-| **Technical quality** | 5 contracts live and wired on `casper-test`; 50 OdraVM tests (incl. the adversarial reputation suite) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
+| **Technical quality** | 5 contracts live and wired on `casper-test`; 52 OdraVM tests (incl. the adversarial reputation suite and the owner's brake) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
 | **Innovation** | Reputation derived *objectively* from settled escrow payments, hardened with anti-gaming math (per-edge caps, trust conservation, value concavity); to our knowledge the category's only npm-published SDK | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
 | **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 | **DeFi / RWA applicability** | AgentTreasury — a capped on-chain spending envelope (per-task + daily) with a protocol-level reputation gate; CEP-18 escrow rails | [AgentTreasury](https://testnet.cspr.live/contract-package/abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c) · [`contracts/src`](contracts/src) |
@@ -207,7 +207,7 @@ Casper contract tooling runs on Linux; on Windows use WSL2 (see [`tasks/lessons.
 
 ```bash
 cd contracts
-cargo odra test                 # 50 passing on the OdraVM (no node needed)
+cargo odra test                 # 52 passing on the OdraVM (no node needed)
 
 export PATH=~/binaryen-latest/bin:$PATH
 cargo odra build                # -> Casper-VM-compatible wasm/*.wasm (needs wabt + binaryen v130+)
@@ -222,7 +222,7 @@ contracts/
   src/identity.rs        IdentityRegistry  — ERC-8004 identity + bond + slash
   src/escrow.rs          Escrow            — A2A job state machine, CEP-18, 2% protocol fee
   src/reputation.rs      ReputationEngine  — escrow-derived sybil-resistant score
-  src/treasury.rs        AgentTreasury     — capped spend envelope + on-chain reputation gate
+  src/treasury.rs        AgentTreasury     — capped spend envelope + reputation gate + pause
   bin/cli.rs             odra-cli deploy script (5 contracts + wiring)
   vendor/                patched odra-casper-rpc-client (Casper 2.0/Condor deploy fix)
 sdk/                     casper-trust TypeScript SDK (published to npm) + live demo scripts

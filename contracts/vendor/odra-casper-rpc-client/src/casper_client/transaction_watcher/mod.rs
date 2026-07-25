@@ -20,14 +20,19 @@ type ByteStream =
 /// Monitors the Casper network event stream for transaction processing events.
 pub struct TransactionWatcher {
     events_url: String,
-    timeout: Duration
+    timeout: Duration,
+    /// CSPR.cloud gates its SSE host (node-sse.*) behind the same access token as
+    /// the RPC host. Without it the stream answers 401 and every deploy fails
+    /// after the transaction was already sent.
+    auth_token: Option<String>
 }
 
 impl TransactionWatcher {
-    pub fn new(events_url: String, timeout: Duration) -> Self {
+    pub fn new(events_url: String, timeout: Duration, auth_token: Option<String>) -> Self {
         Self {
             events_url,
-            timeout
+            timeout,
+            auth_token
         }
     }
 
@@ -59,8 +64,11 @@ impl TransactionWatcher {
 
     async fn connect_to_event_stream(&self) -> Result<ByteStream, LivenetError> {
         let client = Client::new();
-        let response = client
-            .get(&self.events_url)
+        let mut request = client.get(&self.events_url);
+        if let Some(token) = &self.auth_token {
+            request = request.header("Authorization", token);
+        }
+        let response = request
             .send()
             .await
             .map_err(|e| ClientError(format!("Failed to connect to events stream: {}", e)))?;

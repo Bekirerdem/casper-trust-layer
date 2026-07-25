@@ -37,7 +37,7 @@ No judge decides reputation here — the payment does. On-chain trust for AI age
 - **IdentityRegistry** — ERC-8004 agent identity + CSPR bond + slash
 - **Escrow** — A2A job state machine (fund → deliver → settle), 2% protocol fee permanently locked
 - **ReputationEngine** — objective, sybil-resistant score: `Δ = isqrt(value) × counterparty-weight × repeat-dampening`, bounded by per-edge cap + trust conservation (red-teamed with 12 adversarial checks)
-- **AgentTreasury** — capped spend envelope (per-task 100 AGT + daily 500 AGT) + **contract-level reputation gate**
+- **AgentTreasury** — the owner's spending envelope: per-task 100 AGT + daily 500 AGT caps, a **contract-level counterparty gate** (whitelist OR earned score), and an owner-only **`pause()`** that halts every outflow without moving a token
 - **Cep18 (AGT)** demo token
 
 **Plus:**
@@ -52,6 +52,10 @@ No judge decides reputation here — the payment does. On-chain trust for AI age
 - Cross-edge examples: 2→0 (`6a7d54e8…`), 3→0 (`9e490f62…`), bootstrap 0→2 (`b5d6c3b9…`)
 - A browser visitor's own wallet-signed hire flow settled `100 → 200` (`04cea776…`)
 - Trust-gated x402: the *same* endpoint refused below the bar and settled above it (`b4a4635f…`)
+
+**The envelope, proven on-chain — same payment, only the rule changes:**
+- Unproven payee (0 bps) is refused *before the balance is even checked* (`19ddb53b…`); a proven payee (508 bps) clears the identical gate and settles (`64783cce…`)
+- Owner calls `pause()` (`d9e87d8a…`) → the **same** payment now reverts with `Paused` (`c96cf67d…`) → `unpause()` → it settles again (`e03063e3…`). Delegating spend to an agent is reversible in one owner-only call, and no funds move to prove it.
 
 **Why this matters beyond us.** We ship a primitive, not an application — which means the rest of this cohort can consume it. A guard wallet can refuse to sign when a counterparty's score is below a threshold. A multi-hop payment cascade can require a `minScore` at every hop. An agent marketplace can rank by earned track record instead of self-reported stars. That is one npm install and one function call away, today — and it is the reason we kept reads wallet-free and published the SDK rather than hiding the logic behind our own UI.
 
@@ -71,7 +75,7 @@ No judge decides reputation here — the payment does. On-chain trust for AI age
 IdentityRegistry: contract-package-3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc
 ReputationEngine: contract-package-d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb
 Escrow: contract-package-fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c
-AgentTreasury: contract-package-abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c
+AgentTreasury: contract-package-95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a
 Cep18 (AGT demo token): contract-package-f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6
 
 Deployed from account 02035b3ea46df7a08c778d0ebfbe21f7ab2442030d038a7a55cd3058a452ba40f0c7
