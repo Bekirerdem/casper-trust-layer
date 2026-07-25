@@ -6,6 +6,7 @@ import { WalletButton } from "@/components/dashboard/WalletButton";
 import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
 import { HirePanel } from "@/components/dashboard/HirePanel";
 import { MyAgentPanel } from "@/components/dashboard/MyAgentPanel";
+import { SpendingEnvelope } from "@/components/dashboard/SpendingEnvelope";
 import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
 import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
 
@@ -219,6 +220,9 @@ export function TrustDashboard() {
           />
         )}
 
+        {/* The owner's envelope + the live proof that the contract enforces it */}
+        <SpendingEnvelope agents={agents.map((a) => ({ ...a, ...(live[a.agentId] ?? {}) }))} />
+
         {/* Stat strip — live actions (hire/register) update these in place */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           {[
@@ -297,27 +301,8 @@ export function TrustDashboard() {
           </section>
         </div>
 
-        {/* Treasury + contracts */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 mt-6 items-start">
-          <section className="glass-panel bg-white/5 border-white/5 rounded-2xl p-6 md:p-8">
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mb-4">
-              AgentTreasury · bounded spend envelope
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="font-mono text-2xl font-black text-white">100 <span className="text-xs text-[#8E8E93]">AGT</span></div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mt-1">Per-task cap</div>
-              </div>
-              <div>
-                <div className="font-mono text-2xl font-black text-white">500 <span className="text-xs text-[#8E8E93]">AGT</span></div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mt-1">Daily cap</div>
-              </div>
-            </div>
-            <p className="font-sans text-xs text-[#8E8E93] mt-4 leading-relaxed">
-              Funds release only to a payee that is whitelisted <span className="text-white">or</span> clears the on-chain reputation gate — enforced in the contract, not the SDK.
-            </p>
-          </section>
-
+        {/* Contracts — the proof surface */}
+        <div className="mt-6">
           <section className="glass-panel bg-white/5 border-white/5 rounded-2xl p-6 md:p-8">
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mb-4">
               Live contracts · casper-test
