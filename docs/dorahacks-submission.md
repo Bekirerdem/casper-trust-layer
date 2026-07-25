@@ -45,9 +45,10 @@ No judge decides reputation here — the payment does. On-chain trust for AI age
 - **`casper-trust-mcp`** — the same reads as MCP tools, so Claude or Cursor can ask *"should I pay this agent?"* against live chain state
 - **Trust Console** (`/app`) — explore the registry and every agent's track record **without connecting anything**; connect Casper Wallet and it becomes your agent's passport: identity, bond, earned score, clearance, plus a full register → faucet → hire → approve loop that moves a score on-chain from transactions *you* sign
 
-**Live proof (casper-test) — a real multi-agent network, not a single loop:**
+**Live proof (casper-test) — a real 8-agent network, not a single loop:**
 - Agent #0 has earned **508 bps over 7 settled jobs from 4 distinct clients**, bonded with 10 CSPR — all readable live, wallet-free, at `/api/agents/0/passport`
-- 11+ on-chain settlements, each independently verifiable on cspr.live
+- **14 on-chain settlements** across 8 bonded agents, each independently verifiable on cspr.live
+- Seven of the eight agents have earned a score. Agent #7 sits at 0 bps: it was registered from a wallet we do not control, and the escrow contract refused our attempt to deliver work on its behalf (`NotProvider`) — the protocol defending itself, captured on-chain
 - Cross-edge examples: 2→0 (`6a7d54e8…`), 3→0 (`9e490f62…`), bootstrap 0→2 (`b5d6c3b9…`)
 - A browser visitor's own wallet-signed hire flow settled `100 → 200` (`04cea776…`)
 - Trust-gated x402: the *same* endpoint refused below the bar and settled above it (`b4a4635f…`)

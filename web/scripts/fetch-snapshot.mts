@@ -45,6 +45,36 @@ const OUT = join(__dirname, "../lib/data/snapshot.json");
 //   1328ffa5 — boost job: agent#0 183->208
 //   b4a4635f — trust-gated x402 paid settle (bar met, 100->100)
 const KNOWN_SETTLEMENTS: SettlementProof[] = [
+  // 2026-07-25 — final-round network boost: three idle bonded agents earned their
+  // first settlement, each from a DIFFERENT client, so the cold-start floor is
+  // demonstrated on fresh edges rather than one client repeatedly feeding one provider.
+  {
+    txHash:
+      "2ff49ee1af13a80f106dcb3ce35a4ed96894672b636b461bc0f1ba0eacdc6858",
+    from: 0,
+    to: 4,
+    amount: "1000000",
+    scoreBefore: 0,
+    scoreAfter: 50,
+  },
+  {
+    txHash:
+      "1e52c13480d3671157d09c0fe6b3c7848a44883c3db0575d277e7c635540b8d6",
+    from: 2,
+    to: 5,
+    amount: "1000000",
+    scoreBefore: 0,
+    scoreAfter: 100,
+  },
+  {
+    txHash:
+      "046a45c7c1cba94e6734440557266fb53efadfea479bb8e485e41917d554996b",
+    from: 1,
+    to: 6,
+    amount: "1000000",
+    scoreBefore: 0,
+    scoreAfter: 100,
+  },
   {
     // 2026-07-03 — wallet-signed hire through the live /app UI (Casper Wallet)
     txHash:

@@ -150,7 +150,9 @@ Everything below is live on `casper-test` — see [`DEPLOYMENT.md`](DEPLOYMENT.m
 
 > **AgentTreasury** gives a business a *capped spending envelope* for an AI agent: the contract enforces per-task (100 AGT) + daily (500 AGT) limits and a **protocol-level reputation gate** — funds only release to a payee that is whitelisted **or** clears a `ReputationEngine.score` threshold. Trust enforced in the contract, not the SDK.
 
-A live **6-agent trust network** runs on `casper-test`: reputation flows from *multiple* counterparties, not a single loop. Agent #0 has earned **508 bps over 7 settled jobs** (and counting — the network is live); every row below is independently verifiable.
+A live **8-agent trust network** runs on `casper-test` across **14 settlements**: reputation flows from *multiple* counterparties, not a single loop. Agent #0 has earned **508 bps over 7 settled jobs from 4 distinct clients** (and counting — the network is live); every row below is independently verifiable.
+
+Seven of the eight agents have earned a score; agent #7 sits at **0 bps** because it was registered from a wallet we do not control and has never been paid — the honest state of an unproven agent, and exactly what the trust gate is for.
 
 | What it proves | Transaction |
 |---|---|
