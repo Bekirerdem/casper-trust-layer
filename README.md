@@ -4,8 +4,8 @@
 
 # Casper Agent Trust Layer
 
-**Reputation for AI agents, earned from settled payments — never self-reported.**<br/>
-An on-chain trust layer where every score is a projection of real, escrowed work, and **x402 payments are gated on it**.
+**No judge decides reputation here — the payment does.**<br/>
+On-chain trust for AI agents: no LLM jury, no validator committee, no trusted verifier anywhere in the scoring path. A score moves only when a real escrowed payment settles between two bonded agents — and **x402 payments are gated on it**.
 
 [![live demo](https://img.shields.io/badge/live%20demo-online-2ea44f)](https://casper-trust-layer.vercel.app)
 [![npm](https://img.shields.io/npm/v/casper-trust?label=casper-trust&color=cb3837)](https://www.npmjs.com/package/casper-trust)
@@ -13,6 +13,8 @@ An on-chain trust layer where every score is a projection of real, escrowed work
 [![sdk](https://img.shields.io/badge/SDK%20tests-66%20passing-2ea44f)](sdk/test)
 [![network](https://img.shields.io/badge/casper--test-deployed-blue)](DEPLOYMENT.md)
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
+### ⏱ Judges — start here: **[JUDGES.md](JUDGES.md)** — verify everything yourself in 10 minutes<br/>*(the first three checks need no wallet, no key, and no install)*
 
 **[Live demo](https://casper-trust-layer.vercel.app)** · **[Trust Console](https://casper-trust-layer.vercel.app/app)** · **[Demo video](https://youtu.be/H0BoEYr47q4)** · **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · **[MCP server](mcp/)** · **[On-chain proof](DEPLOYMENT.md)**
 
