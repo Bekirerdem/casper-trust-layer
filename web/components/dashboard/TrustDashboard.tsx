@@ -5,6 +5,7 @@ import { loadSnapshot } from "@/lib/data/snapshot";
 import { WalletButton } from "@/components/dashboard/WalletButton";
 import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
 import { HirePanel } from "@/components/dashboard/HirePanel";
+import { MyAgentPanel } from "@/components/dashboard/MyAgentPanel";
 import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
 import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
 
@@ -28,11 +29,13 @@ function RegistryItem({
   agent,
   live,
   selected,
+  mine,
   onSelect,
 }: {
   agent: AgentSnapshot;
   live?: LiveRep;
   selected: boolean;
+  mine?: boolean;
   onSelect: () => void;
 }) {
   // Live (post-hire / read-live) values override the build-time snapshot.
@@ -49,7 +52,14 @@ function RegistryItem({
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold text-white">Agent #{agent.agentId}</span>
+        <span className="font-mono text-sm font-bold text-white">
+          Agent #{agent.agentId}
+          {mine && (
+            <span className="ml-2 rounded border border-accent-red/40 bg-accent-red/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-accent-red align-middle">
+              yours
+            </span>
+          )}
+        </span>
         <span className="font-mono text-lg font-black tabular-nums text-white">
           {scoreBps}
           <span className="text-[10px] font-medium text-[#8E8E93] ml-1">bps</span>
@@ -107,6 +117,7 @@ export function TrustDashboard() {
   const snapshot = loadSnapshot();
   const wallet = useCasperWallet();
   const [selectedId, setSelectedId] = useState(0);
+  const [myAgentId, setMyAgentId] = useState<number | null>(null);
   const [live, setLive] = useState<Record<number, LiveRep>>({});
   const [extraSettlements, setExtraSettlements] = useState(0);
   const [extraAgents, setExtraAgents] = useState(0);
@@ -139,6 +150,14 @@ export function TrustDashboard() {
       cancelled = true;
     };
   }, []);
+
+  // A shared profile link (?agent=N) opens the console focused on that agent.
+  useEffect(() => {
+    const wanted = Number(new URLSearchParams(window.location.search).get("agent"));
+    if (Number.isInteger(wanted) && agents.some((a) => a.agentId === wanted)) {
+      setSelectedId(wanted);
+    }
+  }, [agents]);
 
   const agentSettlements = useMemo(
     () => snapshot.settlements.filter((s) => s.to === selectedId || s.from === selectedId),
@@ -188,6 +207,18 @@ export function TrustDashboard() {
           </div>
         </header>
 
+        {/* Ownership first: a connected wallet should see ITS agent before the network's */}
+        {wallet.publicKey && (
+          <MyAgentPanel
+            publicKey={wallet.publicKey}
+            rescanKey={extraAgents}
+            onResolved={(id) => {
+              setMyAgentId(id);
+              setSelectedId(id);
+            }}
+          />
+        )}
+
         {/* Stat strip — live actions (hire/register) update these in place */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           {[
@@ -217,6 +248,7 @@ export function TrustDashboard() {
                 agent={a}
                 live={live[a.agentId]}
                 selected={a.agentId === selectedId}
+                mine={a.agentId === myAgentId}
                 onSelect={() => setSelectedId(a.agentId)}
               />
             ))}
