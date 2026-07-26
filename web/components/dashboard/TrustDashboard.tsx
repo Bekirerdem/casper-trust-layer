@@ -16,12 +16,22 @@ const SCORE_MAX = 500;
 type LiveRep = { scoreBps: number; jobsCompleted: number };
 
 const CONTRACTS = [
+  { name: "AgentVaults", pkg: "674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914" },
   { name: "IdentityRegistry", pkg: "3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc" },
   { name: "ReputationEngine", pkg: "d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb" },
   { name: "Escrow", pkg: "fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c" },
-  { name: "AgentTreasury", pkg: "abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c" },
+  { name: "AgentTreasury", pkg: "95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a" },
   { name: "Cep18 (AGT)", pkg: "f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6" },
 ];
+
+const TABS = [
+  { id: "account", label: "Account", hint: "Your money and your rules" },
+  { id: "vendors", label: "Vendors", hint: "Who you are allowed to pay" },
+  { id: "activity", label: "Activity", hint: "Every settlement on the network" },
+  { id: "contracts", label: "Contracts", hint: "The code all of this runs on" },
+] as const;
+
+type Tab = (typeof TABS)[number]["id"];
 
 function short(h: string): string {
   return `${h.slice(0, 8)}…${h.slice(-6)}`;
@@ -120,6 +130,7 @@ function SettlementRow({ s, agentId }: { s: SettlementProof; agentId: number }) 
 export function TrustDashboard() {
   const snapshot = loadSnapshot();
   const wallet = useCasperWallet();
+  const [tab, setTab] = useState<Tab>("account");
   const [selectedId, setSelectedId] = useState(0);
   const [myAgentId, setMyAgentId] = useState<number | null>(null);
   const [envelope, setEnvelope] = useState<Envelope | null>(null);
@@ -201,38 +212,148 @@ export function TrustDashboard() {
     }
   }
 
+  const walletButton = (
+    <WalletButton
+      connecting={wallet.connecting}
+      publicKey={wallet.publicKey}
+      error={wallet.error}
+      connect={wallet.connect}
+      disconnect={wallet.disconnect}
+    />
+  );
+
+  const active = TABS.find((t) => t.id === tab)!;
+
   return (
     <main className="min-h-screen bg-bg text-text">
-      <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
-      <div className="relative mx-auto max-w-[1200px] px-6 md:px-10 py-10">
-        {/* Top bar */}
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
-          <div className="flex flex-col gap-1">
-            <a href="/" className="font-mono text-xs tracking-[0.18em] text-muted uppercase hover:text-ink transition-colors">
-              ← Casper <span className="text-accent-red">Trust</span> Layer
+      <div className="fixed inset-0 bg-grid opacity-20 pointer-events-none" />
+
+      <div className="relative flex min-h-screen">
+        {/* Rail — the app's spine. Where you are never moves. */}
+        <aside className="hidden lg:flex w-[252px] shrink-0 flex-col justify-between border-r border-line bg-surface/70 px-5 py-8 sticky top-0 h-screen">
+          <div className="flex flex-col gap-8">
+            <a href="/" className="flex flex-col gap-0.5 group">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted group-hover:text-ink transition-colors">
+                ← Casper
+              </span>
+              <span className="font-sans text-lg font-black tracking-tight text-ink">
+                <span className="text-accent-red">Trust</span> Layer
+              </span>
             </a>
-            <h1 className="font-sans text-2xl md:text-3xl font-black tracking-tight text-ink">
-              Trust Console
-            </h1>
+
+            <nav className="flex flex-col gap-1">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`group flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-all duration-200 ${
+                    tab === t.id
+                      ? "bg-accent-red/[0.07] text-ink"
+                      : "text-muted hover:bg-subtle hover:text-ink"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
+                      tab === t.id ? "bg-accent-red" : "bg-line group-hover:bg-muted"
+                    }`}
+                  />
+                  <span className="font-sans text-sm font-semibold">{t.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-accent-red border border-accent-red/20 bg-accent-red/5 rounded px-2 py-1">
+
+          <div className="flex flex-col gap-3">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded border border-accent-red/20 bg-accent-red/5 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-accent-red">
+              <span className="h-1 w-1 rounded-full bg-accent-red" />
               {snapshot.network}
             </span>
-            <WalletButton
-              connecting={wallet.connecting}
-              publicKey={wallet.publicKey}
-              error={wallet.error}
-              connect={wallet.connect}
-              disconnect={wallet.disconnect}
-            />
+            {walletButton}
           </div>
-        </header>
+        </aside>
 
-        {/* The customer's own account comes first — everything else is reference. */}
-        {wallet.publicKey && <VaultDashboard publicKey={wallet.publicKey} />}
+        <div className="flex-1 min-w-0">
+          {/* Phone + tablet: the rail lies down into a scrollable strip. */}
+          <div className="lg:hidden sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
+            <div className="flex items-center justify-between gap-3 px-6 pt-5">
+              <a href="/" className="font-sans text-base font-black tracking-tight text-ink">
+                <span className="text-accent-red">Trust</span> Layer
+              </a>
+              {walletButton}
+            </div>
+            <div className="flex gap-1 overflow-x-auto px-6 pb-3 pt-3">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 font-sans text-xs font-semibold transition-colors ${
+                    tab === t.id
+                      ? "bg-accent-red/10 text-ink"
+                      : "text-muted hover:bg-subtle hover:text-ink"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {wallet.publicKey && (
+          <div className="mx-auto max-w-[1000px] px-6 md:px-10 py-8 lg:py-10 flex flex-col gap-6">
+            <header className="flex flex-col gap-1">
+              <h1 className="font-sans text-2xl md:text-3xl font-black tracking-tight text-ink">
+                {active.label}
+              </h1>
+              <p className="font-sans text-sm text-muted">{active.hint}</p>
+            </header>
+
+        {tab === "account" && wallet.publicKey && <VaultDashboard publicKey={wallet.publicKey} />}
+
+        {/* Without a wallet this tab used to open on OUR treasury, under a heading
+            that says "your money" — so say plainly whose account is on screen. */}
+        {tab === "account" && !wallet.publicKey && (
+          <section className="glass-panel bg-surface border-line rounded-2xl p-6 md:p-8 flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <h2 className="font-sans text-xl font-black tracking-tight text-ink">
+                You don&apos;t have an account here yet
+              </h2>
+              <p className="font-sans text-sm leading-relaxed text-muted max-w-[52ch]">
+                Opening one takes a single transaction. You write the limits — how much per
+                job, how much per day, how much track record a vendor needs — and{" "}
+                <span className="text-ink font-semibold">you</span> sign it. The rules live in
+                the contract from that moment on, so neither your agent nor we can move past
+                them.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-start gap-2">
+              <button
+                onClick={wallet.connect}
+                disabled={wallet.connecting}
+                className="inline-flex items-center gap-2.5 rounded-full bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-bg shadow-md shadow-accent-red/20 transition-all duration-300 hover:bg-ink hover:text-bg disabled:opacity-60"
+              >
+                <span className={`h-1.5 w-1.5 rounded-full bg-white ${wallet.connecting ? "animate-ping" : ""}`} />
+                {wallet.connecting ? "Connecting…" : "Connect wallet to open yours"}
+              </button>
+              {!wallet.available && (
+                <a
+                  href="https://www.casperwallet.io/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-[10px] text-muted hover:text-ink transition-colors"
+                >
+                  Casper Wallet extension not detected — install it first ↗
+                </a>
+              )}
+            </div>
+
+            <p className="font-sans text-xs leading-relaxed text-muted border-t border-line pt-4">
+              No wallet handy? The account below is <span className="text-ink">ours</span>, funded
+              with test tokens — try to break its rules and watch the contract refuse you.
+            </p>
+          </section>
+        )}
+
+        {tab === "account" && wallet.publicKey && (
           <MyAgentPanel
             publicKey={wallet.publicKey}
             rescanKey={extraAgents}
@@ -244,10 +365,13 @@ export function TrustDashboard() {
         )}
 
         {/* The owner's envelope + the live proof that the contract enforces it */}
-        <SpendingEnvelope agents={agents.map((a) => ({ ...a, ...(live[a.agentId] ?? {}) }))} env={envelope} />
+        {tab === "account" && (
+          <SpendingEnvelope agents={agents.map((a) => ({ ...a, ...(live[a.agentId] ?? {}) }))} env={envelope} />
+        )}
 
         {/* Stat strip — live actions (hire/register) update these in place */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+        {tab === "contracts" && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { n: agents.length + extraAgents, l: "Agents registered" },
             { n: snapshot.settlements.length + extraSettlements, l: "Settlements" },
@@ -261,9 +385,11 @@ export function TrustDashboard() {
             </div>
           ))}
         </div>
+        )}
 
         {/* Registry + detail */}
-        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.6fr] gap-6 mt-6">
+        {tab === "vendors" && (
+        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.6fr] gap-6">
           {/* Registry */}
           <section className="flex flex-col gap-3">
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted">
@@ -324,9 +450,33 @@ export function TrustDashboard() {
             </div>
           </section>
         </div>
+        )}
+
+        {/* Every settlement on the network, newest first — the ledger behind every score. */}
+        {tab === "activity" && (
+          <section className="glass-panel bg-surface border-line rounded-2xl p-6 md:p-8 flex flex-col gap-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                Settled escrows · wallet-free read
+              </h2>
+              <span className="font-mono text-[10px] text-muted">
+                {snapshot.settlements.length + extraSettlements} total
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {[...snapshot.settlements].reverse().map((s) => (
+                <SettlementRow key={s.txHash} s={s} agentId={s.to} />
+              ))}
+            </div>
+            <p className="font-sans text-xs leading-relaxed text-muted">
+              Every row is a payment a client actually approved. That approval is what moves a
+              score — nobody votes, and nothing here can be written without spending money.
+            </p>
+          </section>
+        )}
 
         {/* Contracts — the proof surface */}
-        <div className="mt-6">
+        {tab === "contracts" && (
           <section className="glass-panel bg-surface border-line rounded-2xl p-6 md:p-8">
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted mb-4">
               Live contracts · casper-test
@@ -346,9 +496,9 @@ export function TrustDashboard() {
               ))}
             </div>
           </section>
-        </div>
+        )}
 
-        {wallet.publicKey ? (
+        {tab === "account" && (wallet.publicKey ? (
           <>
             <HirePanel
               publicKey={wallet.publicKey}
@@ -368,7 +518,7 @@ export function TrustDashboard() {
           /* Locked preview — the console's strongest features must be visible
              BEFORE a wallet is connected, or first-time visitors never learn
              they exist. */
-          <section className="glass-panel bg-surface border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
+          <section className="glass-panel bg-surface border-accent-red/20 rounded-2xl p-6 md:p-8">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
                 Hire &amp; register · live on-chain flows
@@ -392,28 +542,13 @@ export function TrustDashboard() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-start gap-2">
-              <button
-                onClick={wallet.connect}
-                disabled={wallet.connecting}
-                className="inline-flex items-center gap-2.5 rounded-full bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-bg shadow-md shadow-accent-red/20 transition-all duration-300 hover:bg-ink hover:text-bg disabled:opacity-60"
-              >
-                <span className={`h-1.5 w-1.5 rounded-full bg-white ${wallet.connecting ? "animate-ping" : ""}`} />
-                {wallet.connecting ? "Connecting…" : "Connect Casper Wallet to unlock"}
-              </button>
-              {!wallet.available && (
-                <a
-                  href="https://www.casperwallet.io/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-[10px] text-muted hover:text-ink transition-colors"
-                >
-                  Casper Wallet extension not detected — install it first ↗
-                </a>
-              )}
-            </div>
+            <p className="font-sans text-xs text-muted">
+              Both unlock with the same wallet connection as the account above.
+            </p>
           </section>
-        )}
+        ))}
+          </div>
+        </div>
       </div>
     </main>
   );
