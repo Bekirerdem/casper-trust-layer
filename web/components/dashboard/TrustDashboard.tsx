@@ -6,6 +6,7 @@ import { WalletButton } from "@/components/dashboard/WalletButton";
 import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
 import { HirePanel } from "@/components/dashboard/HirePanel";
 import { MyAgentPanel } from "@/components/dashboard/MyAgentPanel";
+import { VaultDashboard } from "@/components/dashboard/VaultDashboard";
 import { SpendingEnvelope, type Envelope } from "@/components/dashboard/SpendingEnvelope";
 import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
 import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
@@ -228,7 +229,9 @@ export function TrustDashboard() {
           </div>
         </header>
 
-        {/* Ownership first: a connected wallet should see ITS agent before the network's */}
+        {/* The customer's own account comes first — everything else is reference. */}
+        {wallet.publicKey && <VaultDashboard publicKey={wallet.publicKey} />}
+
         {wallet.publicKey && (
           <MyAgentPanel
             publicKey={wallet.publicKey}
