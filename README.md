@@ -87,6 +87,8 @@ flowchart TD
 
 ## The payment layer — trust-gated x402
 
+We did not rewrite x402. Its bottleneck was never the payment — it is the decision. A public data marketplace logged **1,183 agent probes against 5 settlements**; the agents could pay perfectly well, they just could not tell whether a counterparty was worth paying. That judgement is what we added.
+
 On-chain trust is only useful if something *acts* on it. The [`casper-trust`](https://www.npmjs.com/package/casper-trust) TypeScript SDK turns the registry into a live payment gate:
 
 - **Wallet-free, gas-free reads.** Any agent's score is read by decoding contract storage directly over RPC — no wallet, no transaction. One line: `checkTrust(client, agentId)`.
@@ -201,7 +203,7 @@ No claim in this README requires trusting us:
 | Criterion | What ships | Evidence |
 |---|---|---|
 | **Technical quality** | 6 contracts live and wired on `casper-test`; 62 OdraVM tests (incl. the adversarial reputation suite, the owner's brake, and per-customer vault isolation) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
-| **Innovation** | Reputation derived *objectively* from settled escrow payments, hardened with anti-gaming math (per-edge caps, trust conservation, value concavity); to our knowledge the category's only npm-published SDK | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
+| **Innovation** | Reputation derived *objectively* from settled escrow payments — no judge anywhere in the scoring path — hardened with anti-gaming math (per-edge caps, trust conservation, value concavity), and shipped as a package that installs and runs outside this repo | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
 | **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 | **DeFi / RWA applicability** | A vault per customer: per-job + daily ceilings and a protocol-level counterparty gate, enforced in the contract; CEP-18 escrow rails | [AgentVaults](https://testnet.cspr.live/contract-package/674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914) · [AgentTreasury](https://testnet.cspr.live/contract-package/95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a) · [`contracts/src`](contracts/src) |
 | **UX** | Wallet-free, gas-free score reads; an account you open and sign yourself; in-browser wallet-signed registration **and** a full hire flow with a faucet | [live demo](https://casper-trust-layer.vercel.app) · [dashboard](https://casper-trust-layer.vercel.app/app) |

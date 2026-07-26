@@ -97,7 +97,8 @@ can neither freeze, withdraw, re-rule nor spend from someone else's vault
 
 ## 4 · Integrate it — 3 minutes
 
-The category's only npm-published SDK. Wallet-free, works in plain Node:
+Published to npm and installable right now — wallet-free, working in plain Node.
+Install it in an empty directory and it runs; nothing here is a repo-only script:
 
 ```bash
 npm install casper-trust
