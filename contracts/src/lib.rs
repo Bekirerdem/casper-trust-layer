@@ -6,3 +6,4 @@ pub mod escrow;
 pub mod identity;
 pub mod reputation;
 pub mod treasury;
+pub mod vaults;

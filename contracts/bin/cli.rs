@@ -7,6 +7,7 @@ use contracts::escrow::{Escrow, EscrowInitArgs};
 use contracts::identity::IdentityRegistry;
 use contracts::reputation::{ReputationEngine, ReputationEngineInitArgs};
 use contracts::treasury::{AgentTreasury, AgentTreasuryInitArgs};
+use contracts::vaults::{AgentVaults, AgentVaultsInitArgs};
 use odra::casper_types::U256;
 use odra::host::{HostEnv, NoArgs};
 use odra::prelude::Addressable;
@@ -99,6 +100,20 @@ impl DeployScript for TrustLayerDeployScript {
         // require a real settled score; tune per demo).
         env.set_gas(20_000_000_000u64);
         treasury.set_reputation_policy(reputation.address(), U256::from(1u64));
+
+        // Multi-tenant vaults: every customer opens their own account inside this
+        // one contract — their balance, their limits, their agent, their freeze.
+        // No init-time owner; each vault records its own.
+        let _vaults = AgentVaults::load_or_deploy(
+            env,
+            AgentVaultsInitArgs {
+                identity: identity.address(),
+                reputation: reputation.address(),
+                token: token.address(),
+            },
+            container,
+            gas,
+        )?;
 
         Ok(())
     }

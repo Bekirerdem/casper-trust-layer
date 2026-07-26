@@ -1,4 +1,4 @@
-last_updated = "2026-07-25T17:12:31Z"
+last_updated = "2026-07-26T02:21:02Z"
 
 [[contracts]]
 name = "IdentityRegistry"
@@ -24,3 +24,8 @@ package_hash = "hash-fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc
 name = "AgentTreasury"
 package_name = "AgentTreasury"
 package_hash = "hash-95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a"
+
+[[contracts]]
+name = "AgentVaults"
+package_name = "AgentVaults"
+package_hash = "hash-674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914"
