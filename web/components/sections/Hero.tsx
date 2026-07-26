@@ -27,10 +27,8 @@ export function Hero() {
 
           <Reveal mode="mount" delay={0.06}>
             <h1 className="font-sans text-[clamp(2.6rem,6vw,4.6rem)] font-black leading-[0.98] tracking-[-0.03em] text-white">
-              Your AI agent can spend your money.
-              <br />
-              You decide <span className="text-accent-red">how much</span>, and who&apos;s worth
-              paying.
+              Give your AI agent a budget it{" "}
+              <span className="text-accent-red">can&apos;t exceed</span>.
             </h1>
           </Reveal>
 

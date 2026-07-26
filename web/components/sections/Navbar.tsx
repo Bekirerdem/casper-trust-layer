@@ -20,10 +20,15 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Section links are anchors on the home page, so from any other route they
+  // have to carry the route with them — a bare "#rules" on /docs just sits there.
+  const onHome = pathname === "/";
+  const section = (hash: string) => (onHome ? hash : `/${hash}`);
+
   const navItems = [
-    { label: "The rules", href: "#rules" },
-    { label: "Proof", href: "#live-proof" },
-    { label: "Developers", href: "#developer" },
+    { label: "The rules", href: section("#rules") },
+    { label: "Proof", href: section("#live-proof") },
+    { label: "Developers", href: section("#developer") },
     { label: "Docs", href: "/docs" },
   ];
 
@@ -42,7 +47,7 @@ export function Navbar() {
     >
       <div className="mx-auto px-6 md:px-8 flex items-center justify-between">
         {/* Logo / Wordmark */}
-        <a href="#hero" className="flex items-center gap-2 group">
+        <a href={onHome ? "#hero" : "/"} className="flex items-center gap-2 group">
           <span className="font-mono text-sm tracking-[0.18em] text-white font-bold uppercase transition-all duration-300">
             Casper <span className="text-accent-red group-hover:text-white transition-colors duration-300">Trust</span> Layer
           </span>
@@ -75,7 +80,7 @@ export function Navbar() {
             <span className="hidden sm:inline">Open Console ↗</span>
           </a>
           <a
-            href="#developer"
+            href={section("#developer")}
             className="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white bg-accent-red border border-transparent rounded-full hover:bg-white hover:text-black transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-accent-red/20 whitespace-nowrap"
           >
             Install SDK
@@ -108,7 +113,7 @@ export function Navbar() {
             </a>
           ))}
           <a
-            href="#developer"
+            href={section("#developer")}
             onClick={() => setMenuOpen(false)}
             className="sm:hidden px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-widest text-accent-red hover:text-white hover:bg-white/5 transition-colors"
           >
