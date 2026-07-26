@@ -55,18 +55,20 @@ export function FinalCta() {
                     {...(door.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className={`flex flex-col gap-1.5 w-full px-6 py-4 rounded-xl transition-all duration-300 hover:scale-102 group ${
                       door.primary
-                        ? "bg-accent-red hover:bg-ink text-bg hover:text-bg shadow-lg shadow-accent-red/10"
-                        : "bg-surface hover:bg-subtle border border-line hover:border-white text-ink"
+                        ? "bg-accent-red hover:bg-ink text-bg shadow-lg shadow-accent-red/10"
+                        : "bg-surface hover:bg-subtle border border-line hover:border-ink/25 text-ink"
                     }`}
                   >
-                    <span className={`font-mono text-[9px] uppercase tracking-[0.2em] ${door.primary ? "text-ink/70 group-hover:text-black/60" : "text-accent-red"}`}>
+                    {/* On the red card the type stays light through the hover —
+                        it darkens to ink, so anything ink-coloured disappears. */}
+                    <span className={`font-mono text-[9px] uppercase tracking-[0.2em] ${door.primary ? "text-bg/75" : "text-accent-red"}`}>
                       {door.audience}
                     </span>
                     <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-widest">
                       <span>{door.title}</span>
                       <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
                     </span>
-                    <span className={`font-sans text-xs normal-case tracking-normal ${door.primary ? "text-ink/70 group-hover:text-black/60" : "text-muted"}`}>
+                    <span className={`font-sans text-xs normal-case tracking-normal ${door.primary ? "text-bg/75" : "text-muted"}`}>
                       {door.body}
                     </span>
                   </a>

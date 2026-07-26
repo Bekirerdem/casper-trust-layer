@@ -194,7 +194,7 @@ export function VaultDashboard({ publicKey }: { publicKey: string }) {
             disabled={running}
             className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-sans text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${
               vault.frozen
-                ? "bg-white text-black hover:bg-ok"
+                ? "bg-ink text-bg hover:bg-ok"
                 : "border border-accent-red/40 text-accent-red hover:bg-accent-red hover:text-bg"
             }`}
           >

@@ -21,18 +21,18 @@ export function Developer() {
   };
 
   const codeLines = [
-    <span key="1"><span className="text-orange-400">import</span> {"{"} createTrustClient, getReputation, pay {"}"} <span className="text-orange-400">from</span> <span className="text-ok">&quot;casper-trust&quot;</span>;</span>,
+    <span key="1"><span className="text-[#CF222E]">import</span> {"{"} createTrustClient, getReputation, pay {"}"} <span className="text-[#CF222E]">from</span> <span className="text-[#0A3069]">&quot;casper-trust&quot;</span>;</span>,
     <span key="2" className="text-ink/20"></span>,
-    <span key="3"><span className="text-orange-400">const</span> trust = <span className="text-yellow-400">createTrustClient</span>(); <span className="text-muted">{"// wallet-free reads"}</span></span>,
+    <span key="3"><span className="text-[#CF222E]">const</span> trust = <span className="text-[#8250DF]">createTrustClient</span>(); <span className="text-muted">{"// wallet-free reads"}</span></span>,
     <span key="4" className="text-ink/20"></span>,
     <span key="5" className="text-muted">{"// Read an agent's on-chain reputation"}</span>,
-    <span key="6"><span className="text-orange-400">const</span> {"{"} scoreBps {"}"} = <span className="text-orange-400">await</span> <span className="text-yellow-400">getReputation</span>(trust, agentId);</span>,
+    <span key="6"><span className="text-[#CF222E]">const</span> {"{"} scoreBps {"}"} = <span className="text-[#CF222E]">await</span> <span className="text-[#8250DF]">getReputation</span>(trust, agentId);</span>,
     <span key="7" className="text-ink/20"></span>,
     <span key="8" className="text-muted">{"// Trust-gated x402 — refused before any gas is spent"}</span>,
-    <span key="9"><span className="text-orange-400">await</span> <span className="text-yellow-400">pay</span>({"{"} ...trust, signer {"}"}, {"{"}</span>,
+    <span key="9"><span className="text-[#CF222E]">await</span> <span className="text-[#8250DF]">pay</span>({"{"} ...trust, signer {"}"}, {"{"}</span>,
     <span key="10">{"  "}url: providerEndpoint,</span>,
     <span key="11">{"  "}providerAgentId: agentId,</span>,
-    <span key="12">{"  "}minScore: <span className="text-cyan-400">100n</span>,</span>,
+    <span key="12">{"  "}minScore: <span className="text-[#0550AE]">100n</span>,</span>,
     <span key="13">
       {"}"});
       <span className="inline-block w-1.5 h-3.5 bg-accent-red ml-1 align-middle animate-pulse" />
@@ -92,7 +92,7 @@ export function Developer() {
                   href={developer.githubLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-6 py-3.5 text-xs font-semibold uppercase tracking-widest text-ink border border-white/20 hover:border-white rounded-full hover:bg-ink hover:text-bg transition-all duration-300"
+                  className="inline-flex items-center justify-center px-6 py-3.5 text-xs font-semibold uppercase tracking-widest text-ink border border-line hover:border-ink/30 rounded-full hover:bg-ink hover:text-bg transition-all duration-300"
                 >
                   GitHub Source
                 </a>
@@ -104,12 +104,12 @@ export function Developer() {
           <Reveal delay={0.18} className="w-full">
             <div className="relative">
               {/* Decorative terminal glow */}
-              <div className="absolute -inset-1.5 bg-linear-to-r from-accent-red to-orange-500 rounded-xl opacity-10 blur-lg pointer-events-none" />
+              <div className="absolute -inset-1.5 bg-linear-to-r from-accent-red to-orange-500 rounded-xl opacity-[0.06] blur-lg pointer-events-none" />
               
               {/* Terminal Box */}
               <div
                 onMouseMove={handleMouseMove}
-                className="relative w-full rounded-xl border border-line bg-[#121215]/95 shadow-2xl overflow-hidden font-mono text-xs spotlight-card"
+                className="relative w-full rounded-xl border border-line bg-surface shadow-sm overflow-hidden font-mono text-xs spotlight-card"
                 style={{
                   "--mouse-x": `${coords.x}px`,
                   "--mouse-y": `${coords.y}px`,
@@ -136,14 +136,14 @@ export function Developer() {
                 </div>
 
                 {/* Terminal Content */}
-                <div className="py-6 overflow-x-auto leading-relaxed text-ink/95 relative z-10">
+                <div className="py-6 overflow-x-auto leading-relaxed text-ink relative z-10">
                   <div className="flex flex-col min-w-[500px]">
                     {codeLines.map((line, idx) => (
                       <div
                         key={idx}
                         className="flex hover:bg-subtle py-0.5 border-l-2 border-transparent hover:border-accent-red transition-colors group"
                       >
-                        <span className="w-10 select-none text-ink/20 group-hover:text-ink/45 text-right pr-4 shrink-0 font-mono text-[10px] pt-0.5">
+                        <span className="w-10 select-none text-muted/45 group-hover:text-muted text-right pr-4 shrink-0 font-mono text-[10px] pt-0.5">
                           {idx + 1}
                         </span>
                         <pre className="font-mono text-left leading-relaxed text-xs">
