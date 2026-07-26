@@ -85,7 +85,7 @@ The single-tenant treasury carries the same story with `pause()`: settle → pau
 - **GitHub:** https://github.com/Bekirerdem/casper-trust-layer
 - **On-chain addresses + tx proofs:** https://github.com/Bekirerdem/casper-trust-layer/blob/main/DEPLOYMENT.md
 - **Reputation formula + threat model:** https://github.com/Bekirerdem/casper-trust-layer/blob/main/docs/reputation-formula.md
-- **Demo video:** https://youtu.be/H0BoEYr47q4
+- **Demo video:** https://youtu.be/JiDR6VGyZz4
 
 ## Casper Testnet Contract Address(es)
 ```

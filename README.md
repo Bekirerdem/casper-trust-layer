@@ -16,7 +16,7 @@ An owner opens an on-chain vault and writes the rules; the contract enforces two
 
 ### ⏱ Judges — start here: **[JUDGES.md](JUDGES.md)** — verify everything yourself in 10 minutes<br/>*(the first three checks need no wallet, no key, and no install)*
 
-**[Live demo](https://casper-trust-layer.vercel.app)** · **[Dashboard](https://casper-trust-layer.vercel.app/app)** · **[Docs](https://casper-trust-layer.vercel.app/docs)** · **[Demo video](https://youtu.be/H0BoEYr47q4)** · **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · **[MCP server](mcp/)** · **[On-chain proof](DEPLOYMENT.md)**
+**[Live demo](https://casper-trust-layer.vercel.app)** · **[Dashboard](https://casper-trust-layer.vercel.app/app)** · **[Docs](https://casper-trust-layer.vercel.app/docs)** · **[Demo video](https://youtu.be/JiDR6VGyZz4)** · **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · **[MCP server](mcp/)** · **[On-chain proof](DEPLOYMENT.md)**
 
 <img src="web/public/og.png" alt="Your agent has your money — you set what it may spend, the contract also checks who it pays" width="820" />
 
