@@ -31,7 +31,7 @@ export function FinalCta() {
                   {finalCta.headlineLine1}
                   <br />
                   {finalCta.headlineLine2Pre}{" "}
-                  <span className="text-transparent bg-clip-text bg-linear-to-r from-accent-red to-orange-500 font-extrabold">
+                  <span className="text-accent-red font-extrabold">
                     {finalCta.headlineLine2Accent}
                   </span>
                   {finalCta.headlineLine2Post}

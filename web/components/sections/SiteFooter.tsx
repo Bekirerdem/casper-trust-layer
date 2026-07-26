@@ -5,7 +5,7 @@ import { siteFooter } from "@/lib/content";
 export function SiteFooter() {
   return (
     <footer
-      className="w-full bg-[#08080A] border-t border-line"
+      className="w-full bg-subtle border-t border-line"
       aria-label="Site footer"
     >
       <div className="mx-auto max-w-[1200px] px-6 md:px-12 py-16 md:py-24">
@@ -45,7 +45,7 @@ export function SiteFooter() {
         </div>
 
         {/* Hairline Separator */}
-        <div className="my-12 w-full h-px bg-surface" />
+        <div className="my-12 w-full h-px bg-line" />
 
         {/* Bottom row: Quotes & Version */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
