@@ -39,10 +39,10 @@ export function ThreeRules() {
       <div className="mx-auto max-w-[1200px]">
         <Reveal>
           <div className="flex max-w-[60ch] flex-col gap-4">
-            <h2 className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-white">
+            <h2 className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-ink">
               Three ways your account says no.
             </h2>
-            <p className="font-sans text-base leading-relaxed text-[#8E8E93]">
+            <p className="font-sans text-base leading-relaxed text-muted">
               Not warnings, not alerts after the fact. Each of these already stopped a real payment —
               the receipts are below.
             </p>
@@ -52,22 +52,22 @@ export function ThreeRules() {
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
           {RULES.map((r, i) => (
             <Reveal key={r.rule} delay={0.06 * i}>
-              <article className="group flex h-full flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6 transition-colors duration-500 hover:border-accent-red/30 hover:bg-white/[0.04]">
+              <article className="group flex h-full flex-col gap-4 rounded-2xl border border-line bg-surface p-6 transition-colors duration-500 hover:border-accent-red/30 hover:bg-subtle">
                 <div className="flex flex-col gap-1">
-                  <h3 className="font-sans text-2xl font-black tracking-tight text-white">{r.rule}</h3>
+                  <h3 className="font-sans text-2xl font-black tracking-tight text-ink">{r.rule}</h3>
                   <p className="font-sans text-sm text-accent-red">{r.setting}</p>
                 </div>
 
-                <p className="flex-1 font-sans text-sm leading-relaxed text-[#8E8E93]">{r.story}</p>
+                <p className="flex-1 font-sans text-sm leading-relaxed text-muted">{r.story}</p>
 
                 <a
                   href={`https://testnet.cspr.live/transaction/${r.tx}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/40 px-4 py-3 transition-colors hover:border-accent-red/40"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-line bg-subtle px-4 py-3 transition-colors hover:border-accent-red/40"
                 >
                   <span className="font-sans text-xs font-semibold text-accent-red">{r.blocked}</span>
-                  <span className="font-sans text-xs text-[#8E8E93] transition-colors group-hover:text-white">
+                  <span className="font-sans text-xs text-muted transition-colors group-hover:text-ink">
                     See receipt ↗
                   </span>
                 </a>

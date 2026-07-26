@@ -27,9 +27,9 @@ function fromMotes(motes: string, maxFractionDigits = 3): string {
 }
 
 function clearance(scoreBps: number): { label: string; tone: string } {
-  if (scoreBps >= 100) return { label: "Trusted", tone: "text-green-400 border-green-400/30 bg-green-400/5" };
+  if (scoreBps >= 100) return { label: "Trusted", tone: "text-ok border-ok/30 bg-ok/5" };
   if (scoreBps > 0) return { label: "Building", tone: "text-orange-400 border-orange-400/30 bg-orange-400/5" };
-  return { label: "New", tone: "text-[#8E8E93] border-white/10 bg-white/5" };
+  return { label: "New", tone: "text-muted border-line bg-surface" };
 }
 
 export function MyAgentPanel({
@@ -106,7 +106,7 @@ export function MyAgentPanel({
   const pct = Math.min(100, ((passport?.scoreBps ?? 0) / SCORE_MAX) * 100);
 
   return (
-    <section className="glass-panel bg-white/5 border-white/10 rounded-2xl p-6 md:p-8 mt-6">
+    <section className="glass-panel bg-surface border-line rounded-2xl p-6 md:p-8 mt-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
           Your agent
@@ -114,7 +114,7 @@ export function MyAgentPanel({
         {owned && (
           <button
             onClick={() => copyProfile(agentId)}
-            className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] hover:text-white transition-colors"
+            className="font-mono text-[10px] uppercase tracking-widest text-muted hover:text-ink transition-colors"
           >
             {copied ? "✓ link copied" : "Copy public link"}
           </button>
@@ -122,12 +122,12 @@ export function MyAgentPanel({
       </div>
 
       {scanning && (
-        <p className="font-mono text-xs text-[#8E8E93]">Looking for your agent…</p>
+        <p className="font-mono text-xs text-muted">Looking for your agent…</p>
       )}
 
       {!scanning && !owned && (
         <div className="flex flex-col gap-3">
-          <p className="font-sans text-sm text-[#8E8E93] max-w-[62ch] leading-relaxed">
+          <p className="font-sans text-sm text-muted max-w-[62ch] leading-relaxed">
             You have not set up an agent yet. Once you do, its deposit and its record of finished
             work show up here — and other people can check it before paying you.
           </p>
@@ -139,14 +139,14 @@ export function MyAgentPanel({
           {/* Identity + earned score */}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex flex-col gap-2">
-              <span className="font-sans text-sm text-[#8E8E93]">Agent #{agentId}</span>
+              <span className="font-sans text-sm text-muted">Agent #{agentId}</span>
               {/* Finished work is the number a customer would judge this on —
                   the raw score is an implementation detail. */}
               <div className="flex items-baseline gap-3">
-                <span className="font-sans text-5xl font-black tabular-nums text-white">
+                <span className="font-sans text-5xl font-black tabular-nums text-ink">
                   {passport?.jobsCompleted ?? "—"}
                 </span>
-                <span className="font-sans text-sm font-semibold text-green-400">
+                <span className="font-sans text-sm font-semibold text-ok">
                   {passport?.jobsCompleted === 1 ? "job finished" : "jobs finished"}
                 </span>
               </div>
@@ -158,7 +158,7 @@ export function MyAgentPanel({
             </span>
           </div>
 
-          <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
+          <div className="h-1 w-full rounded-full bg-subtle overflow-hidden">
             <div
               className="h-full rounded-full bg-linear-to-r from-accent-red to-orange-500 transition-all duration-700"
               style={{ width: `${pct}%` }}
@@ -175,8 +175,8 @@ export function MyAgentPanel({
                 { v: fromMotes(passport.bond, 0), l: "Deposit" },
               ].map((s) => (
                 <div key={s.l}>
-                  <div className="font-mono text-2xl font-black tabular-nums text-white">{s.v}</div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mt-1">
+                  <div className="font-mono text-2xl font-black tabular-nums text-ink">{s.v}</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted mt-1">
                     {s.l}
                   </div>
                 </div>
@@ -185,30 +185,30 @@ export function MyAgentPanel({
           )}
 
           {/* What this unlocks — what this score actually unlocks */}
-          <div className="rounded-xl border border-white/10 bg-black/30 p-4 flex flex-col gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+          <div className="rounded-xl border border-line bg-subtle p-4 flex flex-col gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
               What this unlocks
             </span>
             <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
-              <span className="text-white">Can receive payments from limited accounts</span>
+              <span className="text-ink">Can receive payments from limited accounts</span>
               <span
                 className={
-                  (passport?.scoreBps ?? 0) >= TREASURY_MIN_SCORE ? "text-green-400" : "text-accent-red"
+                  (passport?.scoreBps ?? 0) >= TREASURY_MIN_SCORE ? "text-ok" : "text-accent-red"
                 }
               >
                 {(passport?.scoreBps ?? 0) >= TREASURY_MIN_SCORE ? "Yes" : "Not yet"}
               </span>
             </div>
-            <p className="font-sans text-xs text-[#8E8E93] leading-relaxed">
+            <p className="font-sans text-xs text-muted leading-relaxed">
               Accounts that require a track record will pay this agent{" "}
-              <span className="text-white">or</span> clears this gate — enforced in the contract, not the SDK.
+              <span className="text-ink">or</span> clears this gate — enforced in the contract, not the SDK.
             </p>
           </div>
 
           {passport && (
-            <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+            <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[10px] uppercase tracking-widest text-muted">
               <span>
-                Status <span className={passport.status === "Active" ? "text-green-400" : "text-accent-red"}>{passport.status}</span>
+                Status <span className={passport.status === "Active" ? "text-ok" : "text-accent-red"}>{passport.status}</span>
               </span>
               <span className="break-all normal-case tracking-normal">{passport.agentUri}</span>
             </div>

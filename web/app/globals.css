@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
 /* ── Design tokens ───────────────────────────────────────────────────────── */
+/* A money product reads light. The dark build looked like a trading terminal —
+   which is the wrong promise for someone deciding what their agent may spend. */
 :root {
-  --bg: #08080A;              /* deep slate black */
-  --surface: #121215;         /* dark gray surface */
-  --text: #FFFFFF;            /* pure white */
-  --muted: #8E8E93;           /* slate grey */
-  --line: rgba(255, 255, 255, 0.08); /* fine border line */
-  --accent-red: #E6212F;      /* avax signature red */
-  --accent-gold: rgba(255, 255, 255, 0.12); /* fallback hairline tint */
+  --bg: #FBFBF9;              /* paper, very slightly warm */
+  --surface: #FFFFFF;         /* cards sit above the paper */
+  --subtle: #F3F3EF;          /* recessed areas: inputs, code, receipts */
+  --ink: #16181C;             /* primary text */
+  --muted: #6B6F76;           /* secondary text — passes AA on both bg and surface */
+  --line: #E4E4DE;            /* hairline */
+  --accent-red: #D71B27;      /* Casper red, darkened for contrast on white */
+  --ok: #0B7A4B;              /* settled */
 
   /* Font stacks wired from layout.tsx */
   --font-display: var(--font-geist-sans);
@@ -20,11 +23,13 @@
 @theme {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --color-text: var(--text);
+  --color-subtle: var(--subtle);
+  --color-ink: var(--ink);
+  --color-text: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent-red: var(--accent-red);
-  --color-accent-gold: var(--accent-gold);
+  --color-ok: var(--ok);
 
   --font-family-display: var(--font-display);
   --font-family-sans: var(--font-sans);
@@ -37,7 +42,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   scroll-behavior: smooth;
 }
 
@@ -62,30 +67,31 @@ body {
 .bg-grid {
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, rgba(22, 24, 28, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(22, 24, 28, 0.035) 1px, transparent 1px);
 }
 
 /* Glowing radial backdrop shadow */
 .bg-glow-red {
-  background: radial-gradient(circle 400px at 50% 50%, rgba(230, 33, 47, 0.08), transparent 80%);
+  background: radial-gradient(circle 420px at 50% 50%, rgba(215, 27, 39, 0.05), transparent 78%);
 }
 
 .bg-glow-green {
-  background: radial-gradient(circle 300px at 50% 50%, rgba(34, 197, 94, 0.05), transparent 80%);
+  background: radial-gradient(circle 300px at 50% 50%, rgba(11, 122, 75, 0.04), transparent 80%);
 }
 
-/* Glassmorphism styling */
+/* Was frosted glass on black. On paper, depth comes from a hairline and a
+   whisper of shadow — blur would just look smudged. */
 .glass-panel {
-  background: rgba(18, 18, 21, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(22, 24, 28, 0.04);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel:hover {
-  border-color: rgba(230, 33, 47, 0.25);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), inset 0 0 1px rgba(255, 255, 255, 0.2);
+  border-color: rgba(215, 27, 39, 0.28);
+  box-shadow: 0 6px 20px rgba(22, 24, 28, 0.07);
 }
 
 /* Card Pointer Spotlight Effect */
@@ -102,7 +108,7 @@ body {
   padding: 1px; /* border thickness */
   background: radial-gradient(
     300px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
-    rgba(230, 33, 47, 0.3),
+    rgba(215, 27, 39, 0.22),
     transparent 80%
   );
   -webkit-mask: 
@@ -126,7 +132,7 @@ body {
   pointer-events: none;
   background: radial-gradient(
     300px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
-    rgba(230, 33, 47, 0.04),
+    rgba(215, 27, 39, 0.05),
     transparent 80%
   );
   opacity: 0;
@@ -228,7 +234,7 @@ body {
 .vignette-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, transparent 35%, #08080A 95%);
+  background: radial-gradient(circle at center, transparent 40%, rgba(22, 24, 28, 0.06) 95%);
   pointer-events: none;
 }
 

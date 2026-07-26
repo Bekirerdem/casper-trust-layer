@@ -56,43 +56,43 @@ function Attempt({
   return (
     <div
       className={`flex flex-col gap-3 rounded-xl border p-5 ${
-        tone === "pass" ? "border-green-500/20 bg-green-500/[0.03]" : "border-accent-red/20 bg-accent-red/[0.03]"
+        tone === "pass" ? "border-ok/25 bg-ok/5" : "border-accent-red/20 bg-accent-red/[0.03]"
       }`}
     >
       <div className="flex flex-col gap-1.5">
-        <span className="font-sans text-sm font-bold text-white">{title}</span>
-        <span className="font-sans text-xs leading-relaxed text-[#8E8E93]">{subtitle}</span>
+        <span className="font-sans text-sm font-bold text-ink">{title}</span>
+        <span className="font-sans text-xs leading-relaxed text-muted">{subtitle}</span>
       </div>
 
       <button
         onClick={onRun}
         disabled={disabled || running}
-        className="inline-flex items-center gap-2 self-start rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-sans text-xs font-semibold text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10 disabled:opacity-40"
+        className="inline-flex items-center gap-2 self-start rounded-lg border border-line bg-surface px-4 py-2.5 font-sans text-xs font-semibold text-ink transition-all duration-300 hover:border-ink/30 hover:bg-subtle disabled:opacity-40"
       >
         <span
-          className={`h-1.5 w-1.5 rounded-full ${tone === "pass" ? "bg-green-400" : "bg-accent-red"} ${running ? "animate-ping" : ""}`}
+          className={`h-1.5 w-1.5 rounded-full ${tone === "pass" ? "bg-ok" : "bg-accent-red"} ${running ? "animate-ping" : ""}`}
         />
         {running ? "Checking…" : buttonLabel}
       </button>
 
       {verdict && verdict.state !== "sending" && (
         <div className="flex flex-col gap-1 font-sans text-xs">
-          {verdict.state === "pending" && <span className="text-[#8E8E93]">Checking your rules…</span>}
+          {verdict.state === "pending" && <span className="text-muted">Checking your rules…</span>}
           {verdict.state === "sent" && (
-            <span className="font-semibold text-green-400">Sent — this one cleared your rules.</span>
+            <span className="font-semibold text-ok">Sent — this one cleared your rules.</span>
           )}
           {verdict.state === "blocked" && (
             <span className="font-semibold text-accent-red">
               Blocked — {verdict.message}. Your money didn&apos;t move.
             </span>
           )}
-          {verdict.state === "error" && <span className="text-[#8E8E93]">{verdict.message}</span>}
+          {verdict.state === "error" && <span className="text-muted">{verdict.message}</span>}
           {verdict.txHash && (
             <a
               href={receipt(verdict.txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#8E8E93] underline decoration-white/20 transition-colors hover:text-white"
+              className="text-muted underline decoration-white/20 transition-colors hover:text-ink"
             >
               See the receipt ↗
             </a>
@@ -164,13 +164,13 @@ export function SpendingEnvelope({
   }
 
   return (
-    <section className="glass-panel bg-white/5 border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
+    <section className="glass-panel bg-surface border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <h2 className="font-sans text-lg font-bold text-white">Spending limits</h2>
-        <span className="font-sans text-xs text-[#8E8E93]">Demo account · test funds</span>
+        <h2 className="font-sans text-lg font-bold text-ink">Spending limits</h2>
+        <span className="font-sans text-xs text-muted">Demo account · test funds</span>
       </div>
 
-      <p className="font-sans text-sm text-[#8E8E93] mb-6 leading-relaxed max-w-[68ch]">
+      <p className="font-sans text-sm text-muted mb-6 leading-relaxed max-w-[68ch]">
         You decide what your agent can spend and who it may pay. The account holds those rules
         itself, so the agent cannot talk its way past them — and neither can we.
       </p>
@@ -182,9 +182,9 @@ export function SpendingEnvelope({
           { v: "Completed jobs", l: "Vendors must have" },
           { v: env ? money(env.locked) : "—", l: "Set aside" },
         ].map((s) => (
-          <div key={s.l} className="rounded-xl border border-white/10 bg-black/30 p-4">
-            <div className="font-sans text-xl font-black tabular-nums text-white">{s.v}</div>
-            <div className="font-sans text-xs text-[#8E8E93] mt-1">{s.l}</div>
+          <div key={s.l} className="rounded-xl border border-line bg-subtle p-4">
+            <div className="font-sans text-xl font-black tabular-nums text-ink">{s.v}</div>
+            <div className="font-sans text-xs text-muted mt-1">{s.l}</div>
           </div>
         ))}
       </div>
@@ -192,25 +192,25 @@ export function SpendingEnvelope({
       {/* Freeze */}
       <div
         className={`rounded-xl border p-4 mb-7 ${
-          env?.paused ? "border-accent-red/40 bg-accent-red/5" : "border-white/10 bg-black/30"
+          env?.paused ? "border-accent-red/40 bg-accent-red/5" : "border-line bg-subtle"
         }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-sans text-sm font-semibold text-white">Freeze</span>
+          <span className="font-sans text-sm font-semibold text-ink">Freeze</span>
           <span
-            className={`font-sans text-xs font-semibold ${env?.paused ? "text-accent-red" : "text-green-400"}`}
+            className={`font-sans text-xs font-semibold ${env?.paused ? "text-accent-red" : "text-ok"}`}
           >
             {env ? (env.paused ? "Frozen — nothing can be paid" : "Active — spending allowed") : "—"}
           </span>
         </div>
-        <p className="font-sans text-xs text-[#8E8E93] mt-2 leading-relaxed">
+        <p className="font-sans text-xs text-muted mt-2 leading-relaxed">
           One switch stops every payment instantly. Nothing leaves the account and nothing has to be
           undone.{" "}
           <a
             href={receipt("c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8")}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white underline decoration-white/20 transition-colors hover:text-accent-red"
+            className="text-ink underline decoration-white/20 transition-colors hover:text-accent-red"
           >
             See a payment refused while frozen ↗
           </a>
@@ -218,8 +218,8 @@ export function SpendingEnvelope({
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-sans text-sm font-bold text-white">Try to break the rules</h3>
-        <span className="font-sans text-xs text-[#8E8E93]">No wallet needed</span>
+        <h3 className="font-sans text-sm font-bold text-ink">Try to break the rules</h3>
+        <span className="font-sans text-xs text-muted">No wallet needed</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -258,7 +258,7 @@ export function SpendingEnvelope({
         )}
       </div>
 
-      <p className="font-sans text-xs text-[#8E8E93] mt-5 leading-relaxed">
+      <p className="font-sans text-xs text-muted mt-5 leading-relaxed">
         Every attempt is real. A refusal is recorded the same way a payment is, which is why you can
         open its receipt instead of taking our word for it.
       </p>

@@ -19,21 +19,21 @@ export function Hero() {
         {/* Left — the claim */}
         <div className="flex flex-col gap-7">
           <Reveal mode="mount">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#8E8E93]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
               <span className="h-1.5 w-1.5 rounded-full bg-accent-red" />
               {hero.badge}
             </span>
           </Reveal>
 
           <Reveal mode="mount" delay={0.06}>
-            <h1 className="font-sans text-[clamp(2.6rem,6vw,4.6rem)] font-black leading-[0.98] tracking-[-0.03em] text-white">
+            <h1 className="font-sans text-[clamp(2.6rem,6vw,4.6rem)] font-black leading-[0.98] tracking-[-0.03em] text-ink">
               Give your AI agent a budget it{" "}
               <span className="text-accent-red">can&apos;t exceed</span>.
             </h1>
           </Reveal>
 
           <Reveal mode="mount" delay={0.12}>
-            <p className="max-w-[54ch] font-sans text-lg leading-relaxed text-[#8E8E93]">
+            <p className="max-w-[54ch] font-sans text-lg leading-relaxed text-muted">
               {hero.subhead}
             </p>
           </Reveal>
@@ -42,13 +42,13 @@ export function Hero() {
             <div className="flex flex-wrap items-center gap-3">
               <a
                 href="/app"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 font-sans text-sm font-semibold text-black transition-all duration-300 hover:bg-accent-red hover:text-white"
+                className="inline-flex items-center gap-2 rounded-full bg-ink px-7 py-3 font-sans text-sm font-semibold text-bg transition-all duration-300 hover:bg-accent-red hover:text-bg"
               >
                 Try the demo account →
               </a>
               <a
                 href="/docs"
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 px-7 py-3 font-sans text-sm text-white transition-all duration-300 hover:border-white/40 hover:bg-white/5"
+                className="inline-flex items-center gap-2 rounded-full border border-line px-7 py-3 font-sans text-sm text-ink transition-all duration-300 hover:border-ink/30 hover:bg-subtle"
               >
                 How it works
               </a>
@@ -58,15 +58,15 @@ export function Hero() {
           {/* What the demo account has actually done — plain counts, no units
               nobody outside this repo would recognise. */}
           <Reveal mode="mount" delay={0.24}>
-            <dl className="flex flex-wrap gap-x-10 gap-y-3 border-t border-white/10 pt-6">
+            <dl className="flex flex-wrap gap-x-10 gap-y-3 border-t border-line pt-6">
               {[
                 { k: "Vendors", v: snapshot.agents.length },
                 { k: "Jobs paid", v: snapshot.settlements.length },
                 { k: "Best track record", v: `${proven?.jobsCompleted ?? 0} jobs` },
               ].map((s) => (
                 <div key={s.k} className="flex flex-col gap-0.5">
-                  <dt className="font-sans text-xs text-[#8E8E93]">{s.k}</dt>
-                  <dd className="font-sans text-xl font-bold tabular-nums text-white">{s.v}</dd>
+                  <dt className="font-sans text-xs text-muted">{s.k}</dt>
+                  <dd className="font-sans text-xl font-bold tabular-nums text-ink">{s.v}</dd>
                 </div>
               ))}
             </dl>

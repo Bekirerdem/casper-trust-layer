@@ -129,27 +129,27 @@ export function HirePanel({
   const stepIndex = STEPS.findIndex((s) => s.key === phase);
 
   return (
-    <section className="glass-panel bg-white/5 border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
+    <section className="glass-panel bg-surface border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
           Hire an agent · live escrow → settlement → reputation
         </h2>
-        <span className="font-mono text-[10px] text-green-400">● wallet connected</span>
+        <span className="font-mono text-[10px] text-ok">● wallet connected</span>
       </div>
 
-      <p className="font-sans text-sm text-[#8E8E93] mb-5 leading-relaxed max-w-[68ch]">
+      <p className="font-sans text-sm text-muted mb-5 leading-relaxed max-w-[68ch]">
         Hire an agent from the registry with your own agent: funds lock in escrow, the hired
         agent delivers, you approve — payment settles and the provider&apos;s reputation changes{" "}
-        <span className="text-white">on-chain, from your own transactions</span>.
+        <span className="text-ink">on-chain, from your own transactions</span>.
       </p>
 
       {myAgentIds === null && (
-        <p className="font-mono text-xs text-[#8E8E93]">Scanning the registry for your agent…</p>
+        <p className="font-mono text-xs text-muted">Scanning the registry for your agent…</p>
       )}
 
       {myAgentIds !== null && myAgentId === undefined && (
-        <p className="font-mono text-xs text-[#8E8E93]">
-          No agent is registered to this wallet — <span className="text-white">register</span> below
+        <p className="font-mono text-xs text-muted">
+          No agent is registered to this wallet — <span className="text-ink">register</span> below
           first, and hiring unlocks here.
         </p>
       )}
@@ -159,12 +159,12 @@ export function HirePanel({
           {/* Setup row — every field is a real input */}
           <div className="flex flex-col md:flex-row gap-4 md:items-end">
             <label className="flex flex-col gap-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Your agent (client)</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted">Your agent (client)</span>
               <select
                 value={myAgentId ?? ""}
                 onChange={(e) => setClientId(Number(e.target.value))}
                 disabled={running}
-                className="rounded-lg border border-white/15 bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:border-accent-red/50 focus:outline-none"
+                className="rounded-lg border border-line bg-subtle px-4 py-2.5 font-mono text-sm text-ink focus:border-accent-red/50 focus:outline-none"
               >
                 {(myAgentIds ?? []).map((id) => (
                   <option key={id} value={id}>
@@ -174,12 +174,12 @@ export function HirePanel({
               </select>
             </label>
             <label className="flex flex-col gap-1.5 flex-1 max-w-xs">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Hire (provider)</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted">Hire (provider)</span>
               <select
                 value={provider?.agentId ?? ""}
                 onChange={(e) => setProviderId(Number(e.target.value))}
                 disabled={running}
-                className="rounded-lg border border-white/15 bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:border-accent-red/50 focus:outline-none"
+                className="rounded-lg border border-line bg-subtle px-4 py-2.5 font-mono text-sm text-ink focus:border-accent-red/50 focus:outline-none"
               >
                 {providers.map((a) => (
                   <option key={a.agentId} value={a.agentId}>
@@ -189,14 +189,14 @@ export function HirePanel({
               </select>
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Job amount (AGT)</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted">Job amount (AGT)</span>
               <input
                 value={amountAgt}
                 onChange={(e) => setAmountAgt(e.target.value)}
                 disabled={running}
                 inputMode="decimal"
-                className={`w-32 rounded-lg border bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:outline-none ${
-                  amountMotes ? "border-white/15 focus:border-accent-red/50" : "border-accent-red/60"
+                className={`w-32 rounded-lg border bg-subtle px-4 py-2.5 font-mono text-sm text-ink focus:outline-none ${
+                  amountMotes ? "border-line focus:border-accent-red/50" : "border-accent-red/60"
                 }`}
                 placeholder="0.001"
               />
@@ -211,15 +211,15 @@ export function HirePanel({
             <button
               onClick={onFaucet}
               disabled={faucetState === "pending" || running}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-ink transition-all duration-300 hover:border-ink/30 hover:bg-subtle disabled:opacity-50"
             >
-              <span className={`h-1.5 w-1.5 rounded-full bg-green-400 ${faucetState === "pending" ? "animate-ping" : ""}`} />
+              <span className={`h-1.5 w-1.5 rounded-full bg-ok ${faucetState === "pending" ? "animate-ping" : ""}`} />
               {faucetState === "pending" ? "Sending…" : faucetState === "done" ? "✓ AGT ready" : "1 · Get test AGT"}
             </button>
             <button
               onClick={onHire}
               disabled={running || !provider || !amountMotes}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-bg transition-all duration-300 hover:bg-ink hover:text-bg disabled:opacity-50"
             >
               <span className={`h-1.5 w-1.5 rounded-full bg-white ${running ? "animate-ping" : ""}`} />
               {running ? "Flow running — watch your wallet…" : `2 · Hire Agent #${provider?.agentId ?? "…"}`}
@@ -227,7 +227,7 @@ export function HirePanel({
           </div>
 
           {faucetState === "done" && faucetMsg && (
-            <a href={explorer(faucetMsg)} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-green-400 hover:text-white transition-colors -mt-2">
+            <a href={explorer(faucetMsg)} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-ok hover:text-ink transition-colors -mt-2">
               faucet on-chain — {faucetMsg.slice(0, 12)}… ↗
             </a>
           )}
@@ -237,7 +237,7 @@ export function HirePanel({
 
           {/* Step tracker */}
           {phase !== "idle" && (
-            <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/30 p-4">
+            <div className="flex flex-col gap-2 rounded-xl border border-line bg-subtle p-4">
               {STEPS.map((s, i) => {
                 const st =
                   phase === "done" || (stepIndex >= 0 && i < stepIndex) || txs[s.key]
@@ -251,20 +251,20 @@ export function HirePanel({
                     <span
                       className={
                         st === "done"
-                          ? "text-green-400"
+                          ? "text-ok"
                           : st === "active"
                             ? "text-accent-red animate-pulse"
-                            : "text-[#8E8E93]"
+                            : "text-muted"
                       }
                     >
                       {st === "done" ? "✓" : st === "active" ? "●" : "○"}
                     </span>
-                    <span className={st === "todo" ? "text-[#8E8E93]" : "text-white"}>{s.label}</span>
-                    <span className="text-[9px] uppercase tracking-widest text-[#8E8E93]">
+                    <span className={st === "todo" ? "text-muted" : "text-ink"}>{s.label}</span>
+                    <span className="text-[9px] uppercase tracking-widest text-muted">
                       {s.signer === "you" ? "you sign" : "agent signs"}
                     </span>
                     {tx && (
-                      <a href={explorer(tx)} target="_blank" rel="noopener noreferrer" className="ml-auto text-green-400 hover:text-white transition-colors">
+                      <a href={explorer(tx)} target="_blank" rel="noopener noreferrer" className="ml-auto text-ok hover:text-ink transition-colors">
                         {tx.slice(0, 10)}… ↗
                       </a>
                     )}
@@ -276,15 +276,15 @@ export function HirePanel({
 
           {/* Result */}
           {phase === "done" && result && (
-            <div className="rounded-xl border border-green-400/20 bg-green-400/5 p-4 font-mono text-sm">
-              <span className="text-green-400 font-bold">Settlement on-chain.</span>{" "}
-              <span className="text-white">
+            <div className="rounded-xl border border-green-400/20 bg-ok/5 p-4 font-mono text-sm">
+              <span className="text-ok font-bold">Settlement on-chain.</span>{" "}
+              <span className="text-ink">
                 Agent #{result.before.agentId}: {result.before.scoreBps} bps
                 {result.after ? ` → ${result.after.scoreBps} bps` : ""} · jobs{" "}
                 {result.before.jobsCompleted}
                 {result.after ? ` → ${result.after.jobsCompleted}` : ""}
               </span>
-              <p className="text-[#8E8E93] text-xs mt-1">
+              <p className="text-muted text-xs mt-1">
                 This reputation came from real work you paid for and approved — no self-reports.
               </p>
             </div>

@@ -30,7 +30,7 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
     <Reveal key={s.txHash} delay={0.05 + idx * 0.05} className="w-full">
       <div
         onMouseMove={handleMouseMove}
-        className="glass-panel bg-white/5 border-white/5 rounded-xl p-5 hover:bg-white/10 transition-all duration-300 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 spotlight-card"
+        className="glass-panel bg-surface border-line rounded-xl p-5 hover:bg-subtle transition-all duration-300 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 spotlight-card"
         style={{
           "--mouse-x": `${coords.x}px`,
           "--mouse-y": `${coords.y}px`,
@@ -44,22 +44,22 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
             TX
           </span>
           <div className="flex flex-col">
-            <span className="font-mono text-sm text-white font-bold">
+            <span className="font-mono text-sm text-ink font-bold">
               {shortHash(s.txHash)}
             </span>
-            <span className="font-mono text-[10px] text-[#8E8E93] uppercase tracking-wider mt-0.5">
+            <span className="font-mono text-[10px] text-muted uppercase tracking-wider mt-0.5">
               Paid job · receipt on file
             </span>
           </div>
         </div>
 
         {/* Right stats: delta & link */}
-        <div className="flex items-center justify-between sm:justify-end gap-6 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 relative z-10">
+        <div className="flex items-center justify-between sm:justify-end gap-6 border-t sm:border-t-0 border-line pt-3 sm:pt-0 relative z-10">
           <div className="flex flex-col text-right">
-            <span className="font-mono text-sm text-green-400 font-bold">
+            <span className="font-mono text-sm text-ok font-bold">
               {formatScoreDelta(s.scoreBefore, s.scoreAfter)}
             </span>
-            <span className="font-mono text-[9px] text-[#8E8E93] uppercase tracking-widest mt-0.5">
+            <span className="font-mono text-[9px] text-muted uppercase tracking-widest mt-0.5">
               After this job
             </span>
           </div>
@@ -68,7 +68,7 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
             href={`https://testnet.cspr.live/deploy/${s.txHash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center p-2.5 bg-white/5 hover:bg-accent-red hover:text-white rounded-lg text-xs font-semibold text-white transition-all duration-300 group"
+            className="inline-flex items-center justify-center p-2.5 bg-surface hover:bg-accent-red hover:text-bg rounded-lg text-xs font-semibold text-ink transition-all duration-300 group"
             aria-label={`View transaction ${s.txHash} on cspr.live`}
           >
             <span className="font-sans text-[10px] uppercase tracking-widest mr-1">Receipt</span>
@@ -113,7 +113,7 @@ export function LiveProof() {
             </span>
             <h2
               id="lp-headline"
-              className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-white"
+              className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-ink"
             >
               {liveProof.headlinePre}{" "}
               <span className="text-accent-red">{liveProof.headlineAccent}</span>{" "}
@@ -130,7 +130,7 @@ export function LiveProof() {
             <Reveal className="w-full flex">
               <div
                 onMouseMove={handleMouseMoveRep}
-                className="w-full glass-panel bg-white/5 border-white/5 rounded-2xl p-8 flex flex-col justify-between min-h-[300px] spotlight-card"
+                className="w-full glass-panel bg-surface border-line rounded-2xl p-8 flex flex-col justify-between min-h-[300px] spotlight-card"
                 style={{
                   "--mouse-x": `${coordsRep.x}px`,
                   "--mouse-y": `${coordsRep.y}px`,
@@ -139,18 +139,18 @@ export function LiveProof() {
                 <div className="spotlight-bg" />
                 
                 <div className="flex flex-col gap-2 relative z-10">
-                  <span className="font-sans text-xs text-[#8E8E93]">Most trusted</span>
-                  <h3 className="font-sans text-xl font-bold text-white">Top vendor</h3>
+                  <span className="font-sans text-xs text-muted">Most trusted</span>
+                  <h3 className="font-sans text-xl font-bold text-ink">Top vendor</h3>
                 </div>
 
-                <div className="py-6 border-y border-white/5 flex flex-col gap-3 relative z-10">
+                <div className="py-6 border-y border-line flex flex-col gap-3 relative z-10">
                   {/* The count of finished, paid work — the thing an owner would
                       actually judge a vendor on. */}
                   <div className="flex items-baseline gap-2">
-                    <span className="font-sans text-6xl font-black text-white tracking-tight tabular-nums">
+                    <span className="font-sans text-6xl font-black text-ink tracking-tight tabular-nums">
                       {agent0?.jobsCompleted ?? 0}
                     </span>
-                    <span className="font-sans text-sm font-semibold text-green-400">
+                    <span className="font-sans text-sm font-semibold text-ok">
                       jobs finished
                     </span>
                   </div>
@@ -172,9 +172,9 @@ export function LiveProof() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between font-sans text-xs text-[#8E8E93] relative z-10">
+                <div className="flex items-center justify-between font-sans text-xs text-muted relative z-10">
                   <span>Paid by</span>
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-ink">
                     {new Set(
                       snapshot.settlements.filter((s) => s.to === (agent0?.agentId ?? 0)).map((s) => s.from),
                     ).size}{" "}
@@ -196,11 +196,11 @@ export function LiveProof() {
 
         {/* Footer Note */}
         <Reveal delay={0.4}>
-          <div className="mt-12 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6 border-t border-white/5 pt-8">
-            <p className="font-sans text-sm text-[#8E8E93] leading-relaxed max-w-[56ch]">
+          <div className="mt-12 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6 border-t border-line pt-8">
+            <p className="font-sans text-sm text-muted leading-relaxed max-w-[56ch]">
               {liveProof.footerNote(snapshot.settlements.length, snapshot.agents.length)}
             </p>
-            <div className="flex flex-col items-start sm:items-end text-xs font-mono text-[#8E8E93]/60">
+            <div className="flex flex-col items-start sm:items-end text-xs font-mono text-muted/70">
               <span>Network: {snapshot.network}</span>
               {/* ISO date: locale-dependent formatting here breaks hydration (React #418) */}
               <span className="mt-1">

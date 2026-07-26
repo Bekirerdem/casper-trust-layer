@@ -53,11 +53,11 @@ function RegistryItem({
       className={`w-full text-left rounded-xl border p-4 transition-all duration-300 ${
         selected
           ? "border-accent-red/40 bg-accent-red/5"
-          : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/5"
+          : "border-line bg-surface hover:border-ink/20 hover:bg-subtle"
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold text-white">
+        <span className="font-mono text-sm font-bold text-ink">
           Agent #{agent.agentId}
           {mine && (
             <span className="ml-2 rounded border border-accent-red/40 bg-accent-red/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-accent-red align-middle">
@@ -65,27 +65,27 @@ function RegistryItem({
             </span>
           )}
         </span>
-        <span className="font-mono text-lg font-black tabular-nums text-white">
+        <span className="font-mono text-lg font-black tabular-nums text-ink">
           {scoreBps}
-          <span className="text-[10px] font-medium text-[#8E8E93] ml-1">bps</span>
-          {live && <span className="ml-1.5 text-[9px] font-medium text-green-400 align-middle">● live</span>}
+          <span className="text-[10px] font-medium text-muted ml-1">bps</span>
+          {live && <span className="ml-1.5 text-[9px] font-medium text-ok align-middle">● live</span>}
         </span>
       </div>
-      <div className="mt-3 h-1 w-full rounded-full bg-white/10 overflow-hidden">
+      <div className="mt-3 h-1 w-full rounded-full bg-subtle overflow-hidden">
         <div
           className="h-full rounded-full bg-linear-to-r from-accent-red to-orange-500"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="mt-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+      <div className="mt-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-muted">
         <span>{jobsCompleted} {jobsCompleted === 1 ? "job" : "jobs"} settled</span>
         {/* Framed as the owner's decision, not an abstract label: can I pay this one? */}
         {bar === undefined ? (
-          <span className={scoreBps > 0 ? "text-orange-400" : "text-[#8E8E93]"}>
+          <span className={scoreBps > 0 ? "text-orange-400" : "text-muted"}>
             {scoreBps > 0 ? "earning" : "unproven"}
           </span>
         ) : (
-          <span className={scoreBps >= bar ? "text-green-400" : "text-accent-red"}>
+          <span className={scoreBps >= bar ? "text-ok" : "text-accent-red"}>
             {scoreBps >= bar ? "✓ payable" : "✕ below your bar"}
           </span>
         )}
@@ -102,14 +102,14 @@ function SettlementRow({ s, agentId }: { s: SettlementProof; agentId: number }) 
       href={`https://testnet.cspr.live/deploy/${s.txHash}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 font-mono text-xs transition-colors hover:border-white/15 hover:bg-white/5"
+      className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3 font-mono text-xs transition-colors hover:border-ink/20 hover:bg-subtle"
     >
-      <span className={`shrink-0 text-[9px] uppercase tracking-widest ${earned ? "text-green-400" : "text-[#8E8E93]"}`}>
+      <span className={`shrink-0 text-[9px] uppercase tracking-widest ${earned ? "text-ok" : "text-muted"}`}>
         {earned ? `earned · from #${s.from}` : `paid → #${s.to}`}
       </span>
-      <span className="text-white">{short(s.txHash)}</span>
+      <span className="text-ink">{short(s.txHash)}</span>
       {/* An outgoing row's delta belongs to the counterparty — show it neutral, not as a gain */}
-      <span className={`font-bold ${earned && delta > 0 ? "text-green-400" : "text-[#8E8E93]"}`}>
+      <span className={`font-bold ${earned && delta > 0 ? "text-ok" : "text-muted"}`}>
         {earned ? `${delta > 0 ? "+" : ""}${delta} bps` : `#${s.to} gains +${delta} bps`}
       </span>
       <span className="text-accent-red">↗</span>
@@ -206,12 +206,12 @@ export function TrustDashboard() {
       <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
       <div className="relative mx-auto max-w-[1200px] px-6 md:px-10 py-10">
         {/* Top bar */}
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
           <div className="flex flex-col gap-1">
-            <a href="/" className="font-mono text-xs tracking-[0.18em] text-[#8E8E93] uppercase hover:text-white transition-colors">
+            <a href="/" className="font-mono text-xs tracking-[0.18em] text-muted uppercase hover:text-ink transition-colors">
               ← Casper <span className="text-accent-red">Trust</span> Layer
             </a>
-            <h1 className="font-sans text-2xl md:text-3xl font-black tracking-tight text-white">
+            <h1 className="font-sans text-2xl md:text-3xl font-black tracking-tight text-ink">
               Trust Console
             </h1>
           </div>
@@ -255,9 +255,9 @@ export function TrustDashboard() {
             { n: agents.reduce((sum, a) => sum + (live[a.agentId]?.scoreBps ?? a.scoreBps), 0), l: "Network score (bps)" },
             { n: CONTRACTS.length, l: "Contracts deployed" },
           ].map((s) => (
-            <div key={s.l} className="glass-panel bg-white/5 border-white/5 rounded-xl p-4">
-              <div className="font-mono text-3xl font-black tabular-nums text-white">{s.n}</div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mt-1">{s.l}</div>
+            <div key={s.l} className="glass-panel bg-surface border-line rounded-xl p-4">
+              <div className="font-mono text-3xl font-black tabular-nums text-ink">{s.n}</div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted mt-1">{s.l}</div>
             </div>
           ))}
         </div>
@@ -266,7 +266,7 @@ export function TrustDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.6fr] gap-6 mt-6">
           {/* Registry */}
           <section className="flex flex-col gap-3">
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted">
               Who you can pay · wallet-free read
             </h2>
             {agents.map((a) => (
@@ -283,25 +283,25 @@ export function TrustDashboard() {
           </section>
 
           {/* Detail */}
-          <section className="glass-panel bg-white/5 border-white/5 rounded-2xl p-6 md:p-8 flex flex-col gap-6">
+          <section className="glass-panel bg-surface border-line rounded-2xl p-6 md:p-8 flex flex-col gap-6">
             <div className="flex items-start justify-between">
               <div className="flex flex-col gap-1">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
                   Agent #{selected.agentId} · on-chain reputation
                 </span>
                 <div className="flex items-baseline gap-3">
-                  <span className="font-mono text-6xl font-black tabular-nums text-white">{shownScore}</span>
-                  <span className="font-mono text-sm text-green-400 font-bold uppercase">bps</span>
+                  <span className="font-mono text-6xl font-black tabular-nums text-ink">{shownScore}</span>
+                  <span className="font-mono text-sm text-ok font-bold uppercase">bps</span>
                   {liveScore !== undefined && (
-                    <span className="font-mono text-[10px] text-green-400">✓ live</span>
+                    <span className="font-mono text-[10px] text-ok">✓ live</span>
                   )}
                 </div>
-                <span className="font-mono text-xs text-[#8E8E93]">{shownJobs} {shownJobs === 1 ? "job" : "jobs"} settled</span>
+                <span className="font-mono text-xs text-muted">{shownJobs} {shownJobs === 1 ? "job" : "jobs"} settled</span>
               </div>
               <button
                 onClick={refreshLive}
                 disabled={loading}
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-ink transition-all duration-300 hover:border-ink/30 hover:bg-subtle disabled:opacity-50"
               >
                 <span className={`h-1.5 w-1.5 rounded-full bg-accent-red ${loading ? "animate-ping" : ""}`} />
                 {loading ? "Reading…" : "Read live"}
@@ -309,14 +309,14 @@ export function TrustDashboard() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
                 Track record · settled escrows ({agentSettlements.length})
               </span>
               <div className="flex flex-col gap-2">
                 {agentSettlements.length > 0 ? (
                   agentSettlements.map((s) => <SettlementRow key={s.txHash} s={s} agentId={selectedId} />)
                 ) : (
-                  <p className="font-mono text-xs text-[#8E8E93] py-4">
+                  <p className="font-mono text-xs text-muted py-4">
                     No settlements yet — this agent is unproven.
                   </p>
                 )}
@@ -327,8 +327,8 @@ export function TrustDashboard() {
 
         {/* Contracts — the proof surface */}
         <div className="mt-6">
-          <section className="glass-panel bg-white/5 border-white/5 rounded-2xl p-6 md:p-8">
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93] mb-4">
+          <section className="glass-panel bg-surface border-line rounded-2xl p-6 md:p-8">
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted mb-4">
               Live contracts · casper-test
             </h2>
             <div className="flex flex-col gap-2">
@@ -338,10 +338,10 @@ export function TrustDashboard() {
                   href={`https://testnet.cspr.live/contract-package/${c.pkg}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] px-4 py-2.5 font-mono text-xs transition-colors hover:border-white/15 hover:bg-white/5"
+                  className="flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-2.5 font-mono text-xs transition-colors hover:border-ink/20 hover:bg-subtle"
                 >
-                  <span className="text-white">{c.name}</span>
-                  <span className="text-[#8E8E93]">{c.pkg.slice(0, 8)}… <span className="text-accent-red">↗</span></span>
+                  <span className="text-ink">{c.name}</span>
+                  <span className="text-muted">{c.pkg.slice(0, 8)}… <span className="text-accent-red">↗</span></span>
                 </a>
               ))}
             </div>
@@ -368,25 +368,25 @@ export function TrustDashboard() {
           /* Locked preview — the console's strongest features must be visible
              BEFORE a wallet is connected, or first-time visitors never learn
              they exist. */
-          <section className="glass-panel bg-white/5 border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
+          <section className="glass-panel bg-surface border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
                 Hire &amp; register · live on-chain flows
               </h2>
-              <span className="font-mono text-[10px] text-[#8E8E93]">○ wallet not connected</span>
+              <span className="font-mono text-[10px] text-muted">○ wallet not connected</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                <span className="font-mono text-xs text-white font-bold block mb-1.5">Hire an agent</span>
-                <p className="font-sans text-xs text-[#8E8E93] leading-relaxed">
+              <div className="rounded-xl border border-line bg-subtle p-4">
+                <span className="font-mono text-xs text-ink font-bold block mb-1.5">Hire an agent</span>
+                <p className="font-sans text-xs text-muted leading-relaxed">
                   Pick a provider, lock AGT in escrow, approve delivery — and watch its
-                  reputation move on-chain from a transaction <span className="text-white">you</span> signed.
+                  reputation move on-chain from a transaction <span className="text-ink">you</span> signed.
                   A test-token faucet is built in.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                <span className="font-mono text-xs text-white font-bold block mb-1.5">Register your agent</span>
-                <p className="font-sans text-xs text-[#8E8E93] leading-relaxed">
+              <div className="rounded-xl border border-line bg-subtle p-4">
+                <span className="font-mono text-xs text-ink font-bold block mb-1.5">Register your agent</span>
+                <p className="font-sans text-xs text-muted leading-relaxed">
                   Join the trust network: deposit a CSPR bond, sign with Casper Wallet, and
                   start earning a track record from settled jobs.
                 </p>
@@ -396,7 +396,7 @@ export function TrustDashboard() {
               <button
                 onClick={wallet.connect}
                 disabled={wallet.connecting}
-                className="inline-flex items-center gap-2.5 rounded-full bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white shadow-md shadow-accent-red/20 transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-60"
+                className="inline-flex items-center gap-2.5 rounded-full bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-bg shadow-md shadow-accent-red/20 transition-all duration-300 hover:bg-ink hover:text-bg disabled:opacity-60"
               >
                 <span className={`h-1.5 w-1.5 rounded-full bg-white ${wallet.connecting ? "animate-ping" : ""}`} />
                 {wallet.connecting ? "Connecting…" : "Connect Casper Wallet to unlock"}
@@ -406,7 +406,7 @@ export function TrustDashboard() {
                   href="https://www.casperwallet.io/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-[10px] text-[#8E8E93] hover:text-white transition-colors"
+                  className="font-mono text-[10px] text-muted hover:text-ink transition-colors"
                 >
                   Casper Wallet extension not detected — install it first ↗
                 </a>

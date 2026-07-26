@@ -15,7 +15,7 @@ export function FinalCta() {
       <div className="mx-auto max-w-[1200px] px-6 md:px-12 relative z-10">
         
         {/* Glowing glassmorphic panel */}
-        <div className="relative glass-panel rounded-2xl bg-white/5 border border-white/10 p-8 md:p-16 overflow-hidden shadow-2xl">
+        <div className="relative glass-panel rounded-2xl bg-surface border border-line p-8 md:p-16 overflow-hidden shadow-2xl">
           {/* Accent red neon ribbon border top */}
           <div className="absolute top-0 left-0 w-full h-[3px] bg-linear-to-r from-transparent via-accent-red to-transparent" />
 
@@ -26,7 +26,7 @@ export function FinalCta() {
               <Reveal>
                 <h2
                   id="cta-headline"
-                  className="font-sans text-[clamp(2.25rem,5vw,4.5rem)] font-black leading-[1.05] tracking-tight text-white mb-6"
+                  className="font-sans text-[clamp(2.25rem,5vw,4.5rem)] font-black leading-[1.05] tracking-tight text-ink mb-6"
                 >
                   {finalCta.headlineLine1}
                   <br />
@@ -39,7 +39,7 @@ export function FinalCta() {
               </Reveal>
 
               <Reveal delay={0.1}>
-                <p className="font-sans text-base md:text-lg text-[#8E8E93] leading-relaxed max-w-[48ch]">
+                <p className="font-sans text-base md:text-lg text-muted leading-relaxed max-w-[48ch]">
                   {finalCta.body}
                 </p>
               </Reveal>
@@ -55,18 +55,18 @@ export function FinalCta() {
                     {...(door.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className={`flex flex-col gap-1.5 w-full px-6 py-4 rounded-xl transition-all duration-300 hover:scale-102 group ${
                       door.primary
-                        ? "bg-accent-red hover:bg-white text-white hover:text-black shadow-lg shadow-accent-red/10"
-                        : "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white text-white"
+                        ? "bg-accent-red hover:bg-ink text-bg hover:text-bg shadow-lg shadow-accent-red/10"
+                        : "bg-surface hover:bg-subtle border border-line hover:border-white text-ink"
                     }`}
                   >
-                    <span className={`font-mono text-[9px] uppercase tracking-[0.2em] ${door.primary ? "text-white/70 group-hover:text-black/60" : "text-accent-red"}`}>
+                    <span className={`font-mono text-[9px] uppercase tracking-[0.2em] ${door.primary ? "text-ink/70 group-hover:text-black/60" : "text-accent-red"}`}>
                       {door.audience}
                     </span>
                     <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-widest">
                       <span>{door.title}</span>
                       <span className="font-mono text-sm transform group-hover:translate-x-0.5 transition-transform">↗</span>
                     </span>
-                    <span className={`font-sans text-xs normal-case tracking-normal ${door.primary ? "text-white/70 group-hover:text-black/60" : "text-[#8E8E93]"}`}>
+                    <span className={`font-sans text-xs normal-case tracking-normal ${door.primary ? "text-ink/70 group-hover:text-black/60" : "text-muted"}`}>
                       {door.body}
                     </span>
                   </a>
@@ -75,7 +75,7 @@ export function FinalCta() {
                   href={finalCta.tertiaryLink.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="self-start font-mono text-[10px] text-[#8E8E93] hover:text-white transition-colors mt-1"
+                  className="self-start font-mono text-[10px] text-muted hover:text-ink transition-colors mt-1"
                 >
                   {finalCta.tertiaryLink.label}
                 </a>

@@ -91,41 +91,41 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
   const running = phase === "sending" || phase === "pending";
 
   return (
-    <div className="glass-panel relative rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-7 shadow-2xl">
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
-        <span className="font-sans text-sm font-bold text-white">Spending limits</span>
-        <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">
+    <div className="glass-panel relative rounded-2xl border border-line bg-surface p-6 md:p-7 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-line pb-4">
+        <span className="font-sans text-sm font-bold text-ink">Spending limits</span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
           Demo account
         </span>
       </div>
 
       <dl className="grid grid-cols-2 gap-5 py-6">
         <div className="flex flex-col gap-1">
-          <dt className="font-sans text-xs text-[#8E8E93]">Per job</dt>
-          <dd className="font-sans text-2xl font-black tabular-nums text-white">
+          <dt className="font-sans text-xs text-muted">Per job</dt>
+          <dd className="font-sans text-2xl font-black tabular-nums text-ink">
             {env ? money(env.perTaskLimit) : "—"}
           </dd>
         </div>
         <div className="flex flex-col gap-1">
-          <dt className="font-sans text-xs text-[#8E8E93]">Per day</dt>
-          <dd className="font-sans text-2xl font-black tabular-nums text-white">
+          <dt className="font-sans text-xs text-muted">Per day</dt>
+          <dd className="font-sans text-2xl font-black tabular-nums text-ink">
             {env ? money(env.dailyLimit) : "—"}
           </dd>
         </div>
       </dl>
 
       <div className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-2.5">
-          <span className="font-sans text-xs text-[#8E8E93]">Who can be paid</span>
-          <span className="font-sans text-xs font-semibold text-white">
+        <div className="flex items-center justify-between rounded-lg border border-line bg-subtle px-4 py-2.5">
+          <span className="font-sans text-xs text-muted">Who can be paid</span>
+          <span className="font-sans text-xs font-semibold text-ink">
             Vendors with completed jobs
           </span>
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-2.5">
-          <span className="font-sans text-xs text-[#8E8E93]">Spending</span>
+        <div className="flex items-center justify-between rounded-lg border border-line bg-subtle px-4 py-2.5">
+          <span className="font-sans text-xs text-muted">Spending</span>
           <span
             className={`font-sans text-xs font-semibold ${
-              env?.paused ? "text-accent-red" : "text-green-400"
+              env?.paused ? "text-accent-red" : "text-ok"
             }`}
           >
             {env ? (env.paused ? "Frozen" : "Active") : "—"}
@@ -134,15 +134,15 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
       </div>
 
       {/* The demo: ask it to break a rule */}
-      <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5">
-        <p className="font-sans text-sm leading-relaxed text-[#8E8E93]">
+      <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5">
+        <p className="font-sans text-sm leading-relaxed text-muted">
           Your agent found a vendor nobody has ever paid. Tell it to send money anyway.
         </p>
 
         <button
           onClick={attempt}
           disabled={running || !env}
-          className="inline-flex items-center justify-center gap-2.5 rounded-full bg-accent-red px-6 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-accent-red/20 transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2.5 rounded-full bg-accent-red px-6 py-3 font-sans text-sm font-semibold text-bg shadow-lg shadow-accent-red/20 transition-all duration-300 hover:bg-ink hover:text-bg disabled:opacity-50"
         >
           <span className={`h-1.5 w-1.5 rounded-full bg-current ${running ? "animate-ping" : ""}`} />
           {phase === "sending" ? "Sending…" : phase === "pending" ? "Checking…" : "Pay an unknown vendor"}
@@ -150,22 +150,22 @@ export function LiveEnvelopeCard({ unprovenAgentId }: { unprovenAgentId: number 
 
         {phase !== "idle" && (
           <div className="font-sans text-[13px] leading-relaxed">
-            {phase === "pending" && <span className="text-[#8E8E93]">Checking your rules…</span>}
+            {phase === "pending" && <span className="text-muted">Checking your rules…</span>}
             {phase === "blocked" && (
               <span className="font-semibold text-accent-red">
                 Blocked — {reason}. Your money didn&apos;t move.
               </span>
             )}
             {phase === "sent" && (
-              <span className="font-semibold text-green-400">Sent — this vendor cleared your rules.</span>
+              <span className="font-semibold text-ok">Sent — this vendor cleared your rules.</span>
             )}
-            {phase === "error" && <span className="text-[#8E8E93]">{reason}</span>}
+            {phase === "error" && <span className="text-muted">{reason}</span>}
             {txHash && (
               <a
                 href={`https://testnet.cspr.live/transaction/${txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 block text-[#8E8E93] underline decoration-white/20 transition-colors hover:text-white"
+                className="mt-1 block text-muted underline decoration-white/20 transition-colors hover:text-ink"
               >
                 See the receipt ↗
               </a>

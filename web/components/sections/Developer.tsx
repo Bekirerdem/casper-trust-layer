@@ -21,14 +21,14 @@ export function Developer() {
   };
 
   const codeLines = [
-    <span key="1"><span className="text-orange-400">import</span> {"{"} createTrustClient, getReputation, pay {"}"} <span className="text-orange-400">from</span> <span className="text-green-400">&quot;casper-trust&quot;</span>;</span>,
-    <span key="2" className="text-white/20"></span>,
-    <span key="3"><span className="text-orange-400">const</span> trust = <span className="text-yellow-400">createTrustClient</span>(); <span className="text-[#8E8E93]">{"// wallet-free reads"}</span></span>,
-    <span key="4" className="text-white/20"></span>,
-    <span key="5" className="text-[#8E8E93]">{"// Read an agent's on-chain reputation"}</span>,
+    <span key="1"><span className="text-orange-400">import</span> {"{"} createTrustClient, getReputation, pay {"}"} <span className="text-orange-400">from</span> <span className="text-ok">&quot;casper-trust&quot;</span>;</span>,
+    <span key="2" className="text-ink/20"></span>,
+    <span key="3"><span className="text-orange-400">const</span> trust = <span className="text-yellow-400">createTrustClient</span>(); <span className="text-muted">{"// wallet-free reads"}</span></span>,
+    <span key="4" className="text-ink/20"></span>,
+    <span key="5" className="text-muted">{"// Read an agent's on-chain reputation"}</span>,
     <span key="6"><span className="text-orange-400">const</span> {"{"} scoreBps {"}"} = <span className="text-orange-400">await</span> <span className="text-yellow-400">getReputation</span>(trust, agentId);</span>,
-    <span key="7" className="text-white/20"></span>,
-    <span key="8" className="text-[#8E8E93]">{"// Trust-gated x402 — refused before any gas is spent"}</span>,
+    <span key="7" className="text-ink/20"></span>,
+    <span key="8" className="text-muted">{"// Trust-gated x402 — refused before any gas is spent"}</span>,
     <span key="9"><span className="text-orange-400">await</span> <span className="text-yellow-400">pay</span>({"{"} ...trust, signer {"}"}, {"{"}</span>,
     <span key="10">{"  "}url: providerEndpoint,</span>,
     <span key="11">{"  "}providerAgentId: agentId,</span>,
@@ -64,7 +64,7 @@ export function Developer() {
             <Reveal delay={0.08}>
               <h2
                 id="dev-headline"
-                className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-white mb-8"
+                className="font-sans text-[clamp(2rem,4.2vw,3.4rem)] font-black leading-[1.05] tracking-[-0.02em] text-ink mb-8"
               >
                 {developer.headlinePre}{" "}
                 <span className="text-accent-red">{developer.headlineAccent}</span>{" "}
@@ -73,7 +73,7 @@ export function Developer() {
             </Reveal>
 
             <Reveal delay={0.14}>
-              <p className="font-sans text-lg text-[#8E8E93] leading-relaxed max-w-[48ch] mb-10">
+              <p className="font-sans text-lg text-muted leading-relaxed max-w-[48ch] mb-10">
                 {developer.body}
               </p>
             </Reveal>
@@ -84,7 +84,7 @@ export function Developer() {
                   href={developer.npmLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-6 py-3.5 text-xs font-semibold uppercase tracking-widest text-white bg-accent-red border border-transparent rounded-full hover:bg-white hover:text-black transition-all duration-300 hover:scale-105 active:scale-95"
+                  className="inline-flex items-center justify-center px-6 py-3.5 text-xs font-semibold uppercase tracking-widest text-bg bg-accent-red border border-transparent rounded-full hover:bg-ink hover:text-bg transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                   NPM Registry
                 </a>
@@ -92,7 +92,7 @@ export function Developer() {
                   href={developer.githubLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-6 py-3.5 text-xs font-semibold uppercase tracking-widest text-white border border-white/20 hover:border-white rounded-full hover:bg-white hover:text-black transition-all duration-300"
+                  className="inline-flex items-center justify-center px-6 py-3.5 text-xs font-semibold uppercase tracking-widest text-ink border border-white/20 hover:border-white rounded-full hover:bg-ink hover:text-bg transition-all duration-300"
                 >
                   GitHub Source
                 </a>
@@ -109,7 +109,7 @@ export function Developer() {
               {/* Terminal Box */}
               <div
                 onMouseMove={handleMouseMove}
-                className="relative w-full rounded-xl border border-white/10 bg-[#121215]/95 shadow-2xl overflow-hidden font-mono text-xs spotlight-card"
+                className="relative w-full rounded-xl border border-line bg-[#121215]/95 shadow-2xl overflow-hidden font-mono text-xs spotlight-card"
                 style={{
                   "--mouse-x": `${coords.x}px`,
                   "--mouse-y": `${coords.y}px`,
@@ -118,32 +118,32 @@ export function Developer() {
                 <div className="spotlight-bg" />
                 
                 {/* Terminal Header */}
-                <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-black/40 relative z-10">
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-subtle relative z-10">
                   <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full bg-red-500/80" />
                     <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                    <span className="h-3 w-3 rounded-full bg-green-500/80" />
+                    <span className="h-3 w-3 rounded-full bg-ok/80" />
                   </div>
-                  <span className="text-[#8E8E93] text-[10px] uppercase tracking-wider font-bold">
+                  <span className="text-muted text-[10px] uppercase tracking-wider font-bold">
                     usage-example.ts
                   </span>
                   <button
                     onClick={handleCopy}
-                    className="text-[10px] text-accent-red hover:text-white uppercase tracking-wider font-bold transition-colors"
+                    className="text-[10px] text-accent-red hover:text-ink uppercase tracking-wider font-bold transition-colors"
                   >
                     {copied ? "Copied!" : "Copy"}
                   </button>
                 </div>
 
                 {/* Terminal Content */}
-                <div className="py-6 overflow-x-auto leading-relaxed text-white/95 relative z-10">
+                <div className="py-6 overflow-x-auto leading-relaxed text-ink/95 relative z-10">
                   <div className="flex flex-col min-w-[500px]">
                     {codeLines.map((line, idx) => (
                       <div
                         key={idx}
-                        className="flex hover:bg-white/5 py-0.5 border-l-2 border-transparent hover:border-accent-red transition-colors group"
+                        className="flex hover:bg-subtle py-0.5 border-l-2 border-transparent hover:border-accent-red transition-colors group"
                       >
-                        <span className="w-10 select-none text-white/20 group-hover:text-white/45 text-right pr-4 shrink-0 font-mono text-[10px] pt-0.5">
+                        <span className="w-10 select-none text-ink/20 group-hover:text-ink/45 text-right pr-4 shrink-0 font-mono text-[10px] pt-0.5">
                           {idx + 1}
                         </span>
                         <pre className="font-mono text-left leading-relaxed text-xs">

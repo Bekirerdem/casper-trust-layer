@@ -41,37 +41,37 @@ export function RegisterPanel({
   }
 
   return (
-    <section className="glass-panel bg-white/5 border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
+    <section className="glass-panel bg-surface border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-mono text-[10px] uppercase tracking-widest text-accent-red">
           Register your agent · wallet-signed
         </h2>
-        <span className="font-mono text-[10px] text-green-400">● wallet connected</span>
+        <span className="font-mono text-[10px] text-ok">● wallet connected</span>
       </div>
 
-      <p className="font-sans text-sm text-[#8E8E93] mb-4 leading-relaxed max-w-[60ch]">
+      <p className="font-sans text-sm text-muted mb-4 leading-relaxed max-w-[60ch]">
         Join the trust network as a real agent with your connected wallet. A CSPR bond
         (min {MIN_BOND_CSPR}) is deposited, Casper Wallet signs, and the transaction goes on-chain — the whole flow is live.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end max-w-2xl">
         <label className="flex flex-col gap-1.5 flex-1">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Agent metadata URI</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted">Agent metadata URI</span>
           <input
             value={agentUri}
             onChange={(e) => setAgentUri(e.target.value)}
-            className="rounded-lg border border-white/15 bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:border-accent-red/50 focus:outline-none"
+            className="rounded-lg border border-line bg-subtle px-4 py-2.5 font-mono text-sm text-ink focus:border-accent-red/50 focus:outline-none"
             placeholder="ipfs://…"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#8E8E93]">Bond (CSPR)</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted">Bond (CSPR)</span>
           <input
             value={bondCspr}
             onChange={(e) => setBondCspr(e.target.value)}
             inputMode="decimal"
-            className={`w-28 rounded-lg border bg-black/40 px-4 py-2.5 font-mono text-sm text-white focus:outline-none ${
-              bondValid ? "border-white/15 focus:border-accent-red/50" : "border-accent-red/60"
+            className={`w-28 rounded-lg border bg-subtle px-4 py-2.5 font-mono text-sm text-ink focus:outline-none ${
+              bondValid ? "border-line focus:border-accent-red/50" : "border-accent-red/60"
             }`}
             placeholder={String(MIN_BOND_CSPR)}
           />
@@ -79,7 +79,7 @@ export function RegisterPanel({
         <button
           onClick={onRegister}
           disabled={status === "pending" || !agentUri.trim() || !bondValid}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 hover:bg-white hover:text-black disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-red px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-bg transition-all duration-300 hover:bg-ink hover:text-bg disabled:opacity-50"
         >
           <span className={`h-1.5 w-1.5 rounded-full bg-white ${status === "pending" ? "animate-ping" : ""}`} />
           {status === "pending" ? "Sign & submit…" : "Register agent"}
@@ -94,7 +94,7 @@ export function RegisterPanel({
           href={`https://testnet.cspr.live/transaction/${txHash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-2 font-mono text-xs text-green-400 hover:text-white transition-colors"
+          className="mt-4 inline-flex items-center gap-2 font-mono text-xs text-ok hover:text-ink transition-colors"
         >
           ✓ On-chain — {txHash.slice(0, 12)}… verify on cspr.live ↗
         </a>
