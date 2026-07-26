@@ -7,7 +7,7 @@ export function FinalCta() {
   return (
     <section
       id="final-cta"
-      className="relative w-full bg-bg py-20 md:py-32 overflow-hidden"
+      className="relative w-full py-20 md:py-32 overflow-hidden"
       aria-labelledby="cta-headline"
     >
       <div className="absolute inset-0 bg-glow-red opacity-30 pointer-events-none z-0" />

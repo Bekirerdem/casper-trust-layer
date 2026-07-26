@@ -96,7 +96,7 @@ export function LiveProof() {
   return (
     <section
       id="live-proof"
-      className="relative w-full bg-bg py-24 md:py-36 overflow-hidden"
+      className="relative w-full py-24 md:py-36 overflow-hidden"
       aria-labelledby="lp-headline"
     >
       <div className="absolute inset-0 bg-glow-red opacity-30 pointer-events-none z-0" />

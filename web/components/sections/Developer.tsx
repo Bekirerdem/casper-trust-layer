@@ -42,7 +42,7 @@ export function Developer() {
   return (
     <section
       id="developer"
-      className="relative w-full bg-bg py-24 md:py-36 overflow-hidden"
+      className="relative w-full py-24 md:py-36 overflow-hidden"
       aria-labelledby="dev-headline"
     >
       <div className="absolute inset-0 bg-glow-red opacity-30 pointer-events-none z-0" />
