@@ -4,21 +4,21 @@
 
 # Casper Agent Trust Layer
 
-**No judge decides reputation here — the payment does.**<br/>
-On-chain trust for AI agents: no LLM jury, no validator committee, no trusted verifier anywhere in the scoring path. A score moves only when a real escrowed payment settles between two bonded agents — and **x402 payments are gated on it**.
+**Your agent has your money. This decides how much it may spend — and who may receive it.**<br/>
+An owner opens an on-chain vault and writes the rules; the contract enforces two things on every payment: the owner's ceiling, **and** the payee's earned track record. And nobody decides that track record — no LLM jury, no validator committee, no trusted verifier anywhere in the scoring path. A score moves only when a real escrowed payment settles between two bonded agents.
 
 [![live demo](https://img.shields.io/badge/live%20demo-online-2ea44f)](https://casper-trust-layer.vercel.app)
 [![npm](https://img.shields.io/npm/v/casper-trust?label=casper-trust&color=cb3837)](https://www.npmjs.com/package/casper-trust)
-[![contracts](https://img.shields.io/badge/OdraVM%20tests-52%20passing-2ea44f)](contracts/src)
+[![contracts](https://img.shields.io/badge/OdraVM%20tests-62%20passing-2ea44f)](contracts/src)
 [![sdk](https://img.shields.io/badge/SDK%20tests-66%20passing-2ea44f)](sdk/test)
 [![network](https://img.shields.io/badge/casper--test-deployed-blue)](DEPLOYMENT.md)
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
 ### ⏱ Judges — start here: **[JUDGES.md](JUDGES.md)** — verify everything yourself in 10 minutes<br/>*(the first three checks need no wallet, no key, and no install)*
 
-**[Live demo](https://casper-trust-layer.vercel.app)** · **[Trust Console](https://casper-trust-layer.vercel.app/app)** · **[Demo video](https://youtu.be/H0BoEYr47q4)** · **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · **[MCP server](mcp/)** · **[On-chain proof](DEPLOYMENT.md)**
+**[Live demo](https://casper-trust-layer.vercel.app)** · **[Dashboard](https://casper-trust-layer.vercel.app/app)** · **[Docs](https://casper-trust-layer.vercel.app/docs)** · **[Demo video](https://youtu.be/H0BoEYr47q4)** · **[npm: casper-trust](https://www.npmjs.com/package/casper-trust)** · **[MCP server](mcp/)** · **[On-chain proof](DEPLOYMENT.md)**
 
-<img src="web/public/og.png" alt="Trust, settled on-chain" width="820" />
+<img src="web/public/og.png" alt="Your agent has your money — you set what it may spend, the contract also checks who it pays" width="820" />
 
 *Built for the **Casper Agentic Buildathon 2026** — 6 contracts live on `casper-test`, SDK on npm, x402 settlement verified on-chain.*
 
@@ -61,7 +61,7 @@ import { createTrustClient, checkTrust } from "casper-trust";
 const { trusted, score } = await checkTrust(createTrustClient(), 0, { minScore: 100n });
 ```
 
-**3 · Live the whole loop in the browser** — open the [**Trust Console**](https://casper-trust-layer.vercel.app/app), connect Casper Wallet, register your agent, grab test AGT from the faucet, and **hire an agent**: funds lock in escrow, the hired agent delivers, you approve — and its reputation changes on-chain, driven by *your* transactions.
+**3 · Open an account and try to break its rules** — the [**dashboard**](https://casper-trust-layer.vercel.app/app) looks for *your* vault when you connect a wallet; if you don't have one, you write the limits and you sign the transaction that opens it. No wallet? Ours is on screen with test funds — pay a vendor with a track record (settles), one without (refused), then freeze it and watch the same payment revert. Every attempt is a real transaction with a receipt.
 
 **4 · Give it to your AI agent** — [`casper-trust-mcp`](mcp/) exposes `check_trust` / `get_reputation` / `get_agent` as MCP tools, so Claude or Cursor can ask *"should I pay this agent?"* against live chain state.
 
@@ -130,13 +130,21 @@ The strongest objection to settlement-derived reputation: a payment proves the w
 - **The alternatives reintroduce a trusted writer.** LLM-jury verdicts and "trusted verifier" roles let whoever controls the judge mint subjective scores for free. Here, score can only be minted by pushing real value through escrow and giving up the fee.
 - **A dishonest pair is bounded, not trusted.** Even a counterparty that *always* approves can only fabricate a capped, capital-linear amount of score — per-edge lifetime caps, trust conservation, and `isqrt` value concavity bound every edge ([full math](docs/reputation-formula.md)).
 
-## The Trust Console
+## The dashboard
 
 <div align="center">
-<a href="https://casper-trust-layer.vercel.app/app"><img src="docs/assets/trust-console.png" alt="Trust Console — live agent registry with on-chain reputation" width="820" /></a>
+<a href="https://casper-trust-layer.vercel.app/app"><img src="docs/assets/dashboard-account.png" alt="The account tab — your vault's balance, per-job and per-day ceilings, the track record a vendor must have, and the freeze switch" width="820" /></a>
 </div>
 
-A live dashboard over the real `casper-test` registry — **no wallet needed to read**: agent scores, per-settlement history with explorer links, treasury caps, and a "Read live" button that decodes contract storage on demand. Connect Casper Wallet and it becomes a workbench: **register your agent** (bonded, wallet-signed) and run the full **hire flow** — faucet → escrow-funded job → delivery → approval → the provider's score moves on-chain, from *your* wallet's transactions.
+Connect a wallet and it looks for **your** vault. If you don't have one, you open it: you write the limits, you sign, and from that moment the rules live in the contract — your agent can't argue past them and neither can we. Four tabs, because the product is four things: **Account** (your money and your rules), **Vendors** (who you're allowed to pay, each row marked payable or below your bar), **Activity** (every settlement on the network), **Contracts** (the code all of it runs on).
+
+Reads never need a wallet. Without one you still see the whole registry, every agent's track record — and our own account, funded with test tokens, so you can try to break its rules and watch the contract refuse you:
+
+<div align="center">
+<a href="https://casper-trust-layer.vercel.app/app"><img src="docs/assets/dashboard-break-the-rules.png" alt="Three real payment attempts: a vendor with a track record settles, one without is refused, and one over the per-job ceiling is refused" width="820" /></a>
+</div>
+
+Every attempt is a real transaction. A refusal costs gas and is written to the chain exactly like a payment is — which is why you can open its receipt instead of taking our word for it.
 
 ## Live proof
 
@@ -154,6 +162,12 @@ Everything below is live on `casper-test` — see [`DEPLOYMENT.md`](DEPLOYMENT.m
 > **AgentVaults** is where an owner's money actually lives: one contract, **a vault per customer**, each carrying its own owner, agent, per-job ceiling, per-day ceiling, required track record, balance and freeze switch. Ownership is checked on every state-changing call, so nobody can read or move anyone else's money — `a_stranger_cannot_touch_your_vault` is a test, not a promise. **AgentTreasury** is the single-tenant envelope that came first, plus an owner-only `pause()`. Both enforce the same two rules in the contract, not the SDK: the owner's ceiling **and** the payee's earned track record.
 
 A live **8-agent trust network** runs on `casper-test` across **14 settlements**: reputation flows from *multiple* counterparties, not a single loop. Agent #0 has earned **508 bps over 7 settled jobs from 4 distinct clients** (and counting — the network is live); every row below is independently verifiable.
+
+<div align="center">
+<a href="https://casper-trust-layer.vercel.app/app"><img src="docs/assets/dashboard-vendors.png" alt="The vendors tab — every agent's earned score, each row marked payable or below your bar, with the full settlement history beside it" width="820" /></a>
+</div>
+
+Each row is judged against *your* bar: agent #7 reads **below your bar** because it has never been paid. Everything here is a wallet-free read — no key, no gas, no account.
 
 Seven of the eight agents have earned a score; agent #7 sits at **0 bps** because it was registered from a wallet we do not control and has never been paid — the honest state of an unproven agent, and exactly what the trust gate is for.
 
@@ -180,7 +194,7 @@ No claim in this README requires trusting us:
 | x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) — the same endpoint is refused below the bar, settled above it |
 | All 6 contracts are live and wired | Package hashes above; every install + wiring transaction linked in [`DEPLOYMENT.md`](DEPLOYMENT.md) |
 | The SDK is public and installable today | [`npm install casper-trust`](https://www.npmjs.com/package/casper-trust) |
-| The code does what we say | `cargo odra test` in `contracts/` (52 tests) · `npx vitest run` in `sdk/` (66 tests incl. live read assertions) |
+| The code does what we say | `cargo odra test` in `contracts/` (62 tests) · `npx vitest run` in `sdk/` (66 tests incl. live read assertions) |
 
 ## Judging criteria at a glance
 
@@ -189,8 +203,8 @@ No claim in this README requires trusting us:
 | **Technical quality** | 6 contracts live and wired on `casper-test`; 62 OdraVM tests (incl. the adversarial reputation suite, the owner's brake, and per-customer vault isolation) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
 | **Innovation** | Reputation derived *objectively* from settled escrow payments, hardened with anti-gaming math (per-edge caps, trust conservation, value concavity); to our knowledge the category's only npm-published SDK | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
 | **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
-| **DeFi / RWA applicability** | AgentTreasury — a capped on-chain spending envelope (per-task + daily) with a protocol-level reputation gate; CEP-18 escrow rails | [AgentTreasury](https://testnet.cspr.live/contract-package/abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c) · [`contracts/src`](contracts/src) |
-| **UX** | Wallet-free, gas-free score reads; live console; in-browser wallet-signed registration **and** a full hire flow with a faucet | [live demo](https://casper-trust-layer.vercel.app) · [Trust Console](https://casper-trust-layer.vercel.app/app) |
+| **DeFi / RWA applicability** | A vault per customer: per-job + daily ceilings and a protocol-level counterparty gate, enforced in the contract; CEP-18 escrow rails | [AgentVaults](https://testnet.cspr.live/contract-package/674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914) · [AgentTreasury](https://testnet.cspr.live/contract-package/95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a) · [`contracts/src`](contracts/src) |
+| **UX** | Wallet-free, gas-free score reads; an account you open and sign yourself; in-browser wallet-signed registration **and** a full hire flow with a faucet | [live demo](https://casper-trust-layer.vercel.app) · [dashboard](https://casper-trust-layer.vercel.app/app) |
 | **Working contracts** | All 6 deployed, wired, and exercised end-to-end: settlements, slashing, treasury pay, a customer vault opened → funded → paid → refused → frozen | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
 | **Ecosystem impact** | A published npm package + MCP server any Casper agent project can adopt; the Odra 2.8.1 → Condor deploy workarounds are documented for other teams | [npm](https://www.npmjs.com/package/casper-trust) · [`mcp/`](mcp/) · [`tasks/lessons.md`](tasks/lessons.md) |
 
@@ -210,7 +224,7 @@ Casper contract tooling runs on Linux; on Windows use WSL2 (see [`tasks/lessons.
 
 ```bash
 cd contracts
-cargo odra test                 # 52 passing on the OdraVM (no node needed)
+cargo odra test                 # 62 passing on the OdraVM (no node needed)
 
 export PATH=~/binaryen-latest/bin:$PATH
 cargo odra build                # -> Casper-VM-compatible wasm/*.wasm (needs wabt + binaryen v130+)
@@ -231,7 +245,7 @@ contracts/
   vendor/                patched odra-casper-rpc-client (Casper 2.0/Condor deploy fix)
 sdk/                     casper-trust TypeScript SDK (published to npm) + live demo scripts
 mcp/                     casper-trust-mcp — MCP server for AI agents (Claude, Cursor)
-web/                     Next.js landing + Trust Console (live on Vercel, hire flow included)
+web/                     Next.js landing + the dashboard (live on Vercel, hire flow included)
 docs/reputation-formula.md   formula design + threat model
 DEPLOYMENT.md                live addresses + tx proofs
 ```
@@ -242,12 +256,12 @@ DEPLOYMENT.md                live addresses + tx proofs
 - **Token:** CEP-18 (`odra-modules`); payments in WCSPR (CEP-3009 `transfer_with_authorization`)
 - **SDK:** TypeScript · `casper-js-sdk` 5 · `@make-software/casper-x402` · `@x402/fetch` — published as [`casper-trust`](https://www.npmjs.com/package/casper-trust)
 - **Payments:** x402 v2 over the hosted [CSPR.cloud facilitator](https://x402-facilitator.cspr.cloud) (gasless for the payer)
-- **Testing:** OdraVM (50 contract tests incl. adversarial reputation cases) + Vitest (66 SDK tests)
+- **Testing:** OdraVM (62 contract tests incl. adversarial reputation cases and per-customer vault isolation) + Vitest (66 SDK tests)
 - **Deploy:** `cargo-odra` + cspr.cloud (via a small auth proxy), patched for the Condor account model
 
 ## Launch plan
 
-**Already shipped** — distribution is live, not hypothetical: [`casper-trust`](https://www.npmjs.com/package/casper-trust) is installable from npm today; the [Trust Console](https://casper-trust-layer.vercel.app/app) exposes the registry to anyone, no wallet required; the in-browser hire flow lets any visitor fund → deliver → approve and watch a score move on-chain; and [`casper-trust-mcp`](mcp/) plugs on-chain trust into Claude/Cursor.
+**Already shipped** — distribution is live, not hypothetical: [`casper-trust`](https://www.npmjs.com/package/casper-trust) is installable from npm today; the [dashboard](https://casper-trust-layer.vercel.app/app) lets anyone open their own on-chain account and exposes the registry without a wallet; the in-browser hire flow lets any visitor fund → deliver → approve and watch a score move on-chain; and [`casper-trust-mcp`](mcp/) plugs on-chain trust into Claude/Cursor.
 
 **Qualification → final**
 
