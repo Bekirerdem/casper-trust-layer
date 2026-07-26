@@ -165,14 +165,20 @@ export function SpendingEnvelope({
 
   return (
     <section className="glass-panel bg-surface border-accent-red/20 rounded-2xl p-6 md:p-8 mt-6">
+      {/* Two accounts share this screen once a wallet is connected. Say whose
+          money this is in the heading, or the buttons below look like they
+          spend the visitor's. */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <h2 className="font-sans text-lg font-bold text-ink">Spending limits</h2>
-        <span className="font-sans text-xs text-muted">Demo account · test funds</span>
+        <h2 className="font-sans text-lg font-bold text-ink">Our demo account</h2>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-subtle px-2.5 py-1 font-sans text-xs text-muted">
+          test funds · not your money
+        </span>
       </div>
 
       <p className="font-sans text-sm text-muted mb-6 leading-relaxed max-w-[68ch]">
-        You decide what your agent can spend and who it may pay. The account holds those rules
-        itself, so the agent cannot talk its way past them — and neither can we.
+        This account is ours, so you can push it around without signing anything. It carries the
+        same rules yours would: a ceiling per job, a ceiling per day, and a vendor requirement.
+        The contract holds them, so the agent cannot talk its way past them — and neither can we.
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
