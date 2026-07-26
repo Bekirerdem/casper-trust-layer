@@ -2,15 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
-/** Must match the CSS mesh in globals.css, or the traces run off the lines. */
-const CELL = 48;
-/** How many cells of glow trail behind a head. */
-const TAIL = 16;
+/** Must match the CSS mesh in globals.css, or the snakes drift off the squares. */
+const CELL = 24;
+/** Body length, in cells. */
+const TAIL = 14;
 /** Milliseconds to cross one cell. */
-const STEP_MS = 78;
-/** Chance a trace turns instead of carrying straight on at a junction. */
-const TURN = 0.34;
-const AMBIENT = 7;
+const STEP_MS = 96;
+/** Chance a snake turns instead of carrying straight on at a junction. */
+const TURN = 0.32;
+const AMBIENT = 6;
 
 type Vec = { x: number; y: number };
 
@@ -176,42 +176,34 @@ export function LiveGrid() {
           }
         }
 
-        if (tr.path.length < 2) continue;
+        if (tr.path.length < 1) continue;
 
-        // Fade of the whole trace: ambient ones are steady, bursts die out.
+        // Fade of the whole snake: ambient ones are steady, bursts die out.
         const fade = tr.life === Infinity ? 1 : Math.min(1, tr.life / 60);
-        const peak = (tr.burst ? 0.5 : 0.26) * fade;
+        const peak = (tr.burst ? 0.30 : 0.155) * fade;
+        // A hair of inset keeps the body inside its square instead of bleeding
+        // across the mesh lines.
+        const pad = 1;
+        const size = CELL - pad * 2;
 
-        const head = tr.path[tr.path.length - 1];
-        const px = (head.x + tr.dir.x * tr.t) * CELL;
-        const py = (head.y + tr.dir.y * tr.t) * CELL;
-
-        ctx.lineCap = "round";
-        for (let s = 1; s < tr.path.length; s++) {
-          const a = tr.path[s - 1];
-          const b = tr.path[s];
-          // Older segments sit further back in the tail and fade accordingly.
-          const k = s / (tr.path.length - 1);
-          ctx.strokeStyle = `rgba(215, 27, 39, ${(peak * k * k).toFixed(3)})`;
-          ctx.lineWidth = tr.burst ? 1.8 : 1.4;
-          ctx.beginPath();
-          ctx.moveTo(a.x * CELL, a.y * CELL);
-          ctx.lineTo(b.x * CELL, b.y * CELL);
-          ctx.stroke();
+        // The body: filled squares, brightest at the head, dying out at the tail.
+        for (let s = 0; s < tr.path.length; s++) {
+          const cell = tr.path[s];
+          const k = (s + 1) / tr.path.length;
+          ctx.fillStyle = `rgba(215, 27, 39, ${(peak * k * k).toFixed(3)})`;
+          ctx.fillRect(cell.x * CELL + pad, cell.y * CELL + pad, size, size);
         }
 
-        // The live edge, from the last node to wherever the head has reached.
-        ctx.strokeStyle = `rgba(215, 27, 39, ${peak.toFixed(3)})`;
-        ctx.lineWidth = tr.burst ? 1.8 : 1.4;
-        ctx.beginPath();
-        ctx.moveTo(head.x * CELL, head.y * CELL);
-        ctx.lineTo(px, py);
-        ctx.stroke();
-
-        ctx.fillStyle = `rgba(215, 27, 39, ${(peak * 1.5).toFixed(3)})`;
-        ctx.beginPath();
-        ctx.arc(px, py, tr.burst ? 2.1 : 1.6, 0, Math.PI * 2);
-        ctx.fill();
+        // The head, growing into the square it is entering.
+        const head = tr.path[tr.path.length - 1];
+        const hx = head.x * CELL + pad;
+        const hy = head.y * CELL + pad;
+        const grow = Math.max(0.001, tr.t);
+        ctx.fillStyle = `rgba(215, 27, 39, ${(peak * 1.25).toFixed(3)})`;
+        if (tr.dir.x === 1) ctx.fillRect(hx + CELL, hy, size * grow, size);
+        else if (tr.dir.x === -1) ctx.fillRect(hx - CELL + size * (1 - grow), hy, size * grow, size);
+        else if (tr.dir.y === 1) ctx.fillRect(hx, hy + CELL, size, size * grow);
+        else ctx.fillRect(hx, hy - CELL + size * (1 - grow), size, size * grow);
       }
 
       raf = requestAnimationFrame(draw);

@@ -86,7 +86,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background-size: 48px 48px;
+  background-size: 24px 24px;
   /* The grid repeats, so shifting its origin never exposes an edge. */
   background-position: var(--gx) var(--gy);
   transition: background-position 500ms cubic-bezier(0.16, 1, 0.3, 1);

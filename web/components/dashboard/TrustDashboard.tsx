@@ -9,20 +9,12 @@ import { MyAgentPanel } from "@/components/dashboard/MyAgentPanel";
 import { VaultDashboard } from "@/components/dashboard/VaultDashboard";
 import { SpendingEnvelope, type Envelope } from "@/components/dashboard/SpendingEnvelope";
 import { useCasperWallet } from "@/lib/wallet/useCasperWallet";
+import { CONTRACTS } from "@/lib/casper/contracts";
 import type { AgentSnapshot, SettlementProof } from "@/lib/casper/types";
 
 const SCORE_MAX = 500;
 
 type LiveRep = { scoreBps: number; jobsCompleted: number };
-
-const CONTRACTS = [
-  { name: "AgentVaults", pkg: "674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914" },
-  { name: "IdentityRegistry", pkg: "3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc" },
-  { name: "ReputationEngine", pkg: "d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb" },
-  { name: "Escrow", pkg: "fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c" },
-  { name: "AgentTreasury", pkg: "95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a" },
-  { name: "Cep18 (AGT)", pkg: "f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6" },
-];
 
 const TABS = [
   { id: "account", label: "Account", hint: "Your money and your rules" },
