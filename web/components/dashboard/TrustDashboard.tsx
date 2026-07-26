@@ -222,10 +222,10 @@ export function TrustDashboard() {
 
       <div className="relative flex min-h-screen">
         {/* Rail — the app's spine. Where you are never moves. */}
-        <aside className="hidden lg:flex w-[252px] shrink-0 flex-col justify-between border-r border-line bg-surface/70 px-5 py-8 sticky top-0 h-screen">
-          <div className="flex flex-col gap-8">
-            <a href="/" className="flex flex-col gap-0.5 group">
-              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted group-hover:text-ink transition-colors">
+        <aside className="hidden lg:flex w-[264px] shrink-0 flex-col justify-between border-r border-line bg-surface/70 px-5 py-7 sticky top-0 h-screen">
+          <div className="flex flex-col gap-7">
+            <a href="/" className="group flex flex-col gap-0.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted transition-colors group-hover:text-ink">
                 ← Casper
               </span>
               <span className="font-sans text-lg font-black tracking-tight text-ink">
@@ -233,29 +233,56 @@ export function TrustDashboard() {
               </span>
             </a>
 
-            <nav className="flex flex-col gap-1">
+            <nav className="flex flex-col gap-0.5">
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
-                  className={`group flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-all duration-200 ${
-                    tab === t.id
-                      ? "bg-accent-red/[0.07] text-ink"
-                      : "text-muted hover:bg-subtle hover:text-ink"
+                  className={`group relative flex flex-col gap-0.5 rounded-lg px-3 py-2.5 text-left transition-colors duration-200 ${
+                    tab === t.id ? "bg-accent-red/[0.06]" : "hover:bg-subtle"
                   }`}
                 >
+                  {/* A bar, not a dot — at this size a dot reads as a bullet. */}
                   <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
-                      tab === t.id ? "bg-accent-red" : "bg-line group-hover:bg-muted"
+                    className={`absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200 ${
+                      tab === t.id ? "bg-accent-red opacity-100" : "bg-ink opacity-0 group-hover:opacity-20"
                     }`}
                   />
-                  <span className="font-sans text-sm font-semibold">{t.label}</span>
+                  <span
+                    className={`font-sans text-sm font-semibold transition-colors ${
+                      tab === t.id ? "text-ink" : "text-muted group-hover:text-ink"
+                    }`}
+                  >
+                    {t.label}
+                  </span>
+                  <span className="font-sans text-[11px] leading-tight text-muted/70">{t.hint}</span>
                 </button>
               ))}
             </nav>
+
+            {/* The rail had four links and a void under them. These are the
+                numbers the whole product rests on, so they belong in view. */}
+            <dl className="flex flex-col gap-2 rounded-xl border border-line bg-bg/60 p-4">
+              {[
+                { l: "Vendors", v: agents.length + extraAgents },
+                { l: "Paid jobs", v: snapshot.settlements.length + extraSettlements },
+                { l: "Contracts", v: CONTRACTS.length },
+              ].map((s) => (
+                <div key={s.l} className="flex items-baseline justify-between">
+                  <dt className="font-mono text-[10px] uppercase tracking-widest text-muted">{s.l}</dt>
+                  <dd className="font-mono text-sm font-bold tabular-nums text-ink">{s.v}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="flex flex-col gap-3">
+            <a
+              href="/docs"
+              className="font-sans text-xs text-muted transition-colors hover:text-ink"
+            >
+              Docs →
+            </a>
             <span className="inline-flex w-fit items-center gap-1.5 rounded border border-accent-red/20 bg-accent-red/5 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-accent-red">
               <span className="h-1 w-1 rounded-full bg-accent-red" />
               {snapshot.network}
@@ -290,7 +317,7 @@ export function TrustDashboard() {
             </div>
           </div>
 
-          <div className="mx-auto max-w-[1000px] px-6 md:px-10 py-8 lg:py-10 flex flex-col gap-6">
+          <div className="mx-auto max-w-[1240px] px-6 md:px-10 py-8 lg:py-10 flex flex-col gap-6">
             <header className="flex flex-col gap-1">
               <h1 className="font-sans text-2xl md:text-3xl font-black tracking-tight text-ink">
                 {active.label}
@@ -345,20 +372,28 @@ export function TrustDashboard() {
           </section>
         )}
 
-        {tab === "account" && wallet.publicKey && (
-          <MyAgentPanel
-            publicKey={wallet.publicKey}
-            rescanKey={extraAgents}
-            onResolved={(id) => {
-              setMyAgentId(id);
-              setSelectedId(id);
-            }}
-          />
-        )}
-
-        {/* The owner's envelope + the live proof that the contract enforces it */}
+        {/* Rhythm: the account runs full width, then the proof splits against
+            the agent beside it. Everything stacked at one width read as a list
+            of equally important things, which none of them are. */}
         {tab === "account" && (
-          <SpendingEnvelope agents={agents.map((a) => ({ ...a, ...(live[a.agentId] ?? {}) }))} env={envelope} />
+          <div
+            className={`grid grid-cols-1 gap-6 xl:items-start ${
+              wallet.publicKey ? "xl:grid-cols-[1.55fr_1fr]" : ""
+            }`}
+          >
+            <SpendingEnvelope agents={agents.map((a) => ({ ...a, ...(live[a.agentId] ?? {}) }))} env={envelope} />
+
+            {wallet.publicKey && (
+              <MyAgentPanel
+                publicKey={wallet.publicKey}
+                rescanKey={extraAgents}
+                onResolved={(id) => {
+                  setMyAgentId(id);
+                  setSelectedId(id);
+                }}
+              />
+            )}
+          </div>
         )}
 
         {/* Stat strip — live actions (hire/register) update these in place */}
