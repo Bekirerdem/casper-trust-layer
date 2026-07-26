@@ -20,7 +20,7 @@ On-chain trust for AI agents: no LLM jury, no validator committee, no trusted ve
 
 <img src="web/public/og.png" alt="Trust, settled on-chain" width="820" />
 
-*Built for the **Casper Agentic Buildathon 2026** — 5 contracts live on `casper-test`, SDK on npm, x402 settlement verified on-chain.*
+*Built for the **Casper Agentic Buildathon 2026** — 6 contracts live on `casper-test`, SDK on npm, x402 settlement verified on-chain.*
 
 </div>
 
@@ -72,11 +72,13 @@ flowchart TD
     IR["IdentityRegistry<br/>ERC-8004 identity · CSPR bond · slash"]
     ES["Escrow<br/>fund → deliver → approve<br/>2% protocol fee locked"]
     RE["ReputationEngine<br/>objective score · anti-gaming math"]
-    AT["AgentTreasury<br/>capped spend envelope · owner's brake<br/>contract-level reputation gate"]
+    AV["AgentVaults<br/>a vault per customer · owner's rules<br/>per-job · per-day · freeze"]
+    AT["AgentTreasury<br/>single-tenant envelope · owner's brake<br/>contract-level reputation gate"]
     SDK["casper-trust SDK + MCP<br/>wallet-free reads · trust-gated pay"]
 
     ES -- "resolve wallet · slash bond" --> IR
     ES -- "record_settlement(provider, client, amount)" --> RE
+    RE -. "score gates payouts" .-> AV
     RE -. "score gates payouts" .-> AT
     RE -. "wallet-free RPC read" .-> SDK
 ```
@@ -142,13 +144,14 @@ Everything below is live on `casper-test` — see [`DEPLOYMENT.md`](DEPLOYMENT.m
 
 | Contract | Package hash |
 |---|---|
+| AgentVaults (a vault per customer) | [`674cc233…`](https://testnet.cspr.live/contract-package/674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914) |
 | IdentityRegistry | [`3a51cc5f…`](https://testnet.cspr.live/contract-package/3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc) |
 | ReputationEngine | [`d73fb111…`](https://testnet.cspr.live/contract-package/d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb) |
 | Escrow | [`fe6b0ddb…`](https://testnet.cspr.live/contract-package/fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c) |
 | AgentTreasury (v2, pausable) | [`95a5cde8…`](https://testnet.cspr.live/contract-package/95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a) |
 | Cep18 (demo token) | [`f962076e…`](https://testnet.cspr.live/contract-package/f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6) |
 
-> **AgentTreasury** gives a business a *capped spending envelope* for an AI agent: the contract enforces per-task (100 AGT) + daily (500 AGT) limits and a **protocol-level reputation gate** — funds only release to a payee that is whitelisted **or** clears a `ReputationEngine.score` threshold. Trust enforced in the contract, not the SDK.
+> **AgentVaults** is where an owner's money actually lives: one contract, **a vault per customer**, each carrying its own owner, agent, per-job ceiling, per-day ceiling, required track record, balance and freeze switch. Ownership is checked on every state-changing call, so nobody can read or move anyone else's money — `a_stranger_cannot_touch_your_vault` is a test, not a promise. **AgentTreasury** is the single-tenant envelope that came first, plus an owner-only `pause()`. Both enforce the same two rules in the contract, not the SDK: the owner's ceiling **and** the payee's earned track record.
 
 A live **8-agent trust network** runs on `casper-test` across **14 settlements**: reputation flows from *multiple* counterparties, not a single loop. Agent #0 has earned **508 bps over 7 settled jobs from 4 distinct clients** (and counting — the network is live); every row below is independently verifiable.
 
@@ -175,7 +178,7 @@ No claim in this README requires trusting us:
 | The score came from real settlements, not writes we control | Settlement txs [`6a7d54e8…`](https://testnet.cspr.live/transaction/6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69) and [`9e490f62…`](https://testnet.cspr.live/transaction/9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a) route through the deployed Escrow |
 | Anyone can move a score with their own wallet | Run the [hire flow](https://casper-trust-layer.vercel.app/app) — or inspect the browser-driven settlement [`04cea776…`](https://testnet.cspr.live/transaction/04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce) |
 | x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) — the same endpoint is refused below the bar, settled above it |
-| All 5 contracts are live and wired | Package hashes above; every install + wiring transaction linked in [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| All 6 contracts are live and wired | Package hashes above; every install + wiring transaction linked in [`DEPLOYMENT.md`](DEPLOYMENT.md) |
 | The SDK is public and installable today | [`npm install casper-trust`](https://www.npmjs.com/package/casper-trust) |
 | The code does what we say | `cargo odra test` in `contracts/` (52 tests) · `npx vitest run` in `sdk/` (66 tests incl. live read assertions) |
 
@@ -183,12 +186,12 @@ No claim in this README requires trusting us:
 
 | Criterion | What ships | Evidence |
 |---|---|---|
-| **Technical quality** | 5 contracts live and wired on `casper-test`; 52 OdraVM tests (incl. the adversarial reputation suite and the owner's brake) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
+| **Technical quality** | 6 contracts live and wired on `casper-test`; 62 OdraVM tests (incl. the adversarial reputation suite, the owner's brake, and per-customer vault isolation) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
 | **Innovation** | Reputation derived *objectively* from settled escrow payments, hardened with anti-gaming math (per-edge caps, trust conservation, value concavity); to our knowledge the category's only npm-published SDK | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
 | **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 | **DeFi / RWA applicability** | AgentTreasury — a capped on-chain spending envelope (per-task + daily) with a protocol-level reputation gate; CEP-18 escrow rails | [AgentTreasury](https://testnet.cspr.live/contract-package/abbdbdfd40fc241983efda0d42efabdc2b919d6b94fe1e2849e98d6e640e763c) · [`contracts/src`](contracts/src) |
 | **UX** | Wallet-free, gas-free score reads; live console; in-browser wallet-signed registration **and** a full hire flow with a faucet | [live demo](https://casper-trust-layer.vercel.app) · [Trust Console](https://casper-trust-layer.vercel.app/app) |
-| **Working contracts** | All 5 deployed, wired, and exercised end-to-end: settlements, slashing, treasury pay | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| **Working contracts** | All 6 deployed, wired, and exercised end-to-end: settlements, slashing, treasury pay, a customer vault opened → funded → paid → refused → frozen | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
 | **Ecosystem impact** | A published npm package + MCP server any Casper agent project can adopt; the Odra 2.8.1 → Condor deploy workarounds are documented for other teams | [npm](https://www.npmjs.com/package/casper-trust) · [`mcp/`](mcp/) · [`tasks/lessons.md`](tasks/lessons.md) |
 
 ## Developer guide
@@ -223,7 +226,8 @@ contracts/
   src/escrow.rs          Escrow            — A2A job state machine, CEP-18, 2% protocol fee
   src/reputation.rs      ReputationEngine  — escrow-derived sybil-resistant score
   src/treasury.rs        AgentTreasury     — capped spend envelope + reputation gate + pause
-  bin/cli.rs             odra-cli deploy script (5 contracts + wiring)
+  src/vaults.rs          AgentVaults       — a vault per customer: own rules, own balance, own freeze
+  bin/cli.rs             odra-cli deploy script (6 contracts + wiring)
   vendor/                patched odra-casper-rpc-client (Casper 2.0/Condor deploy fix)
 sdk/                     casper-trust TypeScript SDK (published to npm) + live demo scripts
 mcp/                     casper-trust-mcp — MCP server for AI agents (Claude, Cursor)

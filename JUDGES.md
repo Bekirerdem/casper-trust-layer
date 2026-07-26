@@ -73,6 +73,28 @@ Also on the [landing page](https://casper-trust-layer.vercel.app): the *Try It*
 section moves a `minScore` slider against a live agent and flips the gate between
 `APPROVED` and `REFUSED` — the same decision `pay()` makes before spending a cent.
 
+**And it is per-customer, not one shared demo.** `AgentVaults`
+([`674cc233…`](https://testnet.cspr.live/contract-package/674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914))
+holds a separate vault for every owner — own rules, own balance, own freeze
+switch, ownership checked on every state-changing call. Connect a wallet on the
+dashboard and it looks for *your* vault; if you don't have one, you write the
+limits and **you** sign the transaction that opens it. The server never signs on
+your behalf.
+
+One vault, exercised end to end — same payment, only the rule changes:
+
+| | Transaction |
+|---|---|
+| Owner opens a vault with their own rules | [`51a90b14…`](https://testnet.cspr.live/transaction/51a90b147d93769a66c33ef833919d8f09a93c8d2d891e41e4fad843f6f27e1a) |
+| Pays a vendor **with** a track record | [`3aed451f…`](https://testnet.cspr.live/transaction/3aed451f55cb30b36ccd20cd80d8c9e696a1dd1dd79df23954698fdc58bed102) |
+| Same payment, vendor **without** one — refused (`PayeeNotAllowed`) | [`5f3e803c…`](https://testnet.cspr.live/transaction/5f3e803c74668482c961ab0c029c4d3043610a3d712a6ee420f1bdc5543df34f) |
+| Owner freezes → the accepted payment now reverts (`Frozen`) | [`c63383cc…`](https://testnet.cspr.live/transaction/c63383cc8246ca04e28be24b583331512f9f149346c434213d90f2a41cfdfc2f) |
+
+Reproduce the whole sequence yourself: `npx vite-node sdk/scripts/vault-probe.mts`.
+The test that matters most is `a_stranger_cannot_touch_your_vault` — an outsider
+can neither freeze, withdraw, re-rule nor spend from someone else's vault
+(`contracts/src/vaults.rs`, 62 tests total).
+
 ## 4 · Integrate it — 3 minutes
 
 The category's only npm-published SDK. Wallet-free, works in plain Node:
