@@ -3,30 +3,19 @@ import { Args, CLValue, ContractCallBuilder } from "casper-js-sdk";
 import { createReadClient } from "@/lib/casper/read";
 import { loadServerSigner } from "@/lib/casper/serverSigner";
 import { TREASURY_PACKAGE } from "@/lib/casper/treasuryRead";
+import {
+  clientIp,
+  ensureOperatorReserve,
+  errorResponse,
+  parseAmount,
+  parseId,
+  throttle,
+} from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const CALL_GAS = 5_000_000_000; // wasm lane 5
-
-// Every attempt burns real testnet CSPR whether it settles or reverts, so the
-// endpoint is throttled. Serverless instances don't share this map, which is
-// fine — it is a spend brake, not a security control.
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 4;
-const hits = new Map<string, number[]>();
-
-function rateLimited(key: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= MAX_PER_WINDOW) {
-    hits.set(key, recent);
-    return true;
-  }
-  recent.push(now);
-  hits.set(key, recent);
-  return false;
-}
 
 /**
  * Attempts a spend from the owner's envelope: POST { payee, amountAgt }.
@@ -40,26 +29,18 @@ function rateLimited(key: string): boolean {
  */
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-    if (rateLimited(ip)) {
-      return NextResponse.json(
-        { error: "Too many attempts — each one spends real testnet gas. Try again shortly." },
-        { status: 429 },
-      );
-    }
+    // Every attempt burns real testnet gas whether it settles or reverts — and
+    // reverting is the point of two of the three demo buttons — so attempts are
+    // throttled and stop entirely once the operator is down to its reserve.
+    throttle("treasury-pay", clientIp(req), 4, 60_000);
 
-    const { payee, amountAgt } = (await req.json()) as { payee: number; amountAgt: string };
-    if (!Number.isInteger(payee) || payee < 0 || payee > 64) {
-      return NextResponse.json({ error: "invalid payee" }, { status: 400 });
-    }
-    const amount = Number(amountAgt);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return NextResponse.json({ error: "invalid amount" }, { status: 400 });
-    }
-    const motes = BigInt(Math.round(amount * 1e9)); // AGT has 9 decimals
+    const body = (await req.json()) as { payee?: unknown; amountAgt?: unknown };
+    const payee = Number(parseId(body.payee, "payee", BigInt(64)));
+    const motes = parseAmount(body.amountAgt, 9, 10_000); // AGT has 9 decimals
 
     const { rpc, cfg } = createReadClient();
     const signer = loadServerSigner();
+    await ensureOperatorReserve(rpc, signer);
 
     // Spend is accounted per task id; a fresh id keeps each attempt independent
     // so the per-task cap reflects this single payment.
@@ -83,9 +64,13 @@ export async function POST(req: Request) {
 
     await rpc.putTransaction(tx);
 
-    return NextResponse.json({ txHash: tx.hash.toHex(), payee, amountAgt, taskId: taskId.toString() });
+    return NextResponse.json({
+      txHash: tx.hash.toHex(),
+      payee,
+      amountAgt: body.amountAgt,
+      taskId: taskId.toString(),
+    });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "payment attempt failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(e, "payment attempt failed");
   }
 }

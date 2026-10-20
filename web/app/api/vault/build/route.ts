@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { Args, CLValue, ContractCallBuilder, Key, PublicKey } from "casper-js-sdk";
+import { Args, CLValue, ContractCallBuilder, Key } from "casper-js-sdk";
 import { createReadClient } from "@/lib/casper/read";
 import { VAULTS_PACKAGE } from "@/lib/casper/vaultRead";
+import { errorResponse, parseAmount, parseId, parsePublicKey } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,8 +25,9 @@ type Action =
   | { action: "setRules"; vaultId: number; perJob: string; perDay: string; requireTrackRecord: boolean }
   | { action: "pay"; vaultId: number; payee: number; amount: string };
 
-/** AGT has 9 decimals; the dashboard talks in whole units. */
-const toMotes = (whole: string) => BigInt(Math.round(Number(whole) * 1e9)).toString();
+/** AGT has 9 decimals; the dashboard talks in whole units. Parsed without floats. */
+const toMotes = (whole: unknown) => parseAmount(whole, 9, 1_000_000_000, { allowZero: true }).toString();
+const toId = (id: unknown, name: string) => Number(parseId(id, name, BigInt(4_294_967_295)));
 
 /**
  * Builds an UNSIGNED transaction for a vault action.
@@ -37,13 +39,8 @@ const toMotes = (whole: string) => BigInt(Math.round(Number(whole) * 1e9)).toStr
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Action & { publicKeyHex: string };
-    const { publicKeyHex } = body;
-    if (!publicKeyHex) {
-      return NextResponse.json({ error: "publicKeyHex required" }, { status: 400 });
-    }
-
+    const from = parsePublicKey(body.publicKeyHex);
     const { cfg } = createReadClient();
-    const from = PublicKey.fromHex(publicKeyHex);
 
     let entryPoint: string;
     let args: Args;
@@ -79,7 +76,7 @@ export async function POST(req: Request) {
       case "deposit":
         entryPoint = "deposit";
         args = Args.fromMap({
-          vault_id: CLValue.newCLUInt32(body.vaultId),
+          vault_id: CLValue.newCLUInt32(toId(body.vaultId, "vaultId")),
           amount: CLValue.newCLUInt256(toMotes(body.amount)),
         });
         gas = GAS.deposit;
@@ -87,7 +84,7 @@ export async function POST(req: Request) {
       case "withdraw":
         entryPoint = "withdraw";
         args = Args.fromMap({
-          vault_id: CLValue.newCLUInt32(body.vaultId),
+          vault_id: CLValue.newCLUInt32(toId(body.vaultId, "vaultId")),
           amount: CLValue.newCLUInt256(toMotes(body.amount)),
         });
         gas = GAS.deposit;
@@ -95,12 +92,12 @@ export async function POST(req: Request) {
       case "freeze":
       case "unfreeze":
         entryPoint = body.action;
-        args = Args.fromMap({ vault_id: CLValue.newCLUInt32(body.vaultId) });
+        args = Args.fromMap({ vault_id: CLValue.newCLUInt32(toId(body.vaultId, "vaultId")) });
         break;
       case "setRules":
         entryPoint = "set_rules";
         args = Args.fromMap({
-          vault_id: CLValue.newCLUInt32(body.vaultId),
+          vault_id: CLValue.newCLUInt32(toId(body.vaultId, "vaultId")),
           per_job: CLValue.newCLUInt256(toMotes(body.perJob)),
           per_day: CLValue.newCLUInt256(toMotes(body.perDay)),
           min_track_record: CLValue.newCLUInt256(body.requireTrackRecord ? "1" : "0"),
@@ -109,9 +106,9 @@ export async function POST(req: Request) {
       case "pay":
         entryPoint = "pay";
         args = Args.fromMap({
-          vault_id: CLValue.newCLUInt32(body.vaultId),
+          vault_id: CLValue.newCLUInt32(toId(body.vaultId, "vaultId")),
           task_id: CLValue.newCLUint64(String(Date.now())),
-          payee: CLValue.newCLUInt32(body.payee),
+          payee: CLValue.newCLUInt32(toId(body.payee, "payee")),
           amount: CLValue.newCLUInt256(toMotes(body.amount)),
         });
         gas = GAS.pay;
@@ -131,7 +128,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ txJson: tx.toJSON(), hash: tx.hash.toHex() });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "build failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(e, "build failed");
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { loadSnapshot } from "@/lib/data/snapshot";
 import { WalletButton } from "@/components/dashboard/WalletButton";
 import { RegisterPanel } from "@/components/dashboard/RegisterPanel";
@@ -180,6 +181,8 @@ export function TrustDashboard() {
   useEffect(() => {
     const wanted = Number(new URLSearchParams(window.location.search).get("agent"));
     if (Number.isInteger(wanted) && agents.some((a) => a.agentId === wanted)) {
+      // Syncing from the URL (an external system) once the agent list is known.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedId(wanted);
     }
   }, [agents]);
@@ -224,14 +227,14 @@ export function TrustDashboard() {
         {/* Rail — the app's spine. Where you are never moves. */}
         <aside className="hidden lg:flex w-[264px] shrink-0 flex-col justify-between border-r border-line bg-surface/70 px-5 py-7 sticky top-0 h-screen">
           <div className="flex flex-col gap-7">
-            <a href="/" className="group flex flex-col gap-0.5">
+            <Link href="/" className="group flex flex-col gap-0.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted transition-colors group-hover:text-ink">
                 ← Casper
               </span>
               <span className="font-sans text-lg font-black tracking-tight text-ink">
                 <span className="text-accent-red">Trust</span> Layer
               </span>
-            </a>
+            </Link>
 
             <nav className="flex flex-col gap-0.5">
               {TABS.map((t) => (
@@ -295,9 +298,9 @@ export function TrustDashboard() {
           {/* Phone + tablet: the rail lies down into a scrollable strip. */}
           <div className="lg:hidden sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
             <div className="flex items-center justify-between gap-3 px-6 pt-5">
-              <a href="/" className="font-sans text-base font-black tracking-tight text-ink">
+              <Link href="/" className="font-sans text-base font-black tracking-tight text-ink">
                 <span className="text-accent-red">Trust</span> Layer
-              </a>
+              </Link>
               {walletButton}
             </div>
             <div className="flex gap-1 overflow-x-auto px-6 pb-3 pt-3">

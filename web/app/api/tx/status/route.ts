@@ -11,7 +11,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const hash = new URL(req.url).searchParams.get("hash");
-  if (!hash) return NextResponse.json({ error: "hash required" }, { status: 400 });
+  if (!hash || !/^[0-9a-fA-F]{64}$/.test(hash)) {
+    return NextResponse.json({ error: "hash required" }, { status: 400 });
+  }
 
   try {
     const { rpc } = createReadClient();
@@ -30,6 +32,7 @@ export async function GET(req: Request) {
     if (code === -32000 || code === -32001 || /not found/i.test(err?.message ?? "")) {
       return NextResponse.json({ executed: false });
     }
-    return NextResponse.json({ error: err?.message ?? "status failed" }, { status: 502 });
+    console.error("[api] tx status:", e);
+    return NextResponse.json({ error: "status failed" }, { status: 502 });
   }
 }

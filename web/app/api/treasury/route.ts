@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getEnvelope, TREASURY_PACKAGE } from "@/lib/casper/treasuryRead";
+import { errorResponse } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +14,6 @@ export async function GET() {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {
-    const message = e instanceof Error ? e.message : "rpc error";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return errorResponse(e, "rpc error", 502);
   }
 }

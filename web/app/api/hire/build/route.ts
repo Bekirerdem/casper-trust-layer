@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { Args, CLValue, ContractCallBuilder, Key, PublicKey } from "casper-js-sdk";
+import { Args, CLValue, ContractCallBuilder, Key } from "casper-js-sdk";
 import { createReadClient } from "@/lib/casper/read";
 import { getNextJobId } from "@/lib/casper/escrowRead";
+import { errorResponse, parseId, parsePublicKey } from "@/lib/casper/guard";
+
+const U32_MAX = BigInt(4_294_967_295);
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,13 +26,9 @@ type BuildBody = {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as BuildBody;
-    const { publicKeyHex, step } = body;
-    if (!publicKeyHex || !step) {
-      return NextResponse.json({ error: "publicKeyHex, step required" }, { status: 400 });
-    }
-
+    const { step } = body;
+    const from = parsePublicKey(body.publicKeyHex);
     const { cfg } = createReadClient();
-    const from = PublicKey.fromHex(publicKeyHex);
 
     let pkg: string;
     let entryPoint: string;
@@ -42,7 +41,7 @@ export async function POST(req: Request) {
       entryPoint = "approve";
       args = Args.fromMap({
         spender: CLValue.newCLKey(Key.newKey("hash-" + cfg.packages.escrow)),
-        amount: CLValue.newCLUInt256(body.amountMotes),
+        amount: CLValue.newCLUInt256(parseId(body.amountMotes, "amountMotes").toString()),
       });
     } else if (step === "create_job") {
       if (body.clientId === undefined || body.providerId === undefined || !body.amountMotes || !body.deadlineMs) {
@@ -51,17 +50,18 @@ export async function POST(req: Request) {
       pkg = cfg.packages.escrow;
       entryPoint = "create_job";
       args = Args.fromMap({
-        client_id: CLValue.newCLUInt32(body.clientId),
-        provider: CLValue.newCLUInt32(body.providerId),
-        amount: CLValue.newCLUInt256(body.amountMotes),
-        deadline: CLValue.newCLUint64(body.deadlineMs), // contract expects Unix MILLISECONDS
+        client_id: CLValue.newCLUInt32(Number(parseId(body.clientId, "clientId", U32_MAX))),
+        provider: CLValue.newCLUInt32(Number(parseId(body.providerId, "providerId", U32_MAX))),
+        amount: CLValue.newCLUInt256(parseId(body.amountMotes, "amountMotes").toString()),
+        // contract expects Unix MILLISECONDS
+        deadline: CLValue.newCLUint64(parseId(body.deadlineMs, "deadlineMs").toString()),
       });
       nextJobId = (await getNextJobId()).toString();
     } else if (step === "approve_job") {
       if (body.jobId === undefined) return NextResponse.json({ error: "jobId required" }, { status: 400 });
       pkg = cfg.packages.escrow;
       entryPoint = "approve";
-      args = Args.fromMap({ job_id: CLValue.newCLUint64(body.jobId) });
+      args = Args.fromMap({ job_id: CLValue.newCLUint64(parseId(body.jobId, "jobId").toString()) });
     } else {
       return NextResponse.json({ error: `unknown step: ${step}` }, { status: 400 });
     }
@@ -77,7 +77,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ txJson: tx.toJSON(), hash: tx.hash.toHex(), nextJobId });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "build failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(e, "build failed");
   }
 }

@@ -61,6 +61,8 @@ export function VaultDashboard({ publicKey }: { publicKey: string }) {
   }, [publicKey]);
 
   useEffect(() => {
+    // A new wallet means a new vault to look up — show the loading state for it.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     refresh();
   }, [refresh]);

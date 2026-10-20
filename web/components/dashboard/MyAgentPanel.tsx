@@ -50,9 +50,11 @@ export function MyAgentPanel({
   // Which agents does this wallet own?
   useEffect(() => {
     let cancelled = false;
-    setIds(null);
-    setPassport(null);
-    fetch(`/api/agents/mine?publicKey=${publicKey}`, { cache: "no-store" })
+    (async () => {
+      setIds(null);
+      setPassport(null);
+      return fetch(`/api/agents/mine?publicKey=${publicKey}`, { cache: "no-store" });
+    })()
       .then((r) => r.json())
       .then((d: { agentIds?: number[] }) => {
         if (cancelled) return;

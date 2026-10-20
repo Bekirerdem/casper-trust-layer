@@ -47,10 +47,10 @@ export function HirePanel({
 
   useEffect(() => {
     let cancelled = false;
-    setMyAgentIds(null);
     // After a register tx (rescanKey bump) the registry needs a while to show the
     // new agent — poll until it appears instead of requiring a page refresh.
     (async () => {
+      setMyAgentIds(null);
       for (let attempt = 0; attempt < 16 && !cancelled; attempt++) {
         try {
           const d = await fetch(`/api/agents/mine?publicKey=${publicKey}`, { cache: "no-store" }).then((r) => r.json());

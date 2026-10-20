@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { PublicKey } from "casper-js-sdk";
 import { getVault, vaultCount, vaultOf } from "@/lib/casper/vaultRead";
+import { errorResponse, parseId, parsePublicKey } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
   try {
     if (id !== null) {
-      const vault = await getVault(Number(id));
+      const vault = await getVault(Number(parseId(id, "id", BigInt(4_294_967_295))));
       return NextResponse.json(vault ?? { error: "not found" }, {
         status: vault ? 200 : 404,
         headers: { "Cache-Control": "no-store" },
@@ -27,14 +27,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ total: await vaultCount() }, { headers: { "Cache-Control": "no-store" } });
     }
 
-    const accountHash = PublicKey.fromHex(publicKey).accountHash().toPrefixedString();
+    const accountHash = parsePublicKey(publicKey).accountHash().toPrefixedString();
     const vault = await vaultOf(accountHash);
     return NextResponse.json(
       { vault, total: await vaultCount() },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {
-    const message = e instanceof Error ? e.message : "rpc error";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return errorResponse(e, "rpc error", 502);
   }
 }

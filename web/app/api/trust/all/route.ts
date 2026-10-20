@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createReadClient, getReputation } from "@/lib/casper/read";
+import { errorResponse } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,7 +35,6 @@ export async function GET() {
   } catch (e) {
     // On rate-limit or RPC failure, serve the last good data if we have it.
     if (cache) return NextResponse.json({ agents: cache.agents, cached: true });
-    const message = e instanceof Error ? e.message : "read failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return errorResponse(e, "read failed", 502);
   }
 }

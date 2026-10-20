@@ -4,14 +4,17 @@ import {
   CLValue,
   CLTypeUInt8,
   SessionBuilder,
-  PublicKey,
 } from "casper-js-sdk";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { createReadClient } from "@/lib/casper/read";
+import { GuardError, errorResponse, parseId, parsePublicKey } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const REGISTER_GAS = 15_000_000_000; // wasm-lane register (proxy purse + cross-call)
+const MAX_URI = 256;
 
 // Builds an UNSIGNED register Transaction for the caller's public key, routed
 // through proxy_caller_with_return.wasm (same construction as the SDK's
@@ -19,21 +22,21 @@ const REGISTER_GAS = 15_000_000_000; // wasm-lane register (proxy purse + cross-
 export async function POST(req: Request) {
   try {
     const { publicKeyHex, agentUri, bondMotes } = (await req.json()) as {
-      publicKeyHex: string;
-      agentUri: string;
-      bondMotes: string;
+      publicKeyHex?: unknown;
+      agentUri?: unknown;
+      bondMotes?: unknown;
     };
-    if (!publicKeyHex || !agentUri || !bondMotes) {
-      return NextResponse.json({ error: "publicKeyHex, agentUri, bondMotes required" }, { status: 400 });
+    const from = parsePublicKey(publicKeyHex);
+    if (typeof agentUri !== "string" || agentUri.length === 0 || agentUri.length > MAX_URI) {
+      throw new GuardError(400, `agentUri must be 1-${MAX_URI} characters`);
     }
+    const bond = parseId(bondMotes, "bondMotes");
 
     const { cfg } = createReadClient();
-    const from = PublicKey.fromHex(publicKeyHex);
 
-    // proxy_caller wasm is served from /public — fetch it from this origin.
-    const wasmRes = await fetch(new URL("/proxy_caller_with_return.wasm", req.url));
-    if (!wasmRes.ok) throw new Error("proxy_caller wasm fetch failed");
-    const wasm = new Uint8Array(await wasmRes.arrayBuffer());
+    // proxy_caller wasm ships in /public — read it from disk, never via the
+    // request's Host header.
+    const wasm = new Uint8Array(await readFile(join(process.cwd(), "public", "proxy_caller_with_return.wasm")));
 
     // Inner args forwarded by proxy_caller to identity::register.
     const innerBytes = Args.fromMap({ agent_uri: CLValue.newCLString(agentUri) }).toBytes();
@@ -51,8 +54,8 @@ export async function POST(req: Request) {
           package_hash: CLValue.newCLByteArray(pkgBytes),
           entry_point: CLValue.newCLString("register"),
           args: innerArgsList,
-          attached_value: CLValue.newCLUInt512(bondMotes),
-          amount: CLValue.newCLUInt512(bondMotes),
+          attached_value: CLValue.newCLUInt512(bond.toString()),
+          amount: CLValue.newCLUInt512(bond.toString()),
         }),
       )
       .chainName(cfg.chainName)
@@ -61,7 +64,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ txJson: tx.toJSON(), hash: tx.hash.toHex() });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "build failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(e, "build failed");
   }
 }

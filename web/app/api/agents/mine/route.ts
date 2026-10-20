@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { PublicKey } from "casper-js-sdk";
 import { getAgent } from "casper-trust";
 import { createReadClient } from "@/lib/casper/read";
+import { clientIp, errorResponse, parsePublicKey, throttle } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,16 +17,17 @@ const cache = new Map<string, { at: number; agentIds: number[] }>();
  * Scans the registry (ids are sequential; stops at the first gap).
  */
 export async function GET(req: Request) {
-  const publicKey = new URL(req.url).searchParams.get("publicKey");
-  if (!publicKey) return NextResponse.json({ error: "publicKey required" }, { status: 400 });
-
   try {
+    throttle("agents-mine", clientIp(req), 20, 60_000);
+    const pub = parsePublicKey(new URL(req.url).searchParams.get("publicKey"));
+    const publicKey = pub.toHex();
+
     const hit = cache.get(publicKey);
     if (hit && Date.now() - hit.at < CACHE_MS) {
       return NextResponse.json({ agentIds: hit.agentIds, cached: true });
     }
 
-    const walletHash = hex64(PublicKey.fromHex(publicKey).accountHash().toPrefixedString());
+    const walletHash = hex64(pub.accountHash().toPrefixedString());
     const client = createReadClient();
 
     const mine: number[] = [];
@@ -36,10 +37,10 @@ export async function GET(req: Request) {
       if (agent.status === "Active" && hex64(agent.wallet) === walletHash) mine.push(id);
     }
 
+    if (cache.size >= 1_000) cache.delete(cache.keys().next().value as string);
     cache.set(publicKey, { at: Date.now(), agentIds: mine });
     return NextResponse.json({ agentIds: mine });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "scan failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(e, "scan failed");
   }
 }

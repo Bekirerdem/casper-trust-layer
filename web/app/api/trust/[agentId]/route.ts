@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createReadClient, getReputation } from "@/lib/casper/read";
+import { errorResponse } from "@/lib/casper/guard";
 
 // casper-js-sdk needs the Node runtime; read live on every request.
 export const runtime = "nodejs";
@@ -23,7 +24,6 @@ export async function GET(
       headers: { "Cache-Control": "no-store" },
     });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "rpc error";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return errorResponse(e, "rpc error", 502);
   }
 }
