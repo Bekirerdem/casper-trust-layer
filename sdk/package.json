@@ -43,15 +43,20 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@make-software/casper-x402": "^0.1.0",
-    "@x402/fetch": "^2.15.0",
+    "@make-software/casper-x402": "^1.0.0",
+    "@x402/core": "^2.28.0",
+    "@x402/fetch": "^2.28.0",
     "blakejs": "^1.2.1",
-    "casper-js-sdk": "5.0.12"
+    "casper-js-sdk": "^5.3.0"
+  },
+  "overrides": {
+    "casper-js-sdk": "$casper-js-sdk",
+    "@x402/core": "$@x402/core"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.9.3",
-    "@x402/express": "^2.16.0",
+    "@x402/express": "^2.28.0",
     "dotenv": "^16.4.0",
     "express": "^5.2.1",
     "typescript": "^5.5.0",

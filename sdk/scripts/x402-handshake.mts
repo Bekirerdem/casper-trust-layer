@@ -97,7 +97,7 @@ async function main() {
   const client = { cfg, rpc: makeRpcClient(cfg), signer, network: NETWORK } as any;
   console.log("\nclient calling /premium (expect 402 -> sign -> settle -> 200)...");
   try {
-    const res = await pay(client, { url: `http://localhost:${PORT}/premium` });
+    const res = await pay(client, { url: `http://localhost:${PORT}/premium`, maxAmount: BigInt(AMOUNT) });
     console.log(`\nHTTP status: ${res.status}`);
     const payResp =
       res.headers.get("payment-response") ?? res.headers.get("x-payment-response");

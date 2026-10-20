@@ -46,7 +46,31 @@ export interface PayRequest {
   url: string;
   providerAgentId?: number;
   minScore?: bigint;
+  /**
+   * Hard ceiling, in token base units, for what this call may sign. A 402 that
+   * asks for more is refused before anything is signed — a provider (or a
+   * compromised one) cannot name its own price.
+   */
+  maxAmount: bigint;
   init?: RequestInit;
+}
+
+export class PaymentCapError extends Error {
+  constructor(public readonly maxAmount: bigint) {
+    super(`402 asked for more than maxAmount ${maxAmount}; nothing was signed`);
+    this.name = "PaymentCapError";
+  }
+}
+
+/** Keeps only the payment options at or under the caller's ceiling. */
+export function capRequirements<T extends { amount: string }>(reqs: T[], maxAmount: bigint): T[] {
+  return reqs.filter((r) => {
+    try {
+      return BigInt(r.amount) <= maxAmount;
+    } catch {
+      return false;
+    }
+  });
 }
 
 /**
@@ -96,6 +120,9 @@ export interface X402TrustClient extends TrustClient {
  */
 export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response> {
   if (!c.signer) throw new Error("pay() requires a signer-bearing client; build it as { ...createTrustClient(overrides), signer }");
+  if (typeof req.maxAmount !== "bigint" || req.maxAmount <= BigInt(0)) {
+    throw new Error("pay() requires a positive bigint maxAmount");
+  }
   // Step 1: gate
   await gateByTrust(
     (id, o) => checkTrust(c, id, o),
@@ -109,7 +136,20 @@ export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response
   const network = c.network ?? NETWORK_CASPER_TESTNET;
   const client = new x402Client();
   client.register(network as `${string}:${string}`, new ExactCasperScheme(c.signer));
+  // Spend ceiling: options above maxAmount are dropped before selection, so an
+  // over-priced 402 leaves nothing to sign.
+  let capped = false;
+  client.registerPolicy((_version, reqs) => {
+    const allowed = capRequirements(reqs, req.maxAmount);
+    capped = reqs.length > 0 && allowed.length === 0;
+    return allowed;
+  });
 
   const paymentFetch = wrapFetchWithPayment(fetch, client);
-  return paymentFetch(req.url, req.init);
+  try {
+    return await paymentFetch(req.url, req.init);
+  } catch (e) {
+    if (capped) throw new PaymentCapError(req.maxAmount);
+    throw e;
+  }
 }

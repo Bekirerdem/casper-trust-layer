@@ -127,6 +127,7 @@ async function main() {
         url: `http://localhost:${PORT}/premium`,
         providerAgentId: id,
         minScore: highBar,
+        maxAmount: BigInt(AMOUNT),
       });
       console.log("❌ UNEXPECTED: payment went through despite insufficient trust.");
     } catch (e) {
@@ -144,6 +145,7 @@ async function main() {
       url: `http://localhost:${PORT}/premium`,
       providerAgentId: id,
       minScore: okBar,
+      maxAmount: BigInt(AMOUNT),
     });
     console.log(`HTTP status: ${res.status}`);
     const payResp =
