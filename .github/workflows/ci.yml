@@ -15,13 +15,15 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - run: npm ci
+      # The lockfile is written on Windows and omits Linux-only optional deps
+      # (@emnapi/*), which `npm ci` treats as out of sync.
+      - run: npm install --no-audit --no-fund
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm test
@@ -34,8 +36,8 @@ jobs:
       run:
         working-directory: sdk
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -51,8 +53,8 @@ jobs:
       run:
         working-directory: mcp
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -67,7 +69,7 @@ jobs:
       run:
         working-directory: contracts
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
       # rustup picks the pinned nightly up from contracts/rust-toolchain.
       - run: rustup show active-toolchain || rustup toolchain install

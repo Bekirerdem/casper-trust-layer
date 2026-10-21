@@ -3,6 +3,7 @@ target/
 **/target/
 *.wasm
 !sdk/assets/*.wasm
+!contracts/vendor/odra-casper-rpc-client/resources/*.wasm
 wasm/
 # rustc internal-compiler-error crash dumps
 rustc-ice-*.txt
