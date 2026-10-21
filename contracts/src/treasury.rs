@@ -8,6 +8,13 @@ use odra_modules::cep18_token::Cep18ContractRef;
 /// Casper `get_block_time()` returns Unix MILLISECONDS, so a UTC day bucket
 /// divides by this (NOT 86_400). Reservation deadlines are milliseconds too.
 const MS_PER_DAY: u64 = 86_400_000;
+const MS_PER_HOUR: u64 = 3_600_000;
+/// The daily cap is enforced over a rolling window of this many hourly buckets,
+/// so no 23-hour stretch can exceed it (a calendar-day bucket allowed 2x across
+/// midnight). The calendar `day_spent` is still written for display.
+const WINDOW_HOURS: u64 = 24;
+/// Longest a reservation may lock funds (Unix ms from creation).
+pub const MAX_RESERVATION_MS: u64 = 30 * MS_PER_DAY;
 
 /// Lifecycle of a locked-funds reservation (outcome-bound payment).
 #[odra::odra_type]
@@ -49,6 +56,14 @@ pub enum Error {
     InvalidState = 11,
     /// The owner pulled the brake: spending is halted until unpaused.
     Paused = 12,
+    /// Reservation deadline is in the past or beyond `MAX_RESERVATION_MS`.
+    InvalidDeadline = 13,
+    /// Limits must be non-zero with per-task <= daily.
+    InvalidLimits = 14,
+    /// The payee identity is missing, slashed, withdrawn or unbonding.
+    PayeeNotActive = 15,
+    /// Caller is not the pending admin.
+    NotPendingAdmin = 16,
 }
 
 /// Non-custodial treasury: a business deposits CEP-18 funds and delegates
@@ -56,7 +71,13 @@ pub enum Error {
 /// gate (whitelist OR earned reputation), a per-task cap, and a UTC daily cap.
 /// Spend is accounted per task. Reservations lock funds for outcome-bound work.
 #[allow(dead_code)]
-#[odra::module(errors = Error, events = [Paid, Reserved, Released, Refunded, PauseChanged])]
+#[odra::module(
+    errors = Error,
+    events = [
+        Paid, Reserved, Released, Refunded, PauseChanged, AgentChanged, PayeeChanged,
+        PolicyChanged, Withdrawn, AdminTransferStarted, AdminChanged
+    ]
+)]
 pub struct AgentTreasury {
     admin: Var<Address>,
     agent: Var<Address>,
@@ -75,6 +96,13 @@ pub struct AgentTreasury {
     /// Appended last on purpose: every earlier field keeps its storage index,
     /// so the calibrated off-chain readers stay valid.
     paused: Var<bool>,
+    // ---- v2 — appended so earlier storage indices stay valid off-chain ----
+    pending_admin: Var<Option<Address>>,
+    /// Hour bucket (block_time / 1h) → spent. Backs the rolling 24h cap.
+    hour_spent: Mapping<u64, U256>,
+    /// Identity `transfer_count` when the payee was whitelisted. If the identity
+    /// changed hands since, the whitelist entry no longer applies.
+    whitelist_epoch: Mapping<u32, u32>,
 }
 
 #[odra::module]
@@ -89,6 +117,7 @@ impl AgentTreasury {
         daily_limit: U256,
         per_task_limit: U256,
     ) {
+        self.check_limits(daily_limit, per_task_limit);
         self.admin.set(self.env().caller());
         self.agent.set(agent);
         self.token.set(token);
@@ -114,20 +143,77 @@ impl AgentTreasury {
         )
     }
 
-    /// Whitelist an agent id as an always-allowed payee. Admin-only.
+    /// Whitelist an agent id as an always-allowed payee. Admin-only. The entry is
+    /// tied to the identity's current owner: a transfer voids it.
     pub fn add_payee(&mut self, agent_id: u32) {
         self.only_admin();
+        let epoch = self.identity_ref().transfer_count(agent_id);
         self.whitelist.set(&agent_id, true);
+        self.whitelist_epoch.set(&agent_id, epoch);
+        self.env().emit_event(PayeeChanged { payee: agent_id, allowed: true });
     }
 
     /// Remove an agent id from the whitelist. Admin-only.
     pub fn remove_payee(&mut self, agent_id: u32) {
         self.only_admin();
         self.whitelist.set(&agent_id, false);
+        self.env().emit_event(PayeeChanged { payee: agent_id, allowed: false });
     }
 
     pub fn is_payee(&self, agent_id: u32) -> bool {
         self.whitelist.get(&agent_id).unwrap_or(false)
+            && self.whitelist_epoch.get(&agent_id).unwrap_or_default()
+                == self.identity_ref().transfer_count(agent_id)
+    }
+
+    // ---- owner recovery ----------------------------------------------------------
+
+    /// Replaces the delegated agent — the answer to a lost or leaked agent key.
+    /// Admin-only.
+    pub fn set_agent(&mut self, agent: Address) {
+        self.only_admin();
+        self.agent.set(agent);
+        self.env().emit_event(AgentChanged { agent });
+    }
+
+    /// Changes the caps. Admin-only, same sanity rules as `init`.
+    pub fn set_limits(&mut self, daily_limit: U256, per_task_limit: U256) {
+        self.only_admin();
+        self.check_limits(daily_limit, per_task_limit);
+        self.daily_limit.set(daily_limit);
+        self.per_task_limit.set(per_task_limit);
+    }
+
+    /// Takes free (unreserved) funds back to the admin. Works while paused —
+    /// that is the point of the brake. Admin-only.
+    pub fn withdraw(&mut self, amount: U256) {
+        self.only_admin();
+        if amount.is_zero() {
+            self.env().revert(Error::ZeroAmount);
+        }
+        if self.free_balance() < amount {
+            self.env().revert(Error::InsufficientFreeBalance);
+        }
+        let admin = self.admin();
+        self.token_ref().transfer(&admin, &amount);
+        self.env().emit_event(Withdrawn { to: admin, amount });
+    }
+
+    /// Starts a two-step admin handover; `to` must call `accept_admin`.
+    pub fn transfer_admin(&mut self, to: Address) {
+        self.only_admin();
+        self.pending_admin.set(Some(to));
+        self.env().emit_event(AdminTransferStarted { to });
+    }
+
+    pub fn accept_admin(&mut self) {
+        let caller = self.env().caller();
+        if self.pending_admin.get().flatten() != Some(caller) {
+            self.env().revert(Error::NotPendingAdmin);
+        }
+        self.admin.set(caller);
+        self.pending_admin.set(None);
+        self.env().emit_event(AdminChanged { admin: caller });
     }
 
     /// The agent pays `amount` to `payee` (an agent id) for `task_id`. The
@@ -145,9 +231,7 @@ impl AgentTreasury {
         if task_spent + amount > self.per_task_limit.get_or_default() {
             self.env().revert(Error::ExceedsTaskLimit);
         }
-        let day = self.today();
-        let spent_today = self.day_spent.get(&day).unwrap_or_default();
-        if spent_today + amount > self.daily_limit.get_or_default() {
+        if self.window_spent() + amount > self.daily_limit.get_or_default() {
             self.env().revert(Error::ExceedsDailyLimit);
         }
         if self.free_balance() < amount {
@@ -155,7 +239,7 @@ impl AgentTreasury {
         }
 
         // EFFECTS before INTERACTION.
-        self.day_spent.set(&day, spent_today + amount);
+        self.record_spend(amount);
         self.task_spent.set(&task_id, task_spent + amount);
 
         let wallet = self.agent_wallet(payee);
@@ -170,6 +254,7 @@ impl AgentTreasury {
         self.only_admin();
         self.rep_registry.set(registry);
         self.min_reputation.set(min_reputation);
+        self.env().emit_event(PolicyChanged { registry, min_reputation });
     }
 
     pub fn get_reputation_policy(&self) -> Option<(Address, U256)> {
@@ -225,6 +310,10 @@ impl AgentTreasury {
         if amount > self.per_task_limit.get_or_default() {
             self.env().revert(Error::ExceedsTaskLimit);
         }
+        let now = self.env().get_block_time();
+        if deadline <= now || deadline > now + MAX_RESERVATION_MS {
+            self.env().revert(Error::InvalidDeadline);
+        }
         if self.free_balance() < amount {
             self.env().revert(Error::InsufficientFreeBalance);
         }
@@ -249,9 +338,11 @@ impl AgentTreasury {
         if r.state != ReservationState::Open {
             self.env().revert(Error::InvalidState);
         }
-        let day = self.today();
-        let spent_today = self.day_spent.get(&day).unwrap_or_default();
-        if spent_today + r.amount > self.daily_limit.get_or_default() {
+        // The payee must still be in good standing at the moment money moves.
+        if !self.identity_ref().is_active(r.payee) {
+            self.env().revert(Error::PayeeNotActive);
+        }
+        if self.window_spent() + r.amount > self.daily_limit.get_or_default() {
             self.env().revert(Error::ExceedsDailyLimit);
         }
         let task_spent = self.task_spent.get(&r.task_id).unwrap_or_default();
@@ -260,7 +351,7 @@ impl AgentTreasury {
         }
 
         // EFFECTS before INTERACTION.
-        self.day_spent.set(&day, spent_today + r.amount);
+        self.record_spend(r.amount);
         self.task_spent.set(&r.task_id, task_spent + r.amount);
         self.locked.set(self.locked.get_or_default() - r.amount);
         let (payee, amount) = (r.payee, r.amount);
@@ -276,19 +367,25 @@ impl AgentTreasury {
     /// is released back to free balance. No transfer, no spend recorded.
     pub fn refund_reservation(&mut self, id: u64) {
         self.only_agent();
-        let mut r = self.load_reservation(id);
+        let r = self.load_reservation(id);
         if r.state != ReservationState::Open {
             self.env().revert(Error::InvalidState);
         }
         if self.env().get_block_time() < r.deadline {
             self.env().revert(Error::DeadlineNotReached);
         }
-        self.locked.set(self.locked.get_or_default() - r.amount);
-        let (payee, amount) = (r.payee, r.amount);
-        r.state = ReservationState::Refunded;
-        self.reservations.set(&id, r);
+        self.unlock(id, r);
+    }
 
-        self.env().emit_event(Refunded { id, payee, amount });
+    /// The owner cancels an open reservation at any time — a compromised agent
+    /// cannot freeze the treasury by reserving everything. Admin-only.
+    pub fn cancel_reservation(&mut self, id: u64) {
+        self.only_admin();
+        let r = self.load_reservation(id);
+        if r.state != ReservationState::Open {
+            self.env().revert(Error::InvalidState);
+        }
+        self.unlock(id, r);
     }
 
     pub fn get_reservation(&self, id: u64) -> Option<Reservation> {
@@ -306,8 +403,14 @@ impl AgentTreasury {
         self.token_ref().balance_of(&addr)
     }
 
+    /// Spent in the current UTC calendar day (display only — the cap is rolling).
     pub fn day_spent(&self) -> U256 {
         self.day_spent.get(&self.today()).unwrap_or_default()
+    }
+
+    /// Spent over the rolling window the daily cap is enforced against.
+    pub fn spent_last_24h(&self) -> U256 {
+        self.window_spent()
     }
 
     pub fn task_spent(&self, task_id: u64) -> U256 {
@@ -338,7 +441,10 @@ impl AgentTreasury {
     /// Otherwise, when a reputation policy is set (`min > 0`), the payee passes
     /// iff its on-chain score meets the threshold.
     fn assert_payee_allowed(&self, payee: u32) {
-        if self.whitelist.get(&payee).unwrap_or(false) {
+        if !self.identity_ref().is_active(payee) {
+            self.env().revert(Error::PayeeNotActive);
+        }
+        if self.is_payee(payee) {
             return;
         }
         let min = self.min_reputation.get_or_default();
@@ -355,6 +461,38 @@ impl AgentTreasury {
 
     fn today(&self) -> u64 {
         self.env().get_block_time() / MS_PER_DAY
+    }
+
+    /// Sum of the last `WINDOW_HOURS` hourly buckets (current hour included).
+    fn window_spent(&self) -> U256 {
+        let hour = self.env().get_block_time() / MS_PER_HOUR;
+        let mut sum = U256::zero();
+        for h in hour.saturating_sub(WINDOW_HOURS - 1)..=hour {
+            sum += self.hour_spent.get(&h).unwrap_or_default();
+        }
+        sum
+    }
+
+    fn record_spend(&mut self, amount: U256) {
+        let now = self.env().get_block_time();
+        let hour = now / MS_PER_HOUR;
+        let day = now / MS_PER_DAY;
+        self.hour_spent.set(&hour, self.hour_spent.get(&hour).unwrap_or_default() + amount);
+        self.day_spent.set(&day, self.day_spent.get(&day).unwrap_or_default() + amount);
+    }
+
+    fn unlock(&mut self, id: u64, mut r: Reservation) {
+        self.locked.set(self.locked.get_or_default() - r.amount);
+        let (payee, amount) = (r.payee, r.amount);
+        r.state = ReservationState::Refunded;
+        self.reservations.set(&id, r);
+        self.env().emit_event(Refunded { id, payee, amount });
+    }
+
+    fn check_limits(&self, daily_limit: U256, per_task_limit: U256) {
+        if daily_limit.is_zero() || per_task_limit.is_zero() || per_task_limit > daily_limit {
+            self.env().revert(Error::InvalidLimits);
+        }
     }
 
     /// Spendable balance: total balance minus funds locked by open reservations.
@@ -417,6 +555,39 @@ pub struct Refunded {
 #[odra::event]
 pub struct PauseChanged {
     pub paused: bool,
+}
+
+#[odra::event]
+pub struct AgentChanged {
+    pub agent: Address,
+}
+
+#[odra::event]
+pub struct PayeeChanged {
+    pub payee: u32,
+    pub allowed: bool,
+}
+
+#[odra::event]
+pub struct PolicyChanged {
+    pub registry: Address,
+    pub min_reputation: U256,
+}
+
+#[odra::event]
+pub struct Withdrawn {
+    pub to: Address,
+    pub amount: U256,
+}
+
+#[odra::event]
+pub struct AdminTransferStarted {
+    pub to: Address,
+}
+
+#[odra::event]
+pub struct AdminChanged {
+    pub admin: Address,
 }
 
 #[cfg(test)]
@@ -880,5 +1051,200 @@ mod tests {
         w.env.set_caller(w.admin);
         w.treasury.set_reputation_policy(rep.address(), U256::from(500u64));
         assert_eq!(w.treasury.get_reputation_policy(), Some((rep.address(), U256::from(500u64))));
+    }
+
+    // ---- v2: attacks from the v1 audit and owner recovery ------------------------
+
+    /// Registers + whitelists a provider and funds the treasury; returns (id, wallet).
+    fn ready_provider(w: &mut World, fund: u64) -> (u32, Address) {
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        w.env.set_caller(w.admin);
+        w.treasury.add_payee(provider);
+        fund_treasury(w, fund);
+        (provider, provider_wallet)
+    }
+
+    /// B7 — spend the daily cap at 23:59, again at 00:01. The rolling window
+    /// refuses the second batch.
+    #[test]
+    fn midnight_double_spend_is_refused() {
+        let mut w = setup();
+        let (provider, _) = ready_provider(&mut w, 1_000_000);
+        // Move to 23:59 UTC of the current day.
+        let now = w.env.block_time();
+        let to_2359 = super::MS_PER_DAY - (now % super::MS_PER_DAY) - 60_000;
+        w.env.advance_block_time(to_2359);
+
+        w.env.set_caller(w.agent);
+        w.treasury.pay(1, provider, U256::from(40_000u64));
+        w.treasury.pay(2, provider, U256::from(40_000u64));
+        w.treasury.pay(3, provider, U256::from(20_000u64)); // = DAILY
+
+        w.env.advance_block_time(120_000); // 00:01 next day
+        assert_eq!(w.treasury.day_spent(), U256::zero()); // calendar view rolled over
+        assert_eq!(
+            w.treasury.try_pay(4, provider, U256::from(1u64)),
+            Err(super::Error::ExceedsDailyLimit.into())
+        );
+        assert_eq!(w.treasury.spent_last_24h(), U256::from(DAILY));
+
+        // A full window later the cap is available again.
+        w.env.advance_block_time(24 * super::MS_PER_HOUR);
+        assert!(w.treasury.try_pay(4, provider, U256::from(40_000u64)).is_ok());
+    }
+
+    /// B8 — a compromised agent reserves everything with a u64::MAX deadline.
+    /// The deadline is refused, and the admin can cancel any open reservation.
+    #[test]
+    fn reservation_lock_up_is_refused_and_admin_can_cancel() {
+        let mut w = setup();
+        let (provider, _) = ready_provider(&mut w, 100_000);
+
+        w.env.set_caller(w.agent);
+        assert_eq!(
+            w.treasury.try_create_reservation(1, provider, U256::from(30_000u64), u64::MAX),
+            Err(super::Error::InvalidDeadline.into())
+        );
+        let past = w.env.block_time();
+        assert_eq!(
+            w.treasury.try_create_reservation(1, provider, U256::from(30_000u64), past),
+            Err(super::Error::InvalidDeadline.into())
+        );
+
+        let deadline = w.env.block_time() + super::MAX_RESERVATION_MS;
+        let id = w.treasury.create_reservation(1, provider, U256::from(30_000u64), deadline);
+        assert_eq!(
+            w.treasury.try_cancel_reservation(id),
+            Err(super::Error::NotAdmin.into())
+        );
+
+        w.env.set_caller(w.admin);
+        w.treasury.cancel_reservation(id);
+        assert_eq!(w.treasury.locked(), U256::zero());
+        assert_eq!(w.treasury.get_reservation(id).unwrap().state, ReservationState::Refunded);
+    }
+
+    /// B3 — the agent key is lost or leaked: the admin swaps the agent and pulls
+    /// the free funds back, even while paused.
+    #[test]
+    fn admin_recovers_from_a_compromised_agent() {
+        let mut w = setup();
+        let (provider, _) = ready_provider(&mut w, 100_000);
+        w.env.set_caller(w.agent);
+        let deadline = w.env.block_time() + 1000;
+        w.treasury.create_reservation(1, provider, U256::from(30_000u64), deadline);
+
+        w.env.set_caller(w.admin);
+        w.treasury.pause();
+        let new_agent = w.env.get_account(5);
+        w.treasury.set_agent(new_agent);
+        assert_eq!(w.treasury.agent_address(), new_agent);
+
+        // The old agent is locked out.
+        w.env.set_caller(w.agent);
+        assert_eq!(
+            w.treasury.try_pay(2, provider, U256::from(1u64)),
+            Err(super::Error::NotAgent.into())
+        );
+
+        // Free balance (100k - 30k reserved) comes back to the admin.
+        w.env.set_caller(w.admin);
+        let before = w.token.balance_of(&w.admin);
+        assert_eq!(
+            w.treasury.try_withdraw(U256::from(70_001u64)),
+            Err(super::Error::InsufficientFreeBalance.into())
+        );
+        w.treasury.withdraw(U256::from(70_000u64));
+        assert_eq!(w.token.balance_of(&w.admin), before + U256::from(70_000u64));
+    }
+
+    #[test]
+    fn admin_handover_is_two_step() {
+        let mut w = setup();
+        let next = w.env.get_account(6);
+        w.env.set_caller(w.admin);
+        w.treasury.transfer_admin(next);
+        assert_eq!(w.treasury.admin(), w.admin);
+
+        w.env.set_caller(w.agent);
+        assert_eq!(w.treasury.try_accept_admin(), Err(super::Error::NotPendingAdmin.into()));
+
+        w.env.set_caller(next);
+        w.treasury.accept_admin();
+        assert_eq!(w.treasury.admin(), next);
+    }
+
+    /// B17 — nonsensical limits are refused at deploy and on update.
+    #[test]
+    fn limits_are_sanity_checked() {
+        let w = setup();
+        let r = AgentTreasury::try_deploy(
+            &w.env,
+            AgentTreasuryInitArgs {
+                identity: w.identity.address(),
+                agent: w.agent,
+                token: w.token.address(),
+                daily_limit: U256::from(10u64),
+                per_task_limit: U256::from(11u64),
+            },
+        );
+        assert!(r.is_err());
+
+        let mut w = w;
+        w.env.set_caller(w.admin);
+        assert_eq!(
+            w.treasury.try_set_limits(U256::zero(), U256::zero()),
+            Err(super::Error::InvalidLimits.into())
+        );
+        w.treasury.set_limits(U256::from(DAILY * 2), U256::from(PER_TASK));
+        assert_eq!(w.treasury.limits(), (U256::from(DAILY * 2), U256::from(PER_TASK)));
+    }
+
+    /// B4 — a whitelisted payee that starts unbonding (or is slashed) can no
+    /// longer be paid, directly or through a pending reservation.
+    #[test]
+    fn inactive_payee_is_refused_even_if_whitelisted() {
+        let mut w = setup();
+        let (provider, provider_wallet) = ready_provider(&mut w, 100_000);
+        w.env.set_caller(w.agent);
+        let deadline = w.env.block_time() + 1000;
+        let id = w.treasury.create_reservation(1, provider, U256::from(10_000u64), deadline);
+
+        w.env.set_caller(provider_wallet);
+        w.identity.request_withdraw(provider);
+
+        w.env.set_caller(w.agent);
+        assert_eq!(
+            w.treasury.try_pay(2, provider, U256::from(1u64)),
+            Err(super::Error::PayeeNotActive.into())
+        );
+        w.env.set_caller(w.admin);
+        assert_eq!(
+            w.treasury.try_release_reservation(id),
+            Err(super::Error::PayeeNotActive.into())
+        );
+    }
+
+    /// B14 — a whitelisted identity that changes hands is no longer whitelisted.
+    #[test]
+    fn whitelist_does_not_survive_a_transfer() {
+        let mut w = setup();
+        let (provider, provider_wallet) = ready_provider(&mut w, 100_000);
+        assert!(w.treasury.is_payee(provider));
+
+        let buyer = w.env.get_account(7);
+        w.env.set_caller(provider_wallet);
+        w.identity.transfer(provider, buyer);
+        w.env.set_caller(buyer);
+        w.identity.accept_transfer(provider);
+
+        assert!(!w.treasury.is_payee(provider));
+        w.env.set_caller(w.agent);
+        assert_eq!(
+            w.treasury.try_pay(1, provider, U256::from(1u64)),
+            Err(super::Error::PayeeNotWhitelisted.into())
+        );
     }
 }

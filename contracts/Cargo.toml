@@ -4,18 +4,18 @@ name = "contracts"
 version = "0.1.0"
 
 [dependencies]
-odra = { version = "2.8.0", features = [], default-features = false }
-odra-modules = { version = "2.8.0", features = [], default-features = false }
+odra = { version = "2.9.1", features = [], default-features = false }
+odra-modules = { version = "2.9.1", features = [], default-features = false }
 
 [dev-dependencies]
-odra-test = { version = "2.8.0", features = [], default-features = false }
+odra-test = { version = "2.9.1", features = [], default-features = false }
 
 [build-dependencies]
-odra-build = { version = "2.8.0", features = [], default-features = false }
+odra-build = { version = "2.9.1", features = [], default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-odra-build = { version = "2.8.0", features = [], default-features = false }
-odra-cli = { version = "2.8.0", features = [], default-features = false }
+odra-build = { version = "2.9.1", features = [], default-features = false }
+odra-cli = { version = "2.9.1", features = [], default-features = false }
 
 [[bin]]
 name = "contracts_build_contract"
@@ -39,8 +39,11 @@ lto = true
 [profile.dev.package."*"]
 opt-level = 3
 
-# Patch: Casper 2.0/Condor no longer stores the installed package under the
-# deployer's named keys, so the upstream deploy resolver fails. The vendored copy
-# resolves the address from the deploy effects instead.
+# Patch (vendored odra-casper-rpc-client 2.9.1 + 3 local changes, each marked
+# "PATCH (casper-trust-layer)"): Casper 2.0/Condor no longer stores the installed
+# package under the deployer's named keys, so the deploy resolver reads the
+# address from the deploy effects; the SSE watcher sends the CSPR.cloud token and
+# skips events it cannot parse. The gas-price-tolerance patch was dropped —
+# upstream fixed it in 2.8.2 (set GAS_PRICE_TOLERANCE in .env if needed).
 [patch.crates-io]
 odra-casper-rpc-client = { path = "vendor/odra-casper-rpc-client" }

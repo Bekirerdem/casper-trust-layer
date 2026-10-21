@@ -1,9 +1,7 @@
 //! Transaction building and deployment methods.
 
-use crate::casper_client::transaction_watcher::{TransactionWatch, TransactionWatcher};
 use crate::casper_client::Result;
-use crate::error::LivenetError::ExecutionError;
-use crate::error::LivenetError::RpcRequestError;
+use crate::error::LivenetError;
 use crate::log;
 use casper_client::cli::TransactionV1Builder;
 use casper_client::put_transaction;
@@ -19,27 +17,49 @@ use odra_core::consts::{
 };
 use odra_core::prelude::*;
 use odra_core::CallDef;
-use std::time::Duration;
 
-/// Transaction-related constants
-const TRANSACTION_WAIT_TIME: u64 = 10;
-const TRANSACTION_MAX_RETRIES: u64 = 12;
+/// Gas amount used for native transfers.
+const NATIVE_TRANSFER_GAS: u64 = 100_000_000u64;
 
 /// Transaction methods implementation for CasperClient.
 impl super::CasperClient {
     /// Transfers the specified number of tokens to the given address.
-    pub async fn transfer(
+    pub fn transfer(
         &self,
         to: Address,
         amount: U512,
         timestamp: Timestamp
     ) -> Result<TransactionHash> {
-        let transaction = self.new_transfer_transaction(to, amount, timestamp);
+        let rt = self.runtime();
+        rt.block_on(self.transfer_async(to, amount, timestamp))
+    }
+
+    /// Transfers the specified number of tokens to the given address.
+    async fn transfer_async(
+        &self,
+        to: Address,
+        amount: U512,
+        timestamp: Timestamp
+    ) -> Result<TransactionHash> {
+        let transaction = self.new_transfer_transaction(to, amount, timestamp)?;
+        log::debug(serde_json::to_string_pretty(&transaction).unwrap());
         self.put_transaction(transaction).await
     }
 
     /// Deploy the contract.
-    pub async fn deploy_wasm(
+    pub fn deploy_wasm(
+        &mut self,
+        contract_name: &str,
+        args: RuntimeArgs,
+        timestamp: Timestamp,
+        wasm_bytes: Vec<u8>
+    ) -> Result<Address> {
+        let rt = self.runtime();
+        rt.block_on(self.deploy_wasm_async(contract_name, args, timestamp, wasm_bytes))
+    }
+
+    /// Deploy the contract.
+    async fn deploy_wasm_async(
         &mut self,
         contract_name: &str,
         args: RuntimeArgs,
@@ -51,7 +71,7 @@ impl super::CasperClient {
         let package_hash_key_name: String = args
             .get(PACKAGE_HASH_KEY_NAME_ARG)
             .ok_or_else(|| {
-                ExecutionError(format!(
+                LivenetError::ExecutionError(format!(
                     "Missing required argument: {}",
                     PACKAGE_HASH_KEY_NAME_ARG
                 ))
@@ -59,42 +79,26 @@ impl super::CasperClient {
             .clone()
             .into_t()
             .map_err(|e| {
-                ExecutionError(format!(
+                LivenetError::ExecutionError(format!(
                     "Failed to parse {} argument: {:?}",
                     PACKAGE_HASH_KEY_NAME_ARG, e
                 ))
             })?;
 
-        let transaction =
-            self.new_wasm_deploy_transaction(Bytes::from(wasm_bytes), args, timestamp);
-        let transaction_hash = match self.put_transaction(transaction).await {
-            Ok(h) => h,
-            Err(e) => {
-                log::error(format!("[PATCH] put_transaction failed: {:?}", e));
-                return Err(e);
-            }
-        };
+        if self.gas.is_zero() {
+            return Err(LivenetError::GasNotSet);
+        }
 
-        // Casper 2.0 (Condor) no longer registers the installed package under the
-        // deployer's named keys, so resolve the address from the deploy effects
-        // (the single ContractPackage write) instead of get_contract_address.
+        let transaction =
+            self.new_wasm_deploy_transaction(Bytes::from(wasm_bytes), args, timestamp)?;
+        log::debug(serde_json::to_string_pretty(&transaction).unwrap());
+        // PATCH (casper-trust-layer): Casper 2.0 (Condor) no longer registers the
+        // installed package under the deployer's named keys, so resolve the
+        // address from the deploy effects (the single ContractPackage write)
+        // instead of get_contract_address.
         let _ = &package_hash_key_name;
-        log::info(format!("[PATCH] tx processed: {}", transaction_hash.to_hex_string()));
-        let exec_result = match self.fetch_execution_result(transaction_hash).await {
-            Ok(r) => r,
-            Err(e) => {
-                log::error(format!("[PATCH] fetch_execution_result failed: {:?}", e));
-                return Err(e);
-            }
-        };
-        log::info("[PATCH] fetched execution result".to_string());
-        let address = match Self::package_address_from_result(&exec_result) {
-            Ok(a) => a,
-            Err(e) => {
-                log::error(format!("[PATCH] package extraction failed: {:?}", e));
-                return Err(e);
-            }
-        };
+        let (_, result) = self.put_transaction_with_result(transaction).await?;
+        let address = Self::package_address_from_result(&result)?;
         log::info(format!(
             "Contract {:?} deployed.",
             &address.to_formatted_string()
@@ -103,37 +107,23 @@ impl super::CasperClient {
         Ok(address)
     }
 
-    /// Resolves a freshly deployed contract's package address from a deploy's
-    /// execution effects (the single `ContractPackage` write). Casper 2.0/Condor
-    /// no longer stores it under the deployer's named keys.
-    fn package_address_from_result(result: &ExecutionResult) -> Result<Address> {
-        use casper_types::contracts::ContractPackageHash;
-        use casper_types::execution::TransformKindV2;
-        use casper_types::{Key, StoredValue};
-        let effects = match result {
-            ExecutionResult::V2(v2) => &v2.effects,
-            _ => {
-                return Err(ExecutionError(
-                    "Expected a V2 execution result for the deploy.".to_string()
-                ))
-            }
-        };
-        for transform in effects.transforms() {
-            if let TransformKindV2::Write(StoredValue::ContractPackage(_)) = transform.kind() {
-                if let Key::Hash(addr) = transform.key() {
-                    return Ok(Address::from(ContractPackageHash::new(*addr)));
-                }
-            }
-        }
-        Err(ExecutionError(
-            "No ContractPackage was created by the deploy.".to_string()
-        ))
+    /// Deploy the entrypoint call using getter_proxy.
+    /// It runs the getter_proxy contract in an account context and stores the return value of the call
+    /// in under the key RESULT_KEY.
+    pub fn deploy_entrypoint_call_with_proxy(
+        &self,
+        address: Address,
+        call_def: CallDef,
+        timestamp: Timestamp
+    ) -> Result<Bytes> {
+        let rt = self.runtime();
+        rt.block_on(self.deploy_entrypoint_call_with_proxy_async(address, call_def, timestamp))
     }
 
     /// Deploy the entrypoint call using getter_proxy.
     /// It runs the getter_proxy contract in an account context and stores the return value of the call
     /// in under the key RESULT_KEY.
-    pub async fn deploy_entrypoint_call_with_proxy(
+    async fn deploy_entrypoint_call_with_proxy_async(
         &self,
         address: Address,
         call_def: CallDef,
@@ -146,7 +136,7 @@ impl super::CasperClient {
         ));
 
         let hash = address.as_contract_package_hash().ok_or_else(|| {
-            ExecutionError(format!(
+            LivenetError::ExecutionError(format!(
                 "Address {:?} is not a contract package hash. Expected contract address.",
                 address.to_formatted_string()
             ))
@@ -168,8 +158,9 @@ impl super::CasperClient {
             .to_vec()
             .into();
 
-        let transaction = self.new_wasm_deploy_transaction(module_bytes, args, timestamp);
-        let watch = self.start_event_watcher().await?;
+        let transaction = self.new_wasm_deploy_transaction(module_bytes, args, timestamp)?;
+        log::debug(serde_json::to_string_pretty(&transaction).unwrap());
+        let watch = self.watcher.start_watching().await?;
 
         let response = put_transaction(
             self.rpc_id_typed(),
@@ -181,22 +172,33 @@ impl super::CasperClient {
         .map_err(|e| match e {
             casper_client::Error::ResponseIsRpcError {
                 rpc_method, error, ..
-            } => RpcRequestError(
+            } => LivenetError::RpcRequestError(
                 rpc_method.to_string(),
                 error
                     .data
                     .map_or_else(|| "No data".to_string(), |d| d.to_string())
             ),
-            _ => ExecutionError(format!("Failed to put transaction: {}", e))
+            _ => LivenetError::ExecutionError(format!("Failed to put transaction: {}", e))
         })?;
-        let deploy_hash = response.result.transaction_hash;
-        let result = self.wait_for_transaction(deploy_hash, watch).await?;
-        self.process_transaction(result, deploy_hash)?;
+        let transaction_hash = response.result.transaction_hash;
+        let result = watch.wait_for_transaction_hash(&transaction_hash).await?;
+        self.process_transaction(result, transaction_hash)?;
         Ok(self.get_proxy_result().await)
     }
 
     /// Deploy the entrypoint call.
-    pub async fn deploy_entrypoint_call(
+    pub fn deploy_entrypoint_call(
+        &self,
+        addr: Address,
+        call_def: CallDef,
+        timestamp: Timestamp
+    ) -> Result<Bytes> {
+        let rt = self.runtime();
+        rt.block_on(self.deploy_entrypoint_call_async(addr, call_def, timestamp))
+    }
+
+    /// Deploy the entrypoint call.
+    async fn deploy_entrypoint_call_async(
         &self,
         addr: Address,
         call_def: CallDef,
@@ -209,7 +211,8 @@ impl super::CasperClient {
         ));
 
         let transaction = self.new_call_transaction(addr, call_def, timestamp)?;
-        let watch = self.start_event_watcher().await?;
+        log::debug(serde_json::to_string_pretty(&transaction).unwrap());
+        let watch = self.watcher.start_watching().await?;
 
         let response = put_transaction(
             self.rpc_id_typed(),
@@ -218,90 +221,69 @@ impl super::CasperClient {
             transaction
         )
         .await;
-        let deploy_hash = match response {
+        let transaction_hash = match response {
             Ok(r) => r.result.transaction_hash,
             Err(e) => {
                 return match e {
                     casper_client::Error::ResponseIsRpcError {
                         rpc_method, error, ..
-                    } => Err(RpcRequestError(
+                    } => Err(LivenetError::RpcRequestError(
                         rpc_method.to_string(),
                         error
                             .data
                             .map_or_else(|| "No data".to_string(), |d| d.to_string())
                     )),
-                    _ => Err(ExecutionError(e.to_string()))
+                    _ => Err(LivenetError::ExecutionError(e.to_string()))
                 }
             }
         };
-        let result = self.wait_for_transaction(deploy_hash, watch).await?;
-        self.process_transaction(result, deploy_hash).map(|_| {
+        let result = watch.wait_for_transaction_hash(&transaction_hash).await?;
+        self.process_transaction(result, transaction_hash).map(|_| {
             ().to_bytes()
                 .expect("Couldn't serialize (). This shouldn't happen.")
                 .into()
         })
     }
 
-    async fn wait_for_transaction(
-        &self,
-        transaction_hash: TransactionHash,
-        watch: TransactionWatch
-    ) -> Result<ExecutionResult> {
-        let transaction_hash_str = transaction_hash.to_hex_string();
-        let found = watch
-            .wait_for_transaction_hash(&transaction_hash_str)
-            .await?;
-
-        if !found {
-            return Err(ExecutionError(String::from(
-                "Events stream ended before transaction was processed."
-            )));
-        }
-
-        self.fetch_execution_result(transaction_hash).await
-    }
-
-    /// Fetches the execution result for a transaction, with retry logic.
-    async fn fetch_execution_result(
-        &self,
-        transaction_hash: TransactionHash
-    ) -> Result<ExecutionResult> {
-        let transaction_info = self.get_transaction(transaction_hash).await?;
-
-        if let Some(deploy_info) = transaction_info.execution_info {
-            if let Some(execution_result) = deploy_info.execution_result {
-                return Ok(execution_result);
-            }
-        }
-
-        // If execution_info is not available yet, wait a bit and retry
-        tokio::time::sleep(Duration::from_millis(500)).await;
-        let transaction_info = self.get_transaction(transaction_hash).await?;
-
-        if let Some(deploy_info) = transaction_info.execution_info {
-            if let Some(execution_result) = deploy_info.execution_result {
-                return Ok(execution_result);
-            }
-        }
-
-        Err(ExecutionError(String::from(
-            "Transaction processed but execution result not available."
-        )))
-    }
-
-    async fn start_event_watcher(&self) -> Result<TransactionWatch> {
-        let timeout = Duration::from_secs(TRANSACTION_WAIT_TIME * TRANSACTION_MAX_RETRIES);
-        let watcher = TransactionWatcher::new(
-            self.configuration.events_url.clone(),
-            timeout,
-            self.configuration.cspr_cloud_auth_token.clone()
-        );
-        watcher.start_watching().await
-    }
-
     async fn put_transaction(&self, transaction: Transaction) -> Result<TransactionHash> {
+        self.put_transaction_with_result(transaction)
+            .await
+            .map(|(hash, _)| hash)
+    }
+
+    /// PATCH (casper-trust-layer): resolves a freshly deployed contract's package
+    /// address from a deploy's execution effects (the single `ContractPackage`
+    /// write). Casper 2.0/Condor no longer stores it under the deployer's named keys.
+    fn package_address_from_result(result: &ExecutionResult) -> Result<Address> {
+        use casper_types::contracts::ContractPackageHash;
+        use casper_types::execution::TransformKindV2;
+        use casper_types::{Key, StoredValue};
+        let effects = match result {
+            ExecutionResult::V2(v2) => &v2.effects,
+            _ => {
+                return Err(LivenetError::ExecutionError(
+                    "Expected a V2 execution result for the deploy.".to_string()
+                ))
+            }
+        };
+        for transform in effects.transforms() {
+            if let TransformKindV2::Write(StoredValue::ContractPackage(_)) = transform.kind() {
+                if let Key::Hash(addr) = transform.key() {
+                    return Ok(Address::from(ContractPackageHash::new(*addr)));
+                }
+            }
+        }
+        Err(LivenetError::ExecutionError(
+            "No ContractPackage was created by the deploy.".to_string()
+        ))
+    }
+
+    async fn put_transaction_with_result(
+        &self,
+        transaction: Transaction
+    ) -> Result<(TransactionHash, ExecutionResult)> {
         log::debug("[TX] Starting event watcher before sending transaction...");
-        let watch = self.start_event_watcher().await?;
+        let watch = self.watcher.start_watching().await?;
         log::debug("[TX] Event watcher ready, now sending transaction...");
 
         let response = put_transaction(
@@ -314,30 +296,30 @@ impl super::CasperClient {
         .map_err(|e| match e {
             casper_client::Error::ResponseIsRpcError {
                 rpc_method, error, ..
-            } => RpcRequestError(
+            } => LivenetError::RpcRequestError(
                 rpc_method.to_string(),
                 error
                     .data
                     .map_or_else(|| "No data".to_string(), |d| d.to_string())
             ),
-            _ => ExecutionError(format!("Failed to put transaction: {}", e))
+            _ => LivenetError::ExecutionError(format!("Failed to put transaction: {}", e))
         })?;
-        let deploy_hash = response.result.transaction_hash;
+        let transaction_hash = response.result.transaction_hash;
         log::debug(format!(
             "[TX] Transaction sent with hash: {}",
-            deploy_hash.to_hex_string()
+            transaction_hash.to_hex_string()
         ));
-        let result = self.wait_for_transaction(deploy_hash, watch).await?;
-        self.process_transaction(result, deploy_hash)?;
-        Ok(deploy_hash)
+        let result = watch.wait_for_transaction_hash(&transaction_hash).await?;
+        self.process_transaction(result.clone(), transaction_hash)?;
+        Ok((transaction_hash, result))
     }
 
     fn process_transaction(
         &self,
         result: ExecutionResult,
-        deploy_hash: TransactionHash
+        transaction_hash: TransactionHash
     ) -> Result<()> {
-        let deploy_hash_str = deploy_hash.to_hex_string();
+        let deploy_hash_str = transaction_hash.to_hex_string();
         match result {
             ExecutionResult::V1(r) => match r {
                 Failure { error_message, .. } => {
@@ -345,7 +327,7 @@ impl super::CasperClient {
                         "Deploy V1 {:?} failed with error: {:?}.",
                         deploy_hash_str, error_message
                     ));
-                    Err(ExecutionError(error_message.to_string()))
+                    Err(LivenetError::ExecutionError(error_message.to_string()))
                 }
                 Success { .. } => {
                     log::info(format!(
@@ -374,7 +356,7 @@ impl super::CasperClient {
                     if let Some(url) = self.configuration.transaction_url(&deploy_hash_str) {
                         log::link(url);
                     }
-                    Err(ExecutionError(error_message.to_string()))
+                    Err(LivenetError::ExecutionError(error_message.to_string()))
                 }
             }
         }
@@ -385,13 +367,13 @@ impl super::CasperClient {
         transaction_bytes: Bytes,
         args: RuntimeArgs,
         timestamp: Timestamp
-    ) -> Transaction {
+    ) -> Result<Transaction> {
         let transaction_builder = TransactionV1Builder::new_session(
             true,
             transaction_bytes,
             TransactionRuntimeParams::VmCasperV1
         );
-        Transaction::V1(
+        Ok(Transaction::V1(
             transaction_builder
                 .with_runtime_args(args)
                 .with_ttl(self.configuration.ttl())
@@ -400,8 +382,8 @@ impl super::CasperClient {
                 .with_secret_key(self.secret_key())
                 .with_timestamp(timestamp)
                 .build()
-                .unwrap_or_else(|e| panic!("Failed to build transaction: {:?}", e))
-        )
+                .map_err(|_| LivenetError::InvalidTransaction)?
+        ))
     }
 
     fn new_transfer_transaction(
@@ -409,26 +391,27 @@ impl super::CasperClient {
         to: Address,
         amount: U512,
         timestamp: Timestamp
-    ) -> Transaction {
-        let transaction_builder = TransactionV1Builder::new_transfer(amount, None, TransferTarget::AccountHash(*to.as_account_hash().unwrap_or_else(
-            || panic!("Couldn't get account hash from address: {:?}. You can transfer only to accounts.", to)
-        )) , None).unwrap_or_else(
-            |e| panic!("Failed to build transfer transaction: {:?}", e)
+    ) -> Result<Transaction> {
+        let target = TransferTarget::AccountHash(
+            *to.as_account_hash()
+                .ok_or(LivenetError::InvalidTransferTarget(to))?
         );
-        Transaction::V1(
+        let transaction_builder = TransactionV1Builder::new_transfer(amount, None, target, None)
+            .map_err(|_| LivenetError::SerializationError)?;
+        Ok(Transaction::V1(
             transaction_builder
                 .with_ttl(self.configuration.ttl())
                 .with_chain_name(self.configuration.chain_name())
                 .with_pricing_mode(PricingMode::PaymentLimited {
-                    payment_amount: amount.as_u64(),
-                    gas_price_tolerance: 1,
+                    payment_amount: NATIVE_TRANSFER_GAS,
+                    gas_price_tolerance: self.configuration.gas_price_tolerance(),
                     standard_payment: true
                 })
                 .with_secret_key(self.secret_key())
                 .with_timestamp(timestamp)
                 .build()
-                .unwrap_or_else(|e| panic!("Failed to build transfer transaction: {:?}", e))
-        )
+                .map_err(|_| LivenetError::InvalidTransaction)?
+        ))
     }
 
     fn new_call_transaction(
@@ -437,12 +420,9 @@ impl super::CasperClient {
         call_def: CallDef,
         timestamp: Timestamp
     ) -> Result<Transaction> {
-        let package_hash = to.as_package_hash().ok_or_else(|| {
-            ExecutionError(format!(
-                "Address {:?} is not a package hash. Expected contract address.",
-                to.to_formatted_string()
-            ))
-        })?;
+        let package_hash = to
+            .as_package_hash()
+            .ok_or(LivenetError::InvalidTransferTarget(to))?;
         let transaction_builder = TransactionV1Builder::new_targeting_package(
             package_hash,
             None,
@@ -454,21 +434,21 @@ impl super::CasperClient {
             .with_chain_name(self.configuration.chain_name())
             .with_pricing_mode(PricingMode::PaymentLimited {
                 payment_amount: call_def.amount().as_u64() + self.gas.as_u64(),
-                gas_price_tolerance: 1,
+                gas_price_tolerance: self.configuration.gas_price_tolerance(),
                 standard_payment: true
             })
             .with_secret_key(self.secret_key())
             .with_timestamp(timestamp)
             .with_runtime_args(call_def.args().clone())
             .build()
-            .map_err(|e| ExecutionError(format!("Failed to build call transaction: {:?}", e)))?;
+            .map_err(|_| LivenetError::InvalidTransaction)?;
         Ok(Transaction::V1(transaction_v1))
     }
 
     fn pricing_mode(&self) -> PricingMode {
         PricingMode::PaymentLimited {
             payment_amount: self.gas.as_u64(),
-            gas_price_tolerance: 1,
+            gas_price_tolerance: self.configuration.gas_price_tolerance(),
             standard_payment: true
         }
     }

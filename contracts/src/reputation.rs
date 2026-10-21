@@ -1,4 +1,4 @@
-use crate::identity::{AgentStatus, IdentityRegistryContractRef, MIN_BOND};
+use crate::identity::{AgentStatus, IdentityRegistryContractRef, ESCROW_TIMELOCK_MS, MIN_BOND};
 use odra::casper_types::{U256, U512};
 use odra::prelude::*;
 use odra::ContractRef;
@@ -20,6 +20,11 @@ const BOND_FLOOR_MAX_BP: u64 = 5_000;
 /// Absolute cap on the newcomer bond-floor — bond can never buy full score.
 const BOND_FLOOR_CAP_BPS: u64 = 1_000;
 const MOTES_PER_CSPR: u64 = 1_000_000_000;
+/// Default minimum settled amount (token base units) for a job to earn any
+/// reputation. Sub-minimum jobs still count in `jobs_completed`/volume but add
+/// no score, so wash-trading dust between sybils buys nothing. Admin-tunable via
+/// `set_min_job_amount` because the right value depends on the token's decimals.
+pub const DEFAULT_MIN_JOB_AMOUNT: u64 = 1_000_000; // 0.001 of a 9-decimal token
 
 /// Objective, escrow-derived reputation for an agent. Reputation only exists if a
 /// real payment settled, so it cannot be fabricated without burning value — the
@@ -51,13 +56,23 @@ pub enum Error {
     NotAdmin = 2,
     /// The escrow address has already been wired.
     EscrowAlreadySet = 3,
+    /// Caller is not the pending admin.
+    NotPendingAdmin = 4,
+    /// No escrow change is pending.
+    NoPendingEscrow = 5,
+    /// The escrow change timelock has not elapsed yet.
+    TimelockActive = 6,
 }
 
 /// Derives reputation from escrow settlements via a sybil/collusion-resistant
 /// formula (value × counterparty-weight × repeat-dampening, bounded by a per-edge
 /// cap and trust conservation). Keyed by `agent_id` so reputation follows the
 /// transferable identity (ERC-8004 model). All math is unsigned integer / bps, O(1).
-#[odra::module(errors = Error, events = [SettlementRecorded])]
+#[allow(dead_code)]
+#[odra::module(
+    errors = Error,
+    events = [SettlementRecorded, MinJobAmountChanged, AdminTransferStarted, AdminChanged, EscrowProposed, EscrowChanged]
+)]
 pub struct ReputationEngine {
     admin: Var<Address>,
     escrow: Var<Address>,
@@ -65,6 +80,12 @@ pub struct ReputationEngine {
     identity: Var<Address>,
     reps: Mapping<u32, Reputation>,
     pairs: Mapping<(u32, u32), PairStat>,
+    // ---- v2 — appended so earlier storage indices stay valid off-chain ----
+    /// Minimum settled amount that earns reputation (see DEFAULT_MIN_JOB_AMOUNT).
+    min_job_amount: Var<U256>,
+    pending_admin: Var<Option<Address>>,
+    pending_escrow: Var<Address>,
+    pending_escrow_at: Var<u64>,
 }
 
 #[odra::module]
@@ -72,17 +93,68 @@ impl ReputationEngine {
     pub fn init(&mut self, identity: Address) {
         self.admin.set(self.env().caller());
         self.identity.set(identity);
+        self.min_job_amount.set(U256::from(DEFAULT_MIN_JOB_AMOUNT));
     }
 
     /// Wires the authorized escrow (one-time, admin only).
     pub fn set_escrow(&mut self, escrow: Address) {
-        if self.env().caller() != self.admin.get().unwrap_or_revert(self) {
-            self.env().revert(Error::NotAdmin);
-        }
+        self.only_admin();
         if self.escrow.get().is_some() {
             self.env().revert(Error::EscrowAlreadySet);
         }
         self.escrow.set(escrow);
+        self.env().emit_event(EscrowChanged { escrow });
+    }
+
+    /// Sets the minimum settled amount that earns reputation. Admin only.
+    pub fn set_min_job_amount(&mut self, amount: U256) {
+        self.only_admin();
+        self.min_job_amount.set(amount);
+        self.env().emit_event(MinJobAmountChanged { amount });
+    }
+
+    pub fn min_job_amount(&self) -> U256 {
+        self.min_job_amount.get_or_default()
+    }
+
+    /// Starts a two-step admin handover; `to` must call `accept_admin`.
+    pub fn transfer_admin(&mut self, to: Address) {
+        self.only_admin();
+        self.pending_admin.set(Some(to));
+        self.env().emit_event(AdminTransferStarted { to });
+    }
+
+    pub fn accept_admin(&mut self) {
+        let caller = self.env().caller();
+        if self.pending_admin.get().flatten() != Some(caller) {
+            self.env().revert(Error::NotPendingAdmin);
+        }
+        self.admin.set(caller);
+        self.pending_admin.set(None);
+        self.env().emit_event(AdminChanged { admin: caller });
+    }
+
+    /// Proposes a replacement escrow, effective after `ESCROW_TIMELOCK_MS`.
+    pub fn propose_escrow(&mut self, escrow: Address) {
+        self.only_admin();
+        let at = self.env().get_block_time() + ESCROW_TIMELOCK_MS;
+        self.pending_escrow.set(escrow);
+        self.pending_escrow_at.set(at);
+        self.env().emit_event(EscrowProposed { escrow, effective_at: at });
+    }
+
+    pub fn apply_escrow(&mut self) {
+        self.only_admin();
+        let escrow = self
+            .pending_escrow
+            .get()
+            .unwrap_or_revert_with(self, Error::NoPendingEscrow);
+        if self.env().get_block_time() < self.pending_escrow_at.get_or_default() {
+            self.env().revert(Error::TimelockActive);
+        }
+        self.escrow.set(escrow);
+        self.pending_escrow_at.set(u64::MAX);
+        self.env().emit_event(EscrowChanged { escrow });
     }
 
     /// Called by the escrow when a job settles to `provider`, paid by `client_id`.
@@ -94,6 +166,11 @@ impl ReputationEngine {
 
         let client = self.rep_of(client_id);
         let (client_bond, client_active) = self.client_bond_status(client_id);
+
+        // Dust jobs and self-dealing (both identities held by one owner account)
+        // are recorded but earn nothing.
+        let earns = amount >= self.min_job_amount.get_or_default()
+            && !self.same_owner(provider, client_id);
 
         // (a) value — concave so whales and micro-job farming both flatten out.
         let v_bps = isqrt(amount);
@@ -114,7 +191,11 @@ impl ReputationEngine {
         let damp_bps = u256(BPS / (1 + pair.jobs as u64)).max(u256(DAMP_FLOOR_BPS));
 
         // (d) raw delta (multiply-before-divide to avoid truncation-to-zero).
-        let mut delta = v_bps * cp_weight / u256(BPS) * damp_bps / u256(BPS);
+        let mut delta = if earns {
+            v_bps * cp_weight / u256(BPS) * damp_bps / u256(BPS)
+        } else {
+            U256::zero()
+        };
 
         // (e) per-edge lifetime cap — the bought-edge / star-topology antidote.
         let edge_cap = u256(EDGE_CAP_BASE_BPS) + bond_to_cap(client_bond);
@@ -159,15 +240,21 @@ impl ReputationEngine {
         self.rep_of(provider)
     }
 
+    /// Effective score: the accumulated score, or zero once the identity is
+    /// slashed or withdrawn. Every payment gate reads this.
     pub fn score(&self, provider: u32) -> U256 {
-        self.rep_of(provider).score_bps
+        if self.in_good_standing(provider) {
+            self.rep_of(provider).score_bps
+        } else {
+            U256::zero()
+        }
     }
 
     /// ERC-8004-compatible read facade: `(count, summary_value, decimals)`.
     /// summary_value is accumulated reputation in basis points (decimals = 4).
     pub fn get_summary(&self, agent_id: u32) -> (u64, U256, u8) {
         let r = self.rep_of(agent_id);
-        (r.jobs_completed, r.score_bps, 4u8)
+        (r.jobs_completed, self.score(agent_id), 4u8)
     }
 
     pub fn pair_stat(&self, provider: u32, client_id: u32) -> PairStat {
@@ -192,6 +279,32 @@ impl ReputationEngine {
             .unwrap_or(PairStat { jobs: 0, contributed_bps: U256::zero() })
     }
 
+    fn only_admin(&self) {
+        if self.env().caller() != self.admin.get().unwrap_or_revert(self) {
+            self.env().revert(Error::NotAdmin);
+        }
+    }
+
+    fn identity_ref(&self) -> IdentityRegistryContractRef {
+        IdentityRegistryContractRef::new(self.env(), self.identity.get().unwrap_or_revert(self))
+    }
+
+    /// Not slashed and not withdrawn. An unknown id keeps its (zero) score.
+    fn in_good_standing(&self, agent_id: u32) -> bool {
+        !matches!(
+            self.identity_ref().status_of(agent_id),
+            Some(AgentStatus::Slashed) | Some(AgentStatus::Withdrawn)
+        )
+    }
+
+    fn same_owner(&self, a: u32, b: u32) -> bool {
+        let id = self.identity_ref();
+        match (id.find_owner(a), id.find_owner(b)) {
+            (Some(x), Some(y)) => x == y,
+            _ => false,
+        }
+    }
+
     fn client_bond_status(&self, client_id: u32) -> (U512, bool) {
         let id = IdentityRegistryContractRef::new(self.env(), self.identity.get().unwrap_or_revert(self));
         if !id.agent_exists(client_id) {
@@ -209,6 +322,32 @@ pub struct SettlementRecorded {
     pub client_id: u32,
     pub amount: U256,
     pub delta_bps: U256,
+}
+
+#[odra::event]
+pub struct MinJobAmountChanged {
+    pub amount: U256,
+}
+
+#[odra::event]
+pub struct AdminTransferStarted {
+    pub to: Address,
+}
+
+#[odra::event]
+pub struct AdminChanged {
+    pub admin: Address,
+}
+
+#[odra::event]
+pub struct EscrowProposed {
+    pub escrow: Address,
+    pub effective_at: u64,
+}
+
+#[odra::event]
+pub struct EscrowChanged {
+    pub escrow: Address,
 }
 
 // ---- pure helpers ----
@@ -269,6 +408,8 @@ mod tests {
     use odra::host::{Deployer, HostEnv, HostRef, NoArgs};
     use odra::prelude::{Address, Addressable};
 
+    const MIN_AMOUNT: u64 = 100;
+
     struct World {
         env: HostEnv,
         identity: IdentityRegistryHostRef,
@@ -285,6 +426,8 @@ mod tests {
         let identity = IdentityRegistry::deploy(&env, NoArgs);
         let mut reputation = ReputationEngine::deploy(&env, super::ReputationEngineInitArgs { identity: identity.address() });
         reputation.set_escrow(escrow);
+        // Tests settle small round numbers; keep the dust floor below them.
+        reputation.set_min_job_amount(U256::from(MIN_AMOUNT));
         World { env, identity, reputation, escrow, admin }
     }
 
@@ -328,7 +471,7 @@ mod tests {
         let client = register(&mut w.identity, client_owner, "ipfs://c");
         // slash the client
         w.env.set_caller(w.escrow);
-        w.identity.slash(client);
+        w.identity.slash(client, w.escrow);
 
         record(&mut w, provider, client, 1000);
 
@@ -438,5 +581,67 @@ mod tests {
         let budget = f_score * U256::from(super::GRANT_K_BPS) / U256::from(super::BPS);
         assert!(granted > U256::zero()); // F has earned weight, so it does grant some
         assert!(granted <= budget); // ...but never more than its conservation budget
+    }
+
+    /// B2 — wash-trading dust between sybils: recorded, but earns nothing.
+    #[test]
+    fn dust_jobs_earn_no_reputation() {
+        let mut w = setup();
+        w.env.set_caller(w.env.get_account(0));
+        let provider = register(&mut w.identity, w.env.get_account(0), "ipfs://p");
+        w.env.set_caller(w.env.get_account(1));
+        let client = register(&mut w.identity, w.env.get_account(1), "ipfs://c");
+
+        for _ in 0..20 {
+            record(&mut w, provider, client, MIN_AMOUNT - 1);
+        }
+
+        assert_eq!(w.reputation.score(provider), U256::zero());
+        assert_eq!(w.reputation.get_reputation(provider).jobs_completed, 20);
+    }
+
+    /// B2 — two identities held by the same owner account cannot pump each other.
+    #[test]
+    fn same_owner_settlements_earn_no_reputation() {
+        let mut w = setup();
+        let owner = w.env.get_account(0);
+        w.env.set_caller(owner);
+        let a = register(&mut w.identity, owner, "ipfs://a");
+        let b = register(&mut w.identity, owner, "ipfs://b");
+
+        record(&mut w, a, b, 1_000_000);
+
+        assert_eq!(w.reputation.score(a), U256::zero());
+    }
+
+    /// B4 — a slashed or withdrawn provider keeps its history but scores zero.
+    #[test]
+    fn slashed_provider_scores_zero() {
+        let mut w = setup();
+        w.env.set_caller(w.admin);
+        w.identity.set_escrow(w.escrow);
+        w.env.set_caller(w.env.get_account(0));
+        let provider = register(&mut w.identity, w.env.get_account(0), "ipfs://p");
+        w.env.set_caller(w.env.get_account(1));
+        let client = register(&mut w.identity, w.env.get_account(1), "ipfs://c");
+        record(&mut w, provider, client, 1_000_000);
+        assert!(w.reputation.score(provider) > U256::zero());
+
+        w.env.set_caller(w.escrow);
+        w.identity.slash(provider, w.escrow);
+
+        assert_eq!(w.reputation.score(provider), U256::zero());
+        assert_eq!(w.reputation.get_summary(provider).1, U256::zero());
+        assert!(w.reputation.get_reputation(provider).score_bps > U256::zero()); // history kept
+    }
+
+    #[test]
+    fn min_job_amount_is_admin_only() {
+        let mut w = setup();
+        w.env.set_caller(w.env.get_account(3));
+        assert_eq!(
+            w.reputation.try_set_min_job_amount(U256::one()),
+            Err(super::Error::NotAdmin.into())
+        );
     }
 }

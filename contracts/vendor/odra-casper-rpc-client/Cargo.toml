@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "odra-casper-rpc-client"
-version = "2.8.1"
+version = "2.9.1"
 authors = [
     "Jakub Płaskonka <kuba@odra.dev>",
     "Krzysztof Pobiarżyn <krzysztof@odra.dev>",
@@ -59,7 +59,7 @@ version = "0.3"
 version = "0.14"
 
 [dependencies.odra-core]
-version = "2.8.1"
+version = "2.9.1"
 
 [dependencies.prettycli]
 version = "0.1"
@@ -75,6 +75,9 @@ default-features = false
 [dependencies.reqwest]
 version = "0.12"
 features = ["stream"]
+
+[dependencies.reqwest-eventsource]
+version = "0.6"
 
 [dependencies.serde_json]
 version = "1.0"

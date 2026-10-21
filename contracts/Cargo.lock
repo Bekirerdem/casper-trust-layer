@@ -535,7 +535,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dad887fd958be91b5098c0248def011f4523ab786cd411be668777e55063501f"
 dependencies = [
  "find-msvc-tools",
- "shlex",
+ "shlex 2.0.1",
 ]
 
 [[package]]
@@ -543,6 +543,12 @@ name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
+
+[[package]]
+name = "cfg_aliases"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
 name = "chrono"
@@ -581,6 +587,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap_complete"
+version = "4.6.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3be2ad0423bdbbb0e25bc89add796f3559706d4a95e1bc98e4d9662a957b6a19"
+dependencies = [
+ "clap",
+]
+
+[[package]]
 name = "clap_derive"
 version = "4.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -597,6 +612,15 @@ name = "clap_lex"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
+
+[[package]]
+name = "clipboard-win"
+version = "5.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bde03770d3df201d4fb868f2c9c59e66a3e4e2bd06692a0fe701e7103c7e84d4"
+dependencies = [
+ "error-code",
+]
 
 [[package]]
 name = "colorchoice"
@@ -951,6 +975,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "endian-type"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
+
+[[package]]
 name = "env_logger"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -980,10 +1010,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "error-code"
+version = "3.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5343afd4a8365a643ac588dab4cf234a190c7f6c88c9f6dd6ffe00837661b7"
+
+[[package]]
+name = "eventsource-stream"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74fef4569247a5f429d9156b9d0a2599914385dd189c539334c625d8099d90ab"
+dependencies = [
+ "futures-core",
+ "nom",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
+
+[[package]]
+name = "fd-lock"
+version = "4.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ce92ff622d6dadf7349484f42c93271a0d49b7cc4d466a936405bacbe10aa78"
+dependencies = [
+ "cfg-if",
+ "rustix",
+ "windows-sys 0.52.0",
+]
 
 [[package]]
 name = "ff"
@@ -1115,6 +1173,12 @@ name = "futures-task"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "037711b3d59c33004d3856fbdc83b99d4ff37a24768fa1be9ce3538a1cde4393"
+
+[[package]]
+name = "futures-timer"
+version = "3.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af43fadb8a98512d547e37b4e92e0ced13e205c061b87b4623eff01d918d6968"
 
 [[package]]
 name = "futures-util"
@@ -1295,6 +1359,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
  "digest 0.10.7",
+]
+
+[[package]]
+name = "home"
+version = "0.5.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc627f471c528ff0c4a49e1d5e60450c8f6461dd6d10ba9dcd3a61d3dff7728d"
+dependencies = [
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1796,6 +1869,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
 name = "miniz_oxide"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1831,6 +1910,37 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "nibble_vec"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77a5d83df9f36fe23f0c3648c6bbb8b0298bb5f1939c8f2704431371f4b84d43"
+dependencies = [
+ "smallvec",
+]
+
+[[package]]
+name = "nix"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4"
+dependencies = [
+ "bitflags 2.13.0",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
+name = "nom"
+version = "7.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
+dependencies = [
+ "memchr",
+ "minimal-lexical",
 ]
 
 [[package]]
@@ -1939,9 +2049,9 @@ dependencies = [
 
 [[package]]
 name = "odra"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2f4d14dccb0ddcf8fe1808caef3fe2e7bb93a786d5bd3967b2c67a0a7af6c2f"
+checksum = "e8d6da37c7ef47e5913e9785106568331e60e2268f0a1d619b1ebf42f82c9d52"
 dependencies = [
  "odra-casper-wasm-env",
  "odra-core",
@@ -1951,9 +2061,9 @@ dependencies = [
 
 [[package]]
 name = "odra-build"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c5b91a79fa9a660b3a1237a719dd94e12813743f064ce129055b0c14bf89768"
+checksum = "bf7a889155bd5652a938229bc1ef602ba7068f9794049cbfed77fc522546c20d"
 dependencies = [
  "serde",
  "serde_json",
@@ -1961,9 +2071,9 @@ dependencies = [
 
 [[package]]
 name = "odra-casper-livenet-env"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95469f8db21e6d91ff646562a760493aeb965a0156ea23857080adf5df282285"
+checksum = "28105d3ed20c8c642d806dfa468eb4f3bc6354ddc419e71b24e8524486d7291f"
 dependencies = [
  "anyhow",
  "blake2 0.10.6",
@@ -1973,12 +2083,11 @@ dependencies = [
  "odra-schema",
  "project-root",
  "serde_json",
- "tokio",
 ]
 
 [[package]]
 name = "odra-casper-rpc-client"
-version = "2.8.1"
+version = "2.9.1"
 dependencies = [
  "base16",
  "bytes",
@@ -1992,6 +2101,7 @@ dependencies = [
  "project-root",
  "rand 0.9.4",
  "reqwest",
+ "reqwest-eventsource",
  "serde_json",
  "thiserror",
  "tokio",
@@ -2000,9 +2110,9 @@ dependencies = [
 
 [[package]]
 name = "odra-casper-test-vm"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "218a93ca6d729beb9a898b31d31f2bda29486453e6f4592fbabd8cd23cd5777a"
+checksum = "2a513ee541757a75df6687ec740de3c4b6d0c66d517f1897e6f54f74254dbf55"
 dependencies = [
  "casper-contract",
  "casper-engine-test-support",
@@ -2013,9 +2123,9 @@ dependencies = [
 
 [[package]]
 name = "odra-casper-wasm-env"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67de2cddccb900998696a13967c59f2809b3a6b24b45d2ee6731a05de795c32c"
+checksum = "295799c319c1f3f47948352f4ec1db324b8bbbcd6ef9f260e3897fc7730ac24a"
 dependencies = [
  "casper-contract",
  "ink_allocator",
@@ -2025,13 +2135,14 @@ dependencies = [
 
 [[package]]
 name = "odra-cli"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfb07990e6615dd393d970b8bc35304ff46c570e646dc83607f7f7de0dc4cc96"
+checksum = "fe995817dc9a8e9433857d928cc16d383e19c06ccc1046a7df5f162d2691dcab"
 dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "clap_complete",
  "hex",
  "odra",
  "odra-build",
@@ -2039,18 +2150,20 @@ dependencies = [
  "pretty_assertions",
  "prettycli",
  "project-root",
+ "rustyline",
  "serde",
  "serde_derive",
  "serde_json",
+ "shlex 1.3.0",
  "thiserror",
  "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]
 name = "odra-core"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "940fef67dfa971d79fba7344844c9fe7c750e97258f08277797aa13a3fe7c439"
+checksum = "265b34b792a366c8db44bbefe913156abf2fdcfa37ee40e80430da54e8d39546"
 dependencies = [
  "anyhow",
  "casper-event-standard",
@@ -2064,9 +2177,9 @@ dependencies = [
 
 [[package]]
 name = "odra-macros"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e4d87eb0bc0d286c227a245c9c47fbca5c37e396a47c6ed6deb78eefe005259"
+checksum = "4a1e27f2fb07fd190b135ad37f13553b39a6a670c2eeabd505ad45b3d06f2454"
 dependencies = [
  "convert_case 0.6.0",
  "derive-try-from-ref",
@@ -2079,9 +2192,9 @@ dependencies = [
 
 [[package]]
 name = "odra-modules"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64ea5b0e8d4c36287a86a615db423f7ccaa2f870a11ce3bc6602986cfe23f912"
+checksum = "f141befe018439a7d8c5a6aa3663a9402972f6471b3803050dd731d03b31099b"
 dependencies = [
  "base64 0.22.1",
  "odra",
@@ -2090,9 +2203,9 @@ dependencies = [
 
 [[package]]
 name = "odra-schema"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42fcd0da8f46722a2204b4aa0a1adc52206c9d5ca2e8d8346d701b1dcb12c0bc"
+checksum = "73f2c97085ba6997dca8f4b25a7eddf85d5e71ef4e18c2444dfd5e91d2efba1e"
 dependencies = [
  "casper-contract-schema",
  "casper-types",
@@ -2103,9 +2216,9 @@ dependencies = [
 
 [[package]]
 name = "odra-test"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b57bce89f1e1ef65b84e0e633a3bdfe38370ed6e99926ce30dcb110cda469557"
+checksum = "2a124009117a9faec92b1a3d26723f68e7f6abfae589f43576dcbdeae20313c5"
 dependencies = [
  "odra-casper-test-vm",
  "odra-core",
@@ -2114,9 +2227,9 @@ dependencies = [
 
 [[package]]
 name = "odra-vm"
-version = "2.8.1"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c06d3dd16611a3901953c9c9e01f39c03d9ef6e11dbce9bce444fa147b895988"
+checksum = "22a4b50518ed0bf03430e25d9c71994bfacaaa77a95bf44da6392942383ba39a"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -2410,6 +2523,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
+name = "radix_trie"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c069c179fcdc6a2fe24d8d18305cf085fdbd4f922c041943e203685d6a1c58fd"
+dependencies = [
+ "endian-type",
+ "nibble_vec",
+]
+
+[[package]]
 name = "rand"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2588,6 +2711,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "reqwest-eventsource"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "632c55746dbb44275691640e7b40c907c16a2dc1a5842aa98aaec90da6ec6bde"
+dependencies = [
+ "eventsource-stream",
+ "futures-core",
+ "futures-timer",
+ "mime",
+ "nom",
+ "pin-project-lite",
+ "reqwest",
+ "thiserror",
+]
+
+[[package]]
 name = "rfc6979"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2688,6 +2827,28 @@ dependencies = [
  "quick-error",
  "tempfile",
  "wait-timeout",
+]
+
+[[package]]
+name = "rustyline"
+version = "14.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7803e8936da37efd9b6d4478277f4b2b9bb5cdb37a113e8d63222e58da647e63"
+dependencies = [
+ "bitflags 2.13.0",
+ "cfg-if",
+ "clipboard-win",
+ "fd-lock",
+ "home",
+ "libc",
+ "log",
+ "memchr",
+ "nix",
+ "radix_trie",
+ "unicode-segmentation",
+ "unicode-width 0.1.14",
+ "utf8parse",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2918,6 +3079,12 @@ dependencies = [
  "cpufeatures 0.2.17",
  "digest 0.10.7",
 ]
+
+[[package]]
+name = "shlex"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shlex"
@@ -3462,6 +3629,12 @@ checksum = "c6f5d3c3b1bf09027a88a6bc961fc00497d651009560b5463668dc81b0fa87a8"
 
 [[package]]
 name = "unicode-width"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
+
+[[package]]
+name = "unicode-width"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
@@ -3710,7 +3883,7 @@ dependencies = [
  "bumpalo",
  "leb128fmt",
  "memchr",
- "unicode-width",
+ "unicode-width 0.2.2",
  "wasm-encoder 0.252.0",
 ]
 

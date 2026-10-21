@@ -7,6 +7,11 @@ use odra_modules::cep18_token::Cep18ContractRef;
 
 /// `get_block_time()` returns Unix MILLISECONDS, so a UTC day bucket divides by this.
 const MS_PER_DAY: u64 = 86_400_000;
+const MS_PER_HOUR: u64 = 3_600_000;
+/// `per_day` is enforced over a rolling window of this many hourly buckets, so no
+/// 23-hour stretch can exceed it (a calendar-day bucket allowed 2x across
+/// midnight). The calendar bucket is still written for `spent_today`.
+const WINDOW_HOURS: u64 = 24;
 
 /// One customer's spending account: their money, their rules, their agent.
 #[odra::odra_type]
@@ -39,6 +44,10 @@ pub enum Error {
     Frozen = 9,
     /// One vault per owner keeps the dashboard unambiguous.
     VaultAlreadyExists = 10,
+    /// Limits must be non-zero with per-job <= per-day.
+    InvalidLimits = 11,
+    /// The payee identity is missing, slashed, withdrawn or unbonding.
+    PayeeNotActive = 12,
 }
 
 /// Many customers, one contract.
@@ -49,7 +58,10 @@ pub enum Error {
 /// limits, their own agent, their own freeze switch. Nobody can touch anybody
 /// else's — ownership is checked on every state-changing call.
 #[allow(dead_code)]
-#[odra::module(errors = Error, events = [VaultOpened, Deposited, Withdrawn, Paid, RulesChanged, FreezeChanged])]
+#[odra::module(
+    errors = Error,
+    events = [VaultOpened, Deposited, Withdrawn, Paid, RulesChanged, FreezeChanged, AgentChanged, PayeeChanged]
+)]
 pub struct AgentVaults {
     identity: Var<Address>,
     reputation: Var<Address>,
@@ -60,10 +72,19 @@ pub struct AgentVaults {
     owner_index: Mapping<Address, u32>,
     /// (vault, UTC day) → spent. Keys are packed because Odra maps take one key.
     day_spent: Mapping<u64, U256>,
-    /// (vault, task) → spent, so a job's ceiling holds across several payments.
+    /// Retired in v2: the packed key dropped a task id's upper 32 bits. Kept so
+    /// later storage indices do not move; `task_spent` replaces it.
     job_spent: Mapping<u64, U256>,
     /// (vault, agent id) → always allowed, no track record needed.
     allow_list: Mapping<u64, bool>,
+    // ---- v2 — appended so earlier storage indices stay valid off-chain ----
+    /// (vault, hour bucket) → spent. Backs the rolling 24h cap.
+    hour_spent: Mapping<(u32, u64), U256>,
+    /// (vault, task) → spent, so a job's ceiling holds across several payments.
+    task_spent: Mapping<(u32, u64), U256>,
+    /// (vault, payee) → identity `transfer_count` when allowed. A transfer of the
+    /// payee identity voids the allow-list entry.
+    allow_epoch: Mapping<(u32, u32), u32>,
 }
 
 fn pack(vault_id: u32, other: u64) -> u64 {
@@ -93,6 +114,7 @@ impl AgentVaults {
         if self.owner_index.get(&owner).unwrap_or_default() > 0 {
             self.env().revert(Error::VaultAlreadyExists);
         }
+        self.check_limits(per_job, per_day);
         let id = self.count.get_or_default();
         self.vaults.set(
             &id,
@@ -151,6 +173,7 @@ impl AgentVaults {
     ) {
         let mut v = self.load(vault_id);
         self.only_owner(&v);
+        self.check_limits(per_job, per_day);
         v.per_job = per_job;
         v.per_day = per_day;
         v.min_track_record = min_track_record;
@@ -164,18 +187,25 @@ impl AgentVaults {
         self.only_owner(&v);
         v.agent = agent;
         self.vaults.set(&vault_id, v);
+        self.env().emit_event(AgentChanged { vault_id, agent });
     }
 
+    /// Always allow `payee` — tied to the identity's current owner: if the
+    /// identity is transferred, the entry stops applying.
     pub fn allow_payee(&mut self, vault_id: u32, payee: u32) {
         let v = self.load(vault_id);
         self.only_owner(&v);
+        let epoch = self.identity_ref().transfer_count(payee);
         self.allow_list.set(&pack(vault_id, payee as u64), true);
+        self.allow_epoch.set(&(vault_id, payee), epoch);
+        self.env().emit_event(PayeeChanged { vault_id, payee, allowed: true });
     }
 
     pub fn disallow_payee(&mut self, vault_id: u32, payee: u32) {
         let v = self.load(vault_id);
         self.only_owner(&v);
         self.allow_list.set(&pack(vault_id, payee as u64), false);
+        self.env().emit_event(PayeeChanged { vault_id, payee, allowed: false });
     }
 
     /// Stops every payment from this vault. Funds stay where they are.
@@ -190,7 +220,9 @@ impl AgentVaults {
     // ---- spending --------------------------------------------------------------
 
     /// The vault's agent pays `payee` for `task_id`. Every rule the owner set is
-    /// checked here — this is the only path money can leave by.
+    /// checked here — this is the only path money can leave by. `per_job` caps
+    /// each single payment AND the running total per task id, so rotating task
+    /// ids does not lift it; `per_day` holds over any rolling 24 hours.
     pub fn pay(&mut self, vault_id: u32, task_id: u64, payee: u32, amount: U256) {
         let mut v = self.load(vault_id);
         if self.env().caller() != v.agent {
@@ -204,15 +236,12 @@ impl AgentVaults {
         }
         self.assert_payee_allowed(vault_id, &v, payee);
 
-        let job_key = pack(vault_id, task_id);
-        let job_so_far = self.job_spent.get(&job_key).unwrap_or_default();
-        if job_so_far + amount > v.per_job {
+        let job_so_far = self.task_spent.get(&(vault_id, task_id)).unwrap_or_default();
+        if amount > v.per_job || job_so_far + amount > v.per_job {
             self.env().revert(Error::ExceedsJobLimit);
         }
 
-        let day_key = pack(vault_id, self.today());
-        let day_so_far = self.day_spent.get(&day_key).unwrap_or_default();
-        if day_so_far + amount > v.per_day {
+        if self.window_spent(vault_id) + amount > v.per_day {
             self.env().revert(Error::ExceedsDailyLimit);
         }
 
@@ -221,8 +250,8 @@ impl AgentVaults {
         }
 
         // EFFECTS before INTERACTION.
-        self.job_spent.set(&job_key, job_so_far + amount);
-        self.day_spent.set(&day_key, day_so_far + amount);
+        self.task_spent.set(&(vault_id, task_id), job_so_far + amount);
+        self.record_spend(vault_id, amount);
         v.balance -= amount;
         self.vaults.set(&vault_id, v);
 
@@ -249,16 +278,24 @@ impl AgentVaults {
         self.count.get_or_default()
     }
 
+    /// Spent in the current UTC calendar day (display only — the cap is rolling).
     pub fn spent_today(&self, vault_id: u32) -> U256 {
         self.day_spent.get(&pack(vault_id, self.today())).unwrap_or_default()
     }
 
+    /// Spent over the rolling window `per_day` is enforced against.
+    pub fn spent_last_24h(&self, vault_id: u32) -> U256 {
+        self.window_spent(vault_id)
+    }
+
     pub fn spent_on_job(&self, vault_id: u32, task_id: u64) -> U256 {
-        self.job_spent.get(&pack(vault_id, task_id)).unwrap_or_default()
+        self.task_spent.get(&(vault_id, task_id)).unwrap_or_default()
     }
 
     pub fn is_payee_allowed(&self, vault_id: u32, payee: u32) -> bool {
         self.allow_list.get(&pack(vault_id, payee as u64)).unwrap_or_default()
+            && self.allow_epoch.get(&(vault_id, payee)).unwrap_or_default()
+                == self.identity_ref().transfer_count(payee)
     }
 
     // ---- internals -------------------------------------------------------------
@@ -287,7 +324,10 @@ impl AgentVaults {
     /// Allow-list first, then earned track record. A vault with no track-record
     /// requirement is allow-list only, which is the safest default.
     fn assert_payee_allowed(&self, vault_id: u32, v: &Vault, payee: u32) {
-        if self.allow_list.get(&pack(vault_id, payee as u64)).unwrap_or_default() {
+        if !self.identity_ref().is_active(payee) {
+            self.env().revert(Error::PayeeNotActive);
+        }
+        if self.is_payee_allowed(vault_id, payee) {
             return;
         }
         if v.min_track_record.is_zero() {
@@ -302,6 +342,30 @@ impl AgentVaults {
 
     fn today(&self) -> u64 {
         self.env().get_block_time() / MS_PER_DAY
+    }
+
+    /// Sum of the vault's last `WINDOW_HOURS` hourly buckets (current included).
+    fn window_spent(&self, vault_id: u32) -> U256 {
+        let hour = self.env().get_block_time() / MS_PER_HOUR;
+        let mut sum = U256::zero();
+        for h in hour.saturating_sub(WINDOW_HOURS - 1)..=hour {
+            sum += self.hour_spent.get(&(vault_id, h)).unwrap_or_default();
+        }
+        sum
+    }
+
+    fn record_spend(&mut self, vault_id: u32, amount: U256) {
+        let now = self.env().get_block_time();
+        let hour_key = (vault_id, now / MS_PER_HOUR);
+        let day_key = pack(vault_id, now / MS_PER_DAY);
+        self.hour_spent.set(&hour_key, self.hour_spent.get(&hour_key).unwrap_or_default() + amount);
+        self.day_spent.set(&day_key, self.day_spent.get(&day_key).unwrap_or_default() + amount);
+    }
+
+    fn check_limits(&self, per_job: U256, per_day: U256) {
+        if per_job.is_zero() || per_day.is_zero() || per_job > per_day {
+            self.env().revert(Error::InvalidLimits);
+        }
     }
 
     fn token_ref(&self) -> Cep18ContractRef {
@@ -352,6 +416,19 @@ pub struct RulesChanged {
 pub struct FreezeChanged {
     pub vault_id: u32,
     pub frozen: bool,
+}
+
+#[odra::event]
+pub struct AgentChanged {
+    pub vault_id: u32,
+    pub agent: Address,
+}
+
+#[odra::event]
+pub struct PayeeChanged {
+    pub vault_id: u32,
+    pub payee: u32,
+    pub allowed: bool,
 }
 
 #[cfg(test)]
@@ -640,5 +717,154 @@ mod tests {
             w.vaults.try_pay(alices, 1, provider, U256::from(6_000u64)),
             Err(Error::InsufficientBalance.into())
         );
+    }
+
+    // ---- v2: attacks from the v1 audit ----------------------------------------------
+
+    fn ready_payee(w: &mut World, vault: u32) -> (u32, Address) {
+        let provider_wallet = w.env.get_account(2);
+        w.env.set_caller(provider_wallet);
+        let provider = register(&mut w.identity, "ipfs://provider");
+        w.env.set_caller(w.alice);
+        w.vaults.allow_payee(vault, provider);
+        (provider, provider_wallet)
+    }
+
+    /// B6 — rotating task ids used to lift the per-job ceiling. Each payment is
+    /// now capped on its own, whatever task id it carries.
+    #[test]
+    fn task_id_rotation_does_not_lift_the_per_job_cap() {
+        let mut w = setup();
+        let who_alice = w.alice;
+        let alices = open_funded_vault(&mut w, who_alice, 500_000);
+        let (provider, _) = ready_payee(&mut w, alices);
+
+        w.env.set_caller(w.alice);
+        for task in [10u64, 11, 12] {
+            assert_eq!(
+                w.vaults.try_pay(alices, task, provider, U256::from(PER_JOB + 1)),
+                Err(Error::ExceedsJobLimit.into())
+            );
+        }
+    }
+
+    /// B16 — task ids that differ only in their upper 32 bits used to share one
+    /// counter. They are separate jobs now.
+    #[test]
+    fn large_task_ids_do_not_collide() {
+        let mut w = setup();
+        let who_alice = w.alice;
+        let alices = open_funded_vault(&mut w, who_alice, 500_000);
+        let (provider, _) = ready_payee(&mut w, alices);
+
+        w.env.set_caller(w.alice);
+        w.vaults.pay(alices, 1, provider, U256::from(10_000u64));
+        assert_eq!(w.vaults.spent_on_job(alices, 1 + (1u64 << 32)), U256::zero());
+        assert_eq!(w.vaults.spent_on_job(alices, 1), U256::from(10_000u64));
+    }
+
+    /// B7 — per_day at 23:59, again at 00:01: refused by the rolling window.
+    #[test]
+    fn midnight_double_spend_is_refused() {
+        let mut w = setup();
+        let who_alice = w.alice;
+        let alices = open_funded_vault(&mut w, who_alice, 500_000);
+        let (provider, _) = ready_payee(&mut w, alices);
+        let now = w.env.block_time();
+        w.env.advance_block_time(super::MS_PER_DAY - (now % super::MS_PER_DAY) - 60_000);
+
+        w.env.set_caller(w.alice);
+        w.vaults.pay(alices, 1, provider, U256::from(PER_JOB));
+        w.vaults.pay(alices, 2, provider, U256::from(PER_JOB));
+        w.vaults.pay(alices, 3, provider, U256::from(PER_DAY - 2 * PER_JOB));
+
+        w.env.advance_block_time(120_000);
+        assert_eq!(w.vaults.spent_today(alices), U256::zero());
+        assert_eq!(w.vaults.spent_last_24h(alices), U256::from(PER_DAY));
+        assert_eq!(
+            w.vaults.try_pay(alices, 4, provider, U256::from(1u64)),
+            Err(Error::ExceedsDailyLimit.into())
+        );
+
+        w.env.advance_block_time(24 * super::MS_PER_HOUR);
+        assert!(w.vaults.try_pay(alices, 4, provider, U256::from(PER_JOB)).is_ok());
+    }
+
+    /// B4 — an allow-listed payee that is unbonding (or slashed) is refused.
+    #[test]
+    fn inactive_payee_is_refused_even_if_allowed() {
+        let mut w = setup();
+        let who_alice = w.alice;
+        let alices = open_funded_vault(&mut w, who_alice, 50_000);
+        let (provider, provider_wallet) = ready_payee(&mut w, alices);
+
+        w.env.set_caller(provider_wallet);
+        w.identity.request_withdraw(provider);
+
+        w.env.set_caller(w.alice);
+        assert_eq!(
+            w.vaults.try_pay(alices, 1, provider, U256::from(10u64)),
+            Err(Error::PayeeNotActive.into())
+        );
+    }
+
+    /// B14 — an allow-listed identity that is sold no longer passes the list.
+    #[test]
+    fn allow_list_does_not_survive_a_transfer() {
+        let mut w = setup();
+        let who_alice = w.alice;
+        let alices = open_funded_vault(&mut w, who_alice, 50_000);
+        let (provider, provider_wallet) = ready_payee(&mut w, alices);
+        assert!(w.vaults.is_payee_allowed(alices, provider));
+
+        let buyer = w.env.get_account(7);
+        w.env.set_caller(provider_wallet);
+        w.identity.transfer(provider, buyer);
+        w.env.set_caller(buyer);
+        w.identity.accept_transfer(provider);
+
+        assert!(!w.vaults.is_payee_allowed(alices, provider));
+        // min_track_record = 1 and the buyer has no score: refused.
+        w.env.set_caller(w.alice);
+        assert_eq!(
+            w.vaults.try_pay(alices, 1, provider, U256::from(10u64)),
+            Err(Error::PayeeNotAllowed.into())
+        );
+    }
+
+    /// B17 — nonsensical rules are refused.
+    #[test]
+    fn rules_are_sanity_checked() {
+        let mut w = setup();
+        w.env.set_caller(w.bob);
+        assert_eq!(
+            w.vaults.try_open_vault(w.bob, U256::from(2u64), U256::from(1u64), U256::zero()),
+            Err(Error::InvalidLimits.into())
+        );
+        let who_alice = w.alice;
+        let alices = open_funded_vault(&mut w, who_alice, 1_000);
+        w.env.set_caller(w.alice);
+        assert_eq!(
+            w.vaults.try_set_rules(alices, U256::zero(), U256::zero(), U256::zero()),
+            Err(Error::InvalidLimits.into())
+        );
+    }
+
+    #[test]
+    fn changing_the_agent_hands_over_spending() {
+        let mut w = setup();
+        let who_alice = w.alice;
+        let alices = open_funded_vault(&mut w, who_alice, 50_000);
+        let (provider, _) = ready_payee(&mut w, alices);
+        let new_agent = w.env.get_account(5);
+
+        w.env.set_caller(w.alice);
+        w.vaults.set_agent(alices, new_agent);
+        assert_eq!(
+            w.vaults.try_pay(alices, 1, provider, U256::from(10u64)),
+            Err(Error::NotAgent.into())
+        );
+        w.env.set_caller(new_agent);
+        assert!(w.vaults.try_pay(alices, 1, provider, U256::from(10u64)).is_ok());
     }
 }

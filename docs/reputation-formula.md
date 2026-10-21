@@ -53,7 +53,7 @@ The escrow `Job` carries a `client_id` (clients must also be registered/bonded a
 ```rust
 pub fn get_summary(&self, agent_id: u32) -> (u64, U256, u8) {
     let r = self.rep_of(agent_id);
-    (r.jobs_completed, r.score_bps, 4u8)   // count, summary_value (bps), decimals = 4
+    (r.jobs_completed, self.score(agent_id), 4u8)   // count, effective score (bps), decimals = 4
 }
 ```
 U256 unsigned instead of ERC-8004's signed `int128`. Failures are expressed through **slashing** (the bond floor collapses + status = Slashed), not negative scores. Objective settlement as the single write path closes ERC-8004's subjective-feedback hole.
@@ -72,6 +72,11 @@ U256 unsigned instead of ERC-8004's signed `int128`. Failures are expressed thro
 | `K_BOND` | ≈ 4× a typical job value | Bond-floor half-saturation |
 | `FEE_BPS` (escrow protocol fee, locked) | 200 (2%) | Wash-trading cost |
 | `MIN_BOND` | 10 CSPR | Per-identity Sybil cost |
+| `min_job_amount` (v2, admin-set) | 1_000_000 base units (0.001 of a 9-decimal token) | Below it a settlement counts but earns no score — dust wash-trading buys nothing |
+| `SLASH_BPS` (v2) | 2000 (20% of the current bond) | Share of the bond seized per escrow default, paid to the client |
+| `UNBONDING_DELAY_MS` (v2) | 7 days | Bond lock after `request_withdraw` — stops bond recycling across identities |
+| `MIN_WINDOW_MS` / `MAX_WINDOW_MS` (v2) | 10 min / 30 days | Allowed job deadline range |
+| `DISPUTE_WINDOW_MS` (v2) | 24 h | Client's minimum time to approve or dispute a submission |
 
 **Most load-bearing:** `EDGE_CAP` + `GRANT_K` — calibrated via simulation/tests (not from the literature). Too loose → bought-edge comes back; too tight → legitimate high-volume pairs get throttled.
 
@@ -94,11 +99,37 @@ U256 unsigned instead of ERC-8004's signed `int128`. Failures are expressed thro
 6. **Clients must be registered** (`client_id: u32`) — a Sybil cost, but UX friction (clients also post a bond).
 7. **isqrt gas unmeasured** — low risk; OdraVM bench before deploy.
 
-The next three findings come from an internal audit of the **frozen v1 contracts**. We document them rather than patch them: the deployed contracts are deliberately **not** redeployed before the buildathon deadline — a redeploy would reset the live reputation network — so the fixes are scoped to v2.
+The next three findings come from an internal audit of the **frozen v1 contracts**. They were documented, not patched, during the buildathon (a redeploy would have reset the live reputation network). **All three are fixed in v2** — see §8.
 
-8. **Slash griefing (v1 accepted risk).** `create_job` (`contracts/src/escrow.rs`) requires no provider consent. If the deadline passes with no submission, `refund` slashes the provider's **entire** bond. A malicious client can therefore open a dust-amount, short-deadline job against any provider and grief-slash it. v2 fix: an `accept_job` step (explicit provider consent) before funds lock, and/or a slash proportional to the job amount.
-9. **A non-existent provider id locks client funds.** `create_job` does not verify that the provider identity exists. A job funded against an unregistered id can never be refunded — `refund` reverts inside `identity.slash` (`AgentNotFound`) — so the client's tokens stay locked in the escrow. v2 fix: an `agent_exists` check at job creation.
-10. **Slashed agents retain their score.** `slash` zeroes the bond and sets `status = Slashed`, but leaves `score_bps` untouched. The SDK's `checkTrust` correctly requires `Active` status, but AgentTreasury's **on-chain** gate checks only the score — so a slashed agent still passes the treasury reputation gate. v2 fix: the treasury gate also checks registry status.
+8. **Slash griefing (v1 accepted risk).** *(fixed in v2 — `accept_job`, deadline window, 20% slash paid to the client)* `create_job` (`contracts/src/escrow.rs`) requires no provider consent. If the deadline passes with no submission, `refund` slashes the provider's **entire** bond. A malicious client can therefore open a dust-amount, short-deadline job against any provider and grief-slash it. v2 fix: an `accept_job` step (explicit provider consent) before funds lock, and/or a slash proportional to the job amount.
+9. **A non-existent provider id locks client funds.** *(fixed in v2 — `create_job` requires both identities to be active)* `create_job` does not verify that the provider identity exists. A job funded against an unregistered id can never be refunded — `refund` reverts inside `identity.slash` (`AgentNotFound`) — so the client's tokens stay locked in the escrow. v2 fix: an `agent_exists` check at job creation.
+10. **Slashed agents retain their score.** *(fixed in v2 — `ReputationEngine.score` reads 0 for Slashed/Withdrawn, and every payment gate also requires `IdentityRegistry.is_active`)* `slash` zeroes the bond and sets `status = Slashed`, but leaves `score_bps` untouched. The SDK's `checkTrust` correctly requires `Active` status, but AgentTreasury's **on-chain** gate checks only the score — so a slashed agent still passes the treasury reputation gate. v2 fix: the treasury gate also checks registry status.
+
+## 8. v2 hardening (2026-10 audit)
+
+A second internal audit of the v1 contracts found the three items above plus several more. v2 fixes them; each has a negative test in the contract crate.
+
+| # | Attack / gap | v2 fix |
+|---|---|---|
+| B1 | Deadline-0 job + `refund` slashes any provider for free | Provider must `accept_job` before its bond is at stake; deadline must sit 10 min – 30 days out; an unaccepted job is `cancel_job`-ed (full refund, no slash); a default slashes `SLASH_BPS` of the bond **to the client** instead of the whole bond into the void |
+| B2 | Sybil wash-trading, bond recycled across identities | `min_job_amount` dust floor; settlements between identities with the same owner earn nothing; bond locked while jobs are open and for `UNBONDING_DELAY_MS` after `request_withdraw` |
+| B3 | Treasury had no admin recovery | `set_agent`, `withdraw` (free balance, works while paused), `set_limits`, two-step `transfer_admin`/`accept_admin` |
+| B4 | Slashed / withdrawn payees still pass gates | `score` reads 0 for them; vault, treasury (pay + release) and escrow require `is_active` |
+| B5 | Client could not reject junk work | `dispute` while `Submitted` until `max(deadline, submitted_at + DISPUTE_WINDOW_MS)`: client gets amount − fee back, provider gets nothing and no score, no slash. A real arbiter is future work |
+| B6 | `per_job` bypassed by rotating task ids | Every single payment is capped at `per_job`, plus the running total per task |
+| B7 | Calendar-day cap allowed 2× across midnight | Rolling window over 24 hourly buckets (treasury and vaults); calendar bucket kept for display |
+| B8 | Agent could lock the treasury with a `u64::MAX` reservation | Reservation deadline ≤ 30 days; admin `cancel_reservation` |
+| B9 | Non-existent provider locked funds | `create_job` requires active identities |
+| B10 | Provider pulls the bond right after taking a job | Bond locked while `open_jobs > 0`; `withdraw` only after unbonding |
+| B11 | No admin / pause / migration path | Escrow `pause` (new jobs only — settlement always works), two-step admin on escrow, identity, reputation, treasury; escrow address replaceable via `propose_escrow` + `apply_escrow` after a 2-day timelock |
+| B12 | Fee described as "burned" but stuck forever | Fees accounted in `fees`, admin `withdraw_fees` |
+| B13 | Admin setters emitted no events | Events on every setter |
+| B14 | Allow-list survives an identity sale | Identity transfer is two-step and bumps `transfer_count`; allow-list / whitelist entries are bound to the count at the time they were added |
+| B15 | Unbounded `agent_uri` / `result_hash` | 512 / 256 byte caps |
+| B16 | Vault task-id key dropped the upper 32 bits | `(vault, task)` tuple key |
+| B17 | No init sanity checks | Limits must be non-zero with per-task ≤ daily |
+
+Still open (v3): time-based score decay, job-proportional dynamic bond, an arbiter for disputes, an external audit, and a parameter sweep for `EDGE_CAP`/`GRANT_K`/`min_job_amount`.
 
 ## Affected files
 - `reputation.rs` — formula + state (score_bps / granted_out_bps / PairStat) + isqrt + cross-contract bond read + get_summary; signature change `client: Address` → `client_id: u32`
