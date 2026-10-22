@@ -1,0 +1,3 @@
+# Production secrets live in Vercel env vars; the local file must never be uploaded.
+.env
+.env.*
