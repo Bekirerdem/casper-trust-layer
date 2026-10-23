@@ -3,7 +3,28 @@
 The full Agent Trust Layer is deployed and wired on Casper testnet, deployed from
 account `02035b3ea46df7a08c778d0ebfbe21f7ab2442030d038a7a55cd3058a452ba40f0c7`.
 
-## Deployed contracts
+## v2 contracts (2026-10-23)
+
+The audited rewrite (`contracts/CHANGELOG.md` [0.2.0]) is a fresh install — Odra has
+no upgrade path. It reuses the v1 AGT token. The web app and SDK still read v1 until
+their field indices are calibrated against these packages.
+
+| Contract | Package hash | Install tx |
+|---|---|---|
+| **IdentityRegistry** | `contract-package-941380ecfa5771630eae4bf38f81c0801cfba085799932f55c094f43c0f44953` | [`99e39ff6…`](https://testnet.cspr.live/transaction/99e39ff6a9385ecf2e4842d1002d9fd76b225a0d8d2087221585e4527034badc) |
+| **ReputationEngine** | `contract-package-276ae7d8d73b1c0c7e993b068d5cea50508b0a00848b06286530ed27fbe943fa` | [`7b26eed5…`](https://testnet.cspr.live/transaction/7b26eed5564f345c686a7973e179a59824e1949fba3c65764750d5c4891ec7ea) |
+| **Escrow** | `contract-package-644486bf5b57376b3855157db10da977e61ab300867248c58dd15f33eb45ec27` | [`194e9200…`](https://testnet.cspr.live/transaction/194e9200b72a78f239e2652f4eb575d3fdfaabf08eabb54e2d0effc83651d2ee) |
+| **AgentTreasury** | `contract-package-ef14ceacbb8cc6d20cf55225295a4f3d6e5ac5a996c94ad5fc56108337acda24` | [`6ba01956…`](https://testnet.cspr.live/transaction/6ba01956e50edf6425cee60e22fc6f12bced6948f21437dabfcc3bc265cfeb4a) |
+| **AgentVaults** | `contract-package-4172ebf4438b14ac02dea598d62a95ec05bd6ea717426dc525209ae33b62eafd` | [`5055c92f…`](https://testnet.cspr.live/transaction/5055c92f531523220ff9dbfd9a7cebc68b3b6a6ca2021517c53153ab3396c787) |
+| **Cep18 (AGT token)** | reused from v1 (`f962076e…`) | — |
+
+| Wiring | tx |
+|---|---|
+| `IdentityRegistry.set_escrow(Escrow)` | [`d1f51f5a…`](https://testnet.cspr.live/transaction/d1f51f5a1bd1414813c1ca4f687862d5224acb7156ca316bf83368a0ad545402) |
+| `ReputationEngine.set_escrow(Escrow)` | [`0a51fab2…`](https://testnet.cspr.live/transaction/0a51fab207bceb79c72294a398b3edf4a527bd55558f75c339772ea3ebf256b7) |
+| `AgentTreasury.set_reputation_policy(ReputationEngine, 1)` | [`8f225869…`](https://testnet.cspr.live/transaction/8f2258694de59ca9e867afd491ffa94a8dd3c7260e492178f14c33ac224ed016) |
+
+## v1 contracts (live in the web app)
 
 | Contract | Package hash | Install tx |
 |---|---|---|
@@ -76,10 +97,9 @@ Same treasury, same payment — only the rule or the owner's decision changes.
 cd contracts
 export PATH=~/binaryen-latest/bin:$PATH      # binaryen v130 (apt v108 too old)
 cargo odra build                              # -> wasm/*.wasm (CARGO_TARGET_DIR unset!)
-# start the cspr.cloud auth proxy (Odra 2.8.1 doesn't apply CSPR_CLOUD_AUTH_TOKEN):
-CSPR_CLOUD_AUTH_TOKEN=<key> python3 ~/casper-proxy.py &   # rpc->node., sse->node-sse.
-set -a; source .env; set +a                   # NODE/EVENTS -> http://127.0.0.1:8888
-cargo run --bin contracts_cli -- deploy
+# Odra 2.9.1 applies CSPR_CLOUD_AUTH_TOKEN itself; no local proxy needed (v2 deploy).
+set -a; source .env; set +a                   # NODE -> public RPC, EVENTS -> cspr.cloud SSE
+cargo run --release --bin contracts_cli -- deploy
 ```
 
 ## Tooling notes (see tasks/lessons.md)
