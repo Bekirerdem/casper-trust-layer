@@ -24,9 +24,10 @@ const BLOCKED_BECAUSE: Record<string, string> = {
   "4": "this vendor isn't on your approved list",
   "5": "this vendor has no completed jobs yet",
   "6": "it's more than one job is allowed to cost",
-  "7": "it's more than today's total allows",
+  "7": "it's more than your 24-hour total allows",
   "8": "there isn't enough left in the account",
   "12": "you've frozen spending",
+  "15": "this vendor is no longer active",
 };
 
 const money = (raw: string) => {

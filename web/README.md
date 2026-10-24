@@ -18,7 +18,9 @@ npm run dev        # http://localhost:3000
 npm run snapshot   # refresh snapshot.json from casper-test (needs CSPR_CLOUD_TOKEN in .env)
 ```
 
-`CSPR_CLOUD_TOKEN` (cspr.cloud) enables live RPC reads; without it the UI falls back to the committed snapshot.
+Reads go to the public `casper-test` node and need no token; if the RPC fails, the UI falls back to the committed snapshot.
+
+`DEMO_SIGNER_PEM` — the PEM text of the demo signer (`sdk/scripts/seed-v2.mts`), the only key the server holds. It is the wallet of demo agents #0–#2 (signs their `accept_job` / `submit_work`), the treasury's delegated agent and the faucet's AGT stock. It administers nothing, and the server stops signing once it is down to 50 CSPR. Without it, reads work and the signing routes answer 500.
 
 ## Deploy
 

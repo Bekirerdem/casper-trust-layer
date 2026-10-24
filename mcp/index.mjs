@@ -25,7 +25,7 @@ const asText = (value) => ({
   ],
 });
 
-const server = new McpServer({ name: "casper-trust", version: "0.1.0" });
+const server = new McpServer({ name: "casper-trust", version: "0.2.0" });
 
 server.registerTool(
   "check_trust",
@@ -33,8 +33,9 @@ server.registerTool(
     title: "Check agent trust",
     description:
       "Gate decision for a Casper agent: is this counterparty trustworthy enough to pay? " +
-      "Returns trusted (boolean, requires Active status and score ≥ minScore), the " +
-      "settlement-derived score in basis points, jobs completed, status, and bond. " +
+      "Returns trusted (boolean, requires Active status, no pending withdrawal and " +
+      "score ≥ minScore), the settlement-derived score in basis points (0 once slashed " +
+      "or withdrawn), jobs completed, status, bond and whether it is unbonding. " +
       "Call this BEFORE paying an agent over x402.",
     inputSchema: {
       agentId: z.number().int().min(0).describe("On-chain agent id (u32) from the IdentityRegistry"),

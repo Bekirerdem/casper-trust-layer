@@ -25,10 +25,12 @@ const BLOCKED_BECAUSE: Record<string, string> = {
   "4": "that account doesn't exist",
   "5": "this vendor has no completed jobs yet",
   "6": "it's more than one job is allowed to cost",
-  "7": "it's more than today's total allows",
+  "7": "it's more than your 24-hour total allows",
   "8": "there isn't enough in the account",
   "9": "you've frozen this account",
   "10": "you already have an account",
+  "11": "the per-job limit has to fit inside the daily one",
+  "12": "this vendor is no longer active",
 };
 
 function reason(error?: string): string {
@@ -170,7 +172,6 @@ export function VaultDashboard({ publicKey }: { publicKey: string }) {
   }
 
   // ---------- The account ----------
-  const spentToday = 0; // per-day usage is tracked on-chain; surfaced in Activity below
   return (
     <section className="flex flex-col gap-4 mt-6">
       <div className="glass-panel bg-surface border-line rounded-2xl p-6 md:p-8">
@@ -286,8 +287,8 @@ export function VaultDashboard({ publicKey }: { publicKey: string }) {
       {note && <Note note={note} />}
 
       <p className="font-sans text-xs text-muted">
-        Spent today is enforced by the contract on every payment; this account&apos;s ceiling is{" "}
-        {money(vault.perDay)} and {spentToday === 0 ? "nothing has been spent yet today" : ""}.
+        The contract checks every payment against this account&apos;s ceiling of {money(vault.perDay)} over
+        any 24 hours — not a calendar day, so it cannot be doubled across midnight.
       </p>
     </section>
   );

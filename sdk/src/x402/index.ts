@@ -136,6 +136,11 @@ export async function pay(c: X402TrustClient, req: PayRequest): Promise<Response
   const network = c.network ?? NETWORK_CASPER_TESTNET;
   const client = new x402Client();
   client.register(network as `${string}:${string}`, new ExactCasperScheme(c.signer));
+  // @x402/core's built-in spend controls only recognise its own default assets
+  // (USDC-style, priced in USD) and reject every Casper token outright. The
+  // ceiling that matters here is the caller's maxAmount in the token's own base
+  // units, enforced by the policy below — so the USD-based layer is switched off.
+  client.setSpendControls(false);
   // Spend ceiling: options above maxAmount are dropped before selection, so an
   // over-priced 402 leaves nothing to sign.
   let capped = false;

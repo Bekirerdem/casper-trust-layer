@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { Args, CLValue, ContractCallBuilder } from "casper-js-sdk";
 import { createReadClient } from "@/lib/casper/read";
 import { loadServerSigner } from "@/lib/casper/serverSigner";
-import { TREASURY_PACKAGE } from "@/lib/casper/treasuryRead";
 import {
   clientIp,
   ensureOperatorReserve,
@@ -20,7 +19,7 @@ const CALL_GAS = 5_000_000_000; // wasm lane 5
 /**
  * Attempts a spend from the owner's envelope: POST { payee, amountAgt }.
  *
- * The treasury's delegated agent is the server key, so a visitor can trigger a
+ * The treasury's delegated agent is the demo signer, so a visitor can trigger a
  * real on-chain decision without a wallet. The contract — not this route —
  * decides: an unproven payee, an over-cap amount or an exhausted daily budget
  * all revert, and the revert is itself the proof the envelope is enforced.
@@ -48,7 +47,7 @@ export async function POST(req: Request) {
 
     const tx = new ContractCallBuilder()
       .from(signer.publicKey)
-      .byPackageHash(TREASURY_PACKAGE)
+      .byPackageHash(cfg.packages.treasury)
       .entryPoint("pay")
       .runtimeArgs(
         Args.fromMap({

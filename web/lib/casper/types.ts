@@ -1,3 +1,9 @@
+/**
+ * Agents operated by the server's demo signer (sdk/scripts/seed-v2.mts): the
+ * only providers the hire flow can complete without the provider's own wallet.
+ */
+export const DEMO_AGENT_IDS: readonly number[] = [0, 1, 2];
+
 /** Flattened, serializable snapshot of one on-chain agent. */
 export type AgentSnapshot = {
   agentId: number;

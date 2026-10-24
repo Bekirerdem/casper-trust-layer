@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { decodeReputation, decodeAgent } from "../src/trust/decode.js";
+import { decodeReputation, decodeAgent, decodeJob } from "../src/trust/decode.js";
 const bytes = (h: string) => Uint8Array.from(Buffer.from(h, "hex"));
 
 describe("trust decode", () => {
@@ -17,5 +17,18 @@ describe("trust decode", () => {
     expect(a.agentUri).toBe("abc");
     expect(a.bond).toBe(10000000000n);
     expect(a.status).toBe("Active");
+  });
+  it("decodes a v2 Job, including the states after Refunded and submitted_at", () => {
+    // client=3 provider=0 amount=1000 result="ab" deadline=5 state=Accepted(4) submitted_at=7
+    const p = bytes(
+      "03000000" + "00000000" + "02e803" + "020000006162" + "0500000000000000" + "04" + "0700000000000000",
+    );
+    expect(decodeJob(p)).toEqual({
+      clientId: 3, provider: 0, amount: 1000n, resultHash: "ab", deadline: 5n, state: "Accepted", submittedAt: 7n,
+    });
+  });
+  it("rejects an unknown job state", () => {
+    const p = bytes("00000000" + "01000000" + "00" + "00000000" + "0000000000000000" + "09" + "0000000000000000");
+    expect(() => decodeJob(p)).toThrow(/unknown job state 9/);
   });
 });

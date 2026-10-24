@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { blake2b } from "blakejs";
-import { varKey, mapKeyU32 } from "../src/odra/keys.js";
+import { varKey, mapKeyU32, mapKeyU64 } from "../src/odra/keys.js";
 
 const hex = (b: Uint8Array) => Buffer.from(b).toString("hex");
 // index_bytes for a Var at field index 3 = u32 BIG-endian = 00000003
@@ -14,5 +14,9 @@ describe("odra keys", () => {
   });
   it("derives Mapping<u32> key (idxBE ++ keyLE)", () => {
     expect(mapKeyU32(3, 0)).toBe(expectMap3Key0);
+  });
+  it("derives Mapping<u64> key (idxBE ++ u64LE)", () => {
+    const expected = hex(blake2b(Uint8Array.from([0, 0, 0, 4, 2, 0, 0, 0, 0, 0, 0, 0]), undefined, 32));
+    expect(mapKeyU64(4, 2n)).toBe(expected);
   });
 });

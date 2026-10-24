@@ -1,13 +1,25 @@
 import type { RpcClient } from "casper-js-sdk";
 
+type Resolved = { contractHash: string; stateUref: string };
+
+// A package only gets a new contract hash when a new version is installed, so a
+// short cache spares two global-state queries on every read without going stale.
+const CACHE_MS = 10 * 60_000;
+const cache = new WeakMap<RpcClient, Map<string, { at: number; value: Resolved }>>();
+
 /**
  * Resolves a ContractPackage hash to its active contract hash + the "state" URef.
  * The "state" URef is the Odra dictionary seed for reading stored fields.
  */
-export async function resolvePackage(
-  rpc: RpcClient,
-  packageHashHex: string,
-): Promise<{ contractHash: string; stateUref: string }> {
+export async function resolvePackage(rpc: RpcClient, packageHashHex: string): Promise<Resolved> {
+  let perRpc = cache.get(rpc);
+  if (!perRpc) {
+    perRpc = new Map();
+    cache.set(rpc, perRpc);
+  }
+  const hit = perRpc.get(packageHashHex);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
+
   const pkg = await rpc.queryLatestGlobalState(`hash-${packageHashHex}`, []);
 
   // StoredValue.contractPackage — lowercase 'c' in casper-js-sdk v5
@@ -34,5 +46,7 @@ export async function resolvePackage(
   }
 
   // Key.toPrefixedString() returns "uref-<hex>-<access>" format
-  return { contractHash, stateUref: stateEntry.key.toPrefixedString() };
+  const value = { contractHash, stateUref: stateEntry.key.toPrefixedString() };
+  perRpc.set(packageHashHex, { at: Date.now(), value });
+  return value;
 }

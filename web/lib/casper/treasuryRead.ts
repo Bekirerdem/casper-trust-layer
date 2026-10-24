@@ -4,16 +4,11 @@ import { decodeBool, decodeU256, readOdraValue, resolveContractHash } from "@/li
 /**
  * The owner's spending envelope, read straight from AgentTreasury storage.
  *
- * Field indices were calibrated against live testnet state, not assumed from the
- * Rust declaration order (sdk/scripts/calibrate-treasury.mts) — Odra applies a
- * +1 offset that only shows up empirically. The dictionary keys below are the
- * blake2b hashes of those indices, precomputed so the web app needs no hashing
- * dependency.
+ * Odra numbers fields from 1 in declaration order; the indices below were read
+ * back from live storage (sdk/scripts/calibrate-treasury.mts) and v2 only
+ * appended fields, so they carried over. The dictionary keys are the blake2b
+ * hashes of those indices, precomputed so this module needs no hashing.
  */
-
-/** v2 — adds the owner's pause(). v1 (abbdbdfd…) remains on-chain, unused. */
-export const TREASURY_PACKAGE =
-  "95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a";
 
 const KEY = {
   dailyLimit: "91ebc8750adaa8b425af368d579f9636248c55fc16a36c3d7df942f03cedd49e", // idx 5
@@ -26,7 +21,7 @@ const KEY = {
 export interface Envelope {
   /** Ceiling for a single task id, in token base units. */
   perTaskLimit: string;
-  /** Ceiling per UTC day. */
+  /** Ceiling over any rolling 24 hours. */
   dailyLimit: string;
   /** Counterparty bar: a non-whitelisted payee needs at least this score. */
   minReputation: number;
@@ -36,10 +31,15 @@ export interface Envelope {
   paused: boolean;
 }
 
+/** The AgentTreasury package the envelope is read from. */
+export function treasuryPackage(): string {
+  return createReadClient().cfg.packages.treasury;
+}
+
 /** Reads the live envelope. Absent keys decode to zero, which is what Odra means by them. */
 export async function getEnvelope(): Promise<Envelope> {
-  const { rpc } = createReadClient();
-  const contractHash = await resolveContractHash(rpc, TREASURY_PACKAGE);
+  const { rpc, cfg } = createReadClient();
+  const contractHash = await resolveContractHash(rpc, cfg.packages.treasury);
 
   const [perTask, daily, minRep, locked, paused] = await Promise.all([
     readOdraValue(rpc, contractHash, KEY.perTaskLimit),

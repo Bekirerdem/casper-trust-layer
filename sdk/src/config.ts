@@ -3,12 +3,30 @@ export interface NetworkConfig {
   authToken?: string;
   chainName: string;
   facilitatorUrl: string;
-  packages: { identity: string; reputation: string; escrow: string; cep18: string; treasury: string };
-  /** Odra field indices — CALIBRATED against live testnet data, not assumed from source. */
+  packages: {
+    identity: string;
+    reputation: string;
+    escrow: string;
+    cep18: string;
+    treasury: string;
+    vaults: string;
+  };
+  /**
+   * Odra field indices. Odra numbers module fields from 1 in declaration order;
+   * every index below was read back from live testnet storage, not assumed.
+   */
   fields: {
-    identity: { escrowVarIndex: number; agents: number; count: number };
+    identity: { escrowVarIndex: number; agents: number; count: number; unbondReadyAt: number };
     reputation: { escrowVarIndex: number; identityVarIndex: number; reps: number; pairs: number };
-    escrow: { identityVarIndex: number; reputationVarIndex: number; tokenVarIndex: number; jobs: number; count: number };
+    escrow: {
+      identityVarIndex: number;
+      reputationVarIndex: number;
+      tokenVarIndex: number;
+      jobs: number;
+      count: number;
+      paused: number;
+      fees: number;
+    };
     treasury: {
       admin: number;
       agent: number;
@@ -22,7 +40,9 @@ export interface NetworkConfig {
       daySpent: number;
       taskSpent: number;
       locked: number;
+      paused: number;
     };
+    vaults: { vaults: number; count: number };
   };
 }
 
@@ -33,42 +53,42 @@ export const CASPER_TEST: NetworkConfig = {
   authToken: process.env.CSPR_CLOUD_TOKEN,
   chainName: "casper-test",
   facilitatorUrl: "https://x402-facilitator.cspr.cloud",
+  // v2 (2026-10-23) — the audited rewrite. Odra has no upgrade path, so this is a
+  // fresh install; the v1 packages stay on-chain, unused (see DEPLOYMENT.md).
   packages: {
-    identity: "3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc",
-    reputation: "d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb",
-    escrow: "fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c",
+    identity: "941380ecfa5771630eae4bf38f81c0801cfba085799932f55c094f43c0f44953",
+    reputation: "276ae7d8d73b1c0c7e993b068d5cea50508b0a00848b06286530ed27fbe943fa",
+    escrow: "644486bf5b57376b3855157db10da977e61ab300867248c58dd15f33eb45ec27",
     cep18: "f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6",
-    // v2 (2026-07-25) — adds the owner's pause(). Odra has no upgrade path, so
-    // this is a fresh install; v1 (abbdbdfd…) stays on-chain, unused.
-    treasury: "95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a",
+    treasury: "ef14ceacbb8cc6d20cf55225295a4f3d6e5ac5a996c94ad5fc56108337acda24",
+    vaults: "4172ebf4438b14ac02dea598d62a95ec05bd6ea717426dc525209ae33b62eafd",
   },
-  // Indices CALIBRATED live against testnet — uniform +1 offset from source order.
-  // Evidence: all three contracts store the admin Address at live idx 0; declared fields
-  // shift up by 1.
+  // Verified against the v2 install (2026-10-24): identity idx 1 = admin and 2 =
+  // the escrow package; escrow 1–3 = identity/reputation/token packages, 6 = admin;
+  // treasury 5 = 500 AGT daily cap, 6 = 100 AGT per-task cap. v2 only appended
+  // fields, so every v1 index carried over unchanged.
   fields: {
-    //                      source-order  →  live idx (offset +1 confirmed on all 3 contracts)
     identity: {
-      escrowVarIndex: 2,  // source 1 → live 2
-      agents: 3,          // Mapping source 2 → live 3
-      count: 4,           // source 3 → live 4
+      escrowVarIndex: 2,
+      agents: 3,          // Mapping<u32, Agent>
+      count: 4,
+      unbondReadyAt: 6,   // Mapping<u32, u64> — non-zero while a withdrawal is pending
     },
     reputation: {
-      escrowVarIndex: 2,    // source 1 → live 2
-      identityVarIndex: 3,  // source 2 → live 3
-      reps: 4,              // Mapping source 3 → live 4
-      pairs: 5,             // Mapping source 4 → live 5
+      escrowVarIndex: 2,
+      identityVarIndex: 3,
+      reps: 4,            // Mapping<u32, Reputation>
+      pairs: 5,           // Mapping<(u32, u32), PairStat>
     },
     escrow: {
-      identityVarIndex: 1,    // source 0 → live 1
-      reputationVarIndex: 2,  // source 1 → live 2
-      tokenVarIndex: 3,       // source 2 → live 3
-      jobs: 4,                // Mapping source 3 → live 4
-      count: 5,               // source 4 → live 5
+      identityVarIndex: 1,
+      reputationVarIndex: 2,
+      tokenVarIndex: 3,
+      jobs: 4,            // Mapping<u64, Job>
+      count: 5,
+      paused: 8,
+      fees: 9,
     },
-    // Calibrated live 2026-07-25 (scripts/calibrate-treasury.mts): every value
-    // matched its expected fingerprint — daily_limit read 500_000_000_000,
-    // per_task_limit 100_000_000_000, min_reputation 1, and admin/agent both
-    // resolved to the deployer account. Same +1 offset as the other contracts.
     treasury: {
       admin: 1,
       agent: 2,
@@ -79,9 +99,14 @@ export const CASPER_TEST: NetworkConfig = {
       repRegistry: 7,
       minReputation: 8,
       whitelist: 9,   // Mapping<u32, bool>
-      daySpent: 10,   // Mapping<u64, U256> keyed by day bucket (block_time / 86_400_000)
+      daySpent: 10,   // Mapping<u64, U256> keyed by UTC day (display only; the cap is rolling 24h)
       taskSpent: 11,  // Mapping<u64, U256>
       locked: 14,
+      paused: 15,
+    },
+    vaults: {
+      vaults: 4,      // Mapping<u32, Vault>
+      count: 5,
     },
   },
 };

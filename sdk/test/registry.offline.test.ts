@@ -296,9 +296,15 @@ describe("buildAttestSettlement (offline)", () => {
     resultHash: "ipfs://result-hash",
   });
 
-  it("returns four transactions", () => {
+  it("returns five transactions, provider consent before delivery", () => {
     const keys = Object.keys(plan);
-    expect(keys).toEqual(["approveTx", "createJobTx", "submitWorkTx", "approveJobTx"]);
+    expect(keys).toEqual(["approveTx", "createJobTx", "acceptJobTx", "submitWorkTx", "approveJobTx"]);
+  });
+
+  it("acceptJobTx targets escrow accept_job, signed by the PROVIDER key", () => {
+    expect(plan.acceptJobTx.entryPoint?.customEntryPoint).toBe("accept_job");
+    const inner = (plan.acceptJobTx as any).transactionV1 ?? (plan.acceptJobTx as any);
+    expect((inner.approvals ?? [])[0]?.signer.toHex()).toBe(providerKey.publicKey.toHex());
   });
 
   it("approveTx targets CEP-18 approve", () => {
@@ -317,13 +323,13 @@ describe("buildAttestSettlement (offline)", () => {
     expect(plan.approveJobTx.entryPoint?.customEntryPoint).toBe("approve");
   });
 
-  it("all four txs have chainName casper-test", () => {
+  it("every tx has chainName casper-test", () => {
     for (const tx of Object.values(plan)) {
       expect(tx.chainName).toBe("casper-test");
     }
   });
 
-  it("all four txs are signed (have approvals)", () => {
+  it("every tx is signed (has approvals)", () => {
     for (const tx of Object.values(plan)) {
       const inner = (tx as any).transactionV1 ?? (tx as any);
       const approvals = inner?.approvals ?? [];

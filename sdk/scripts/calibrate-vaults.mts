@@ -16,9 +16,8 @@ import { readOdraValue } from "../src/odra/read.js";
 import { varKey, mapKeyU32 } from "../src/odra/keys.js";
 import { Reader, u32, uN, addr, bool } from "../src/odra/bytesrepr.js";
 
-const VAULTS_PKG = "674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914";
-
 const cfg = CASPER_TEST;
+const VAULTS_PKG = process.env.VAULTS_PKG ?? cfg.packages.vaults;
 const rpc = makeRpcClient(cfg);
 const hex = (b: Uint8Array) => Buffer.from(b).toString("hex");
 

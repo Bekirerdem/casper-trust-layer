@@ -51,7 +51,13 @@ const facilitator = new HTTPFacilitatorClient({
   }),
 } as any);
 
-const serverScheme = new ServerExactScheme().registerAsset(NETWORK, WCSPR, 9);
+// casper-x402 1.0.0 predates @x402/core's payment-flow table, which the resource
+// server now requires. Casper "exact" is the classic flow — verify before the
+// handler, settle after — so declare exactly that.
+const serverScheme = Object.assign(new ServerExactScheme().registerAsset(NETWORK, WCSPR, 9), {
+  defaultAssetTransferMethod: "default",
+  paymentFlows: { default: { supported: ["authorization"], default: "authorization" } },
+});
 
 const routes = {
   "GET /premium": {
@@ -95,7 +101,7 @@ async function main() {
 
   const provider = await findTrustedProvider();
   if (!provider) {
-    console.log("No Active provider with reputation > 0 found. Run hero-loop.mts first.");
+    console.log("No Active provider with reputation > 0 found. Run seed-v2.mts first.");
     process.exitCode = 2;
     return;
   }
@@ -157,6 +163,11 @@ async function main() {
       console.log("✅ PAID — trust sufficient, x402 settled on-chain.");
       console.log(`   settle tx: ${decoded.transaction}`);
       console.log(`   explorer : https://testnet.cspr.live/transaction/${decoded.transaction}`);
+    } else if (payResp) {
+      // A settle that the facilitator could not land comes back as a 402 with
+      // the reason in the payment-response header — print it rather than guess.
+      const decoded = JSON.parse(Buffer.from(payResp, "base64").toString("utf8"));
+      console.log(`❌ settle failed: ${decoded.errorReason} — ${decoded.errorMessage}`);
     } else {
       console.log("❌ unexpected — see status/body above.");
     }

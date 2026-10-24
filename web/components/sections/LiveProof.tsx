@@ -65,7 +65,7 @@ function LiveProofRow({ s, idx }: { s: SettlementProof; idx: number }) {
           </div>
 
           <a
-            href={`https://testnet.cspr.live/deploy/${s.txHash}`}
+            href={`https://testnet.cspr.live/transaction/${s.txHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center p-2.5 bg-surface hover:bg-accent-red hover:text-bg rounded-lg text-xs font-semibold text-ink transition-all duration-300 group"

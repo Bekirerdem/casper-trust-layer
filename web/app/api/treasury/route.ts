@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getEnvelope, TREASURY_PACKAGE } from "@/lib/casper/treasuryRead";
+import { getEnvelope, treasuryPackage } from "@/lib/casper/treasuryRead";
 import { errorResponse } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const envelope = await getEnvelope();
     return NextResponse.json(
-      { ...envelope, package: TREASURY_PACKAGE },
+      { ...envelope, package: treasuryPackage() },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {

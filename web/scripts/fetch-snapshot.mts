@@ -28,188 +28,82 @@ import type { TrustSnapshot, AgentSnapshot, SettlementProof } from "../lib/caspe
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "../lib/data/snapshot.json");
 
-// Real settlements verified on testnet.cspr.live, ordered strongest-first so the
-// UI showcase (LiveProof shows the first 4, Centerpiece the first 3) leads with
-// high-delta, multi-counterparty edges — a network, not a single 1->0 loop.
-//
-// Cross-edges (network boost, 2026-06-28):
-//   6a7d54e8 — 2->0 : agent#0 earns trust from agent#2 (208->308)
-//   9e490f62 — 3->0 : agent#0 earns trust from agent#3 (308->408)
-//   b5d6c3b9 — 0->2 : agent#0 vouches for new agent#2 (0->100)
-//   16931dc7 — 0->3 : agent#0 vouches for new agent#3 (0->4, trust-conserved)
-//   bd968a26 — 0->1 : agent#0 -> agent#1 (0->0, grant budget exhausted)
-// Original 1->0 history (agent#0 as provider):
-//   0c58d79a — x402 handshake settle (wrap-wcspr + trust-gated-x402 demo)
-//   24f1914a — boost job: agent#0 100->150
-//   50b6d34d — boost job: agent#0 150->183
-//   1328ffa5 — boost job: agent#0 183->208
-//   b4a4635f — trust-gated x402 paid settle (bar met, 100->100)
+// Real v2 settlements (sdk/scripts/seed-v2.mts, 2026-10-24), verifiable on
+// testnet.cspr.live. Each went the full v2 way — create, provider accept,
+// submit, release — and every edge crosses owners: demo providers #0–#2 belong
+// to the deployer, clients #3 and #4 to two other accounts. A same-owner edge
+// would have settled for zero reputation.
 const KNOWN_SETTLEMENTS: SettlementProof[] = [
-  // 2026-07-25 — final-round network boost: three idle bonded agents earned their
-  // first settlement, each from a DIFFERENT client, so the cold-start floor is
-  // demonstrated on fresh edges rather than one client repeatedly feeding one provider.
   {
-    txHash:
-      "2ff49ee1af13a80f106dcb3ce35a4ed96894672b636b461bc0f1ba0eacdc6858",
-    from: 0,
-    to: 4,
-    amount: "1000000",
-    scoreBefore: 0,
-    scoreAfter: 50,
-  },
-  {
-    txHash:
-      "1e52c13480d3671157d09c0fe6b3c7848a44883c3db0575d277e7c635540b8d6",
-    from: 2,
-    to: 5,
-    amount: "1000000",
-    scoreBefore: 0,
-    scoreAfter: 100,
-  },
-  {
-    txHash:
-      "046a45c7c1cba94e6734440557266fb53efadfea479bb8e485e41917d554996b",
-    from: 1,
-    to: 6,
-    amount: "1000000",
-    scoreBefore: 0,
-    scoreAfter: 100,
-  },
-  {
-    // 2026-07-03 — wallet-signed hire through the live /app UI (Casper Wallet)
-    txHash:
-      "f0e1ab418481b9a60fc1b17956bb8dcf0f7dacc4e0b146847cf342bd8a96ac17",
-    from: 0,
-    to: 1,
-    amount: "1000000",
-    scoreBefore: 0,
-    scoreAfter: 100,
-  },
-  {
-    // 2026-07-03 — first settlement through the /app hire flow (job #11)
-    txHash:
-      "04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce",
-    from: 1,
-    to: 2,
-    amount: "1000000",
-    scoreBefore: 100,
-    scoreAfter: 200,
-  },
-  {
-    txHash:
-      "6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69",
-    from: 2,
-    to: 0,
-    amount: "1000000",
-    scoreBefore: 208,
-    scoreAfter: 308,
-  },
-  {
-    txHash:
-      "9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a",
+    txHash: "1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8",
     from: 3,
     to: 0,
-    amount: "1000000",
-    scoreBefore: 308,
-    scoreAfter: 408,
+    amount: "10000000",
+    scoreBefore: 0,
+    scoreAfter: 316,
   },
   {
-    txHash:
-      "b5d6c3b91efdcecf858bcaa55fba0804f7f2ccde1199ba1a5f9affa735edc591",
-    from: 0,
+    // a second, unrelated client: a fresh edge earns in full
+    txHash: "2e09f49fb67eac420342d7bb52b01a04dd8cfaefd44b53e96a79f76f49316550",
+    from: 4,
+    to: 0,
+    amount: "10000000",
+    scoreBefore: 316,
+    scoreAfter: 632,
+  },
+  {
+    txHash: "39151da9211bfd7e1dbb71f093250eb29c973de1f5cc3c9d6e13b9018d3eaa34",
+    from: 3,
+    to: 1,
+    amount: "10000000",
+    scoreBefore: 0,
+    scoreAfter: 316,
+  },
+  {
+    txHash: "36c8e43f2bf618357d9c6070f7a725ff6c1f4839006812fc24ba81bb369ea580",
+    from: 4,
     to: 2,
-    amount: "1000000",
+    amount: "10000000",
     scoreBefore: 0,
-    scoreAfter: 100,
+    scoreAfter: 316,
   },
   {
-    txHash:
-      "0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e",
-    from: 1,
-    to: 0,
-    amount: "1000000",
-    scoreBefore: 0,
-    scoreAfter: 100,
-  },
-  {
-    txHash:
-      "24f1914adcf3915b6abbd69e2c992f251969abf383d278b15f3264218495c154",
-    from: 1,
-    to: 0,
-    amount: "1000000",
-    scoreBefore: 100,
-    scoreAfter: 150,
-  },
-  {
-    txHash:
-      "50b6d34dc3e8f223a50c79bebff697e4dbc1533b3e2799379f81f4fe00c1c275",
-    from: 1,
-    to: 0,
-    amount: "1000000",
-    scoreBefore: 150,
-    scoreAfter: 183,
-  },
-  {
-    // 0->3 vouch — the on-chain source of agent #3's 4 bps (trust-conserved grant)
-    txHash:
-      "16931dc72f12d37db3db55ecb1b30a19a78bae69503db40b681c4eb81e1c8436",
+    // a provider paying a client: trust runs both ways across owners
+    txHash: "36805dc4e83b05ad4c761de116f4524c0186bce72a19f1614ad40be2efcbd2a8",
     from: 0,
     to: 3,
-    amount: "1000000",
+    amount: "10000000",
     scoreBefore: 0,
-    scoreAfter: 4,
+    scoreAfter: 316,
   },
   {
-    // 0->1 — settled but conferred +0: agent #0's grant budget was exhausted
-    // (trust conservation). Explains agent #1's first completed job.
-    txHash:
-      "bd968a263834a730c7daaea731a1764ad3d7201dfff343fb4d4688bf2b015492",
-    from: 0,
-    to: 1,
-    amount: "1000000",
-    scoreBefore: 0,
-    scoreAfter: 0,
-  },
-  {
-    txHash:
-      "1328ffa50300aa01e816a010ebbfe15e096f3ae8616f643a42612b55da18e167",
-    from: 1,
+    // the same client again: repeat business is dampened to half
+    txHash: "19d6466fbcc42ec289b74b36a9277f0668c4e48dd717b3e5619d2fee53f5b3a0",
+    from: 3,
     to: 0,
-    amount: "1000000",
-    scoreBefore: 183,
-    scoreAfter: 208,
+    amount: "10000000",
+    scoreBefore: 632,
+    scoreAfter: 790,
   },
 ];
+
+const SCAN_LIMIT = 24;
 
 async function main() {
   const client = createTrustClient();
   console.log(`rpc: ${client.cfg.rpcUrl}`);
 
-  // Probe a few agent IDs.  The hero-loop registered agents 0+1; scan up to 8
-  // to catch any additional registrations on the shared testnet deployer.
-  const agentIds = [0, 1, 2, 3, 4, 5, 6, 7];
   const agents: AgentSnapshot[] = [];
-
-  for (const id of agentIds) {
-    try {
-      const [rep, agent] = await Promise.all([
-        getReputation(client, id),
-        getAgent(client, id),
-      ]);
-      if (agent !== null) {
-        agents.push({
-          agentId: id,
-          scoreBps: Number(rep.scoreBps),
-          jobsCompleted: Number(rep.jobsCompleted),
-          exists: true,
-        });
-        console.log(`agent #${id}: scoreBps=${rep.scoreBps}, jobs=${rep.jobsCompleted}`);
-      }
-    } catch (e: unknown) {
-      // Agent doesn't exist or RPC error — skip silently
-      const msg = e instanceof Error ? e.message : String(e);
-      console.warn(`agent #${id} skipped: ${msg}`);
-    }
+  for (let id = 0; id < SCAN_LIMIT; id++) {
+    const [rep, agent] = await Promise.all([getReputation(client, id), getAgent(client, id)]);
+    if (agent === null) break; // ids are sequential — first gap = end of registry
+    agents.push({
+      agentId: id,
+      scoreBps: Number(rep.scoreBps),
+      jobsCompleted: Number(rep.jobsCompleted),
+      exists: true,
+    });
+    console.log(`agent #${id}: scoreBps=${rep.scoreBps}, jobs=${rep.jobsCompleted}`);
   }
 
   if (agents.length === 0) {

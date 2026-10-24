@@ -1,27 +1,38 @@
 /**
- * End-to-end test of the web hire-flow API against live casper-test,
- * playing the "browser wallet" with the operator key (which owns the demo
- * agents, so client-side signatures are valid).
+ * End-to-end test of the web hire-flow API against live casper-test, playing
+ * the "browser wallet" with a client agent's key (client B, #4, from
+ * seed-v2.mts — a different owner than the demo providers, so the settlement
+ * really earns).
  *
- * Flow: faucet → approve → create_job → work → approve_job → live trust read.
+ * Flow: faucet → approve → create_job → accept → work → approve_job → trust read.
  *
- *   BASE_URL=http://localhost:3199 CASPER_SECRET_KEY_PEM=<path> \
- *     npx vite-node scripts/test-hire-api.mts
+ *   BASE_URL=http://localhost:3199 npx vite-node scripts/test-hire-api.mts
  */
 import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { KeyAlgorithm, PrivateKey, Transaction } from "casper-js-sdk";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3199";
-const CLIENT_ID = Number(process.env.HIRE_CLIENT_ID ?? 1);
-const PROVIDER_ID = Number(process.env.HIRE_PROVIDER_ID ?? 2);
+const CLIENT_ID = Number(process.env.HIRE_CLIENT_ID ?? 4);
+const PROVIDER_ID = Number(process.env.HIRE_PROVIDER_ID ?? 1);
 const AMOUNT = "1000000"; // 0.001 AGT
 
-const sk = PrivateKey.fromPem(
-  readFileSync(process.env.CASPER_SECRET_KEY_PEM!, "utf8"),
-  KeyAlgorithm.SECP256K1,
-);
+function loadKey(path: string): PrivateKey {
+  const pem = readFileSync(path, "utf8");
+  for (const algo of [KeyAlgorithm.SECP256K1, KeyAlgorithm.ED25519]) {
+    try {
+      return PrivateKey.fromPem(pem, algo);
+    } catch {
+      /* try the other curve */
+    }
+  }
+  throw new Error(`cannot parse ${path}`);
+}
+
+const sk = loadKey(process.env.CLIENT_PEM ?? join(homedir(), ".casper-hero", "faucet2_secret.pem"));
 const publicKeyHex = sk.publicKey.toHex();
-console.log("operator pubkey:", publicKeyHex);
+console.log("client pubkey:", publicKeyHex);
 
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(BASE + url, {
@@ -75,18 +86,31 @@ async function walletStep(step: string, extra: Record<string, unknown>) {
   return { txHash, nextJobId: built.nextJobId };
 }
 
+async function agentStep(jobId: string, expect: "accept" | "work") {
+  const r = await post<{ step: string; txHash: string; resultHash?: string }>("/api/hire/work", { jobId });
+  if (r.step !== expect) throw new Error(`/api/hire/work did ${r.step}, expected ${expect}`);
+  if (r.resultHash) console.log("  resultHash:", r.resultHash);
+  await waitForTx(r.txHash, expect);
+}
+
 // --- run ---------------------------------------------------------------
 
-console.log(`\n[0] agents/mine (expect demo agent ids)`);
+console.log(`\n[0] agents/mine (expect #${CLIENT_ID})`);
 const mine = await fetch(`${BASE}/api/agents/mine?publicKey=${publicKeyHex}`).then((r) => r.json());
 console.log("  agentIds:", JSON.stringify(mine));
 
-console.log(`\n[1] faucet → a FRESH account (real visitor scenario; CEP-18 rejects self-transfer)`);
-const fresh = await PrivateKey.generate(KeyAlgorithm.SECP256K1);
-const faucet = await post<{ txHash: string }>("/api/faucet", {
-  publicKeyHex: fresh.publicKey.toHex(),
+console.log(`\n[1] faucet → a FRESH account must be refused (no account on chain yet)`);
+const fresh = PrivateKey.generate(KeyAlgorithm.ED25519);
+const refused = await fetch(BASE + "/api/faucet", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ publicKeyHex: fresh.publicKey.toHex() }),
 });
-await waitForTx(faucet.txHash, "faucet");
+if (refused.status !== 400) throw new Error(`faucet answered ${refused.status} for an account that does not exist`);
+console.log("  ✓ 400");
+
+const before = await fetch(`${BASE}/api/trust/${PROVIDER_ID}`).then((r) => r.json());
+console.log(`\n    provider #${PROVIDER_ID} before:`, JSON.stringify(before));
 
 console.log(`\n[2] approve (allowance for escrow)`);
 await walletStep("approve", { amountMotes: AMOUNT });
@@ -100,18 +124,18 @@ const created = await walletStep("create_job", {
 });
 console.log("  jobId:", created.nextJobId);
 
-console.log(`\n[4] work (server-signed submit_work)`);
-const work = await post<{ txHash: string; resultHash: string }>("/api/hire/work", {
-  jobId: created.nextJobId,
-});
-console.log("  resultHash:", work.resultHash);
-await waitForTx(work.txHash, "work");
+console.log(`\n[4] accept (server-signed accept_job)`);
+await agentStep(created.nextJobId!, "accept");
 
-console.log(`\n[5] approve_job (settlement + reputation)`);
+console.log(`\n[5] work (server-signed submit_work)`);
+await agentStep(created.nextJobId!, "work");
+
+console.log(`\n[6] approve_job (settlement + reputation)`);
 await walletStep("approve_job", { jobId: created.nextJobId });
 
-console.log(`\n[6] live trust read for provider #${PROVIDER_ID}`);
-const trust = await fetch(`${BASE}/api/trust/${PROVIDER_ID}`).then((r) => r.json());
-console.log("  ", JSON.stringify(trust));
+console.log(`\n[7] live trust read for provider #${PROVIDER_ID}`);
+const after = await fetch(`${BASE}/api/trust/${PROVIDER_ID}`).then((r) => r.json());
+console.log("  ", JSON.stringify(after));
+if (after.jobsCompleted !== before.jobsCompleted + 1) throw new Error("jobsCompleted did not move");
 
 console.log("\nALL STEPS PASSED — hire flow is live end-to-end.");

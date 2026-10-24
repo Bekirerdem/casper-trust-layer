@@ -4,8 +4,9 @@
 // provider = a demo agent operated by the server):
 //   1. approve      — CEP-18 allowance for the escrow          (wallet-signed)
 //   2. create_job   — client funds the job, tokens lock        (wallet-signed)
-//   3. submit_work  — the hired agent delivers                 (server-signed)
-//   4. approve(job) — client releases, settlement fires,
+//   3. accept_job   — the hired agent takes it, bond at stake  (server-signed)
+//   4. submit_work  — the hired agent delivers                 (server-signed)
+//   5. approve(job) — client releases, settlement fires,
 //                     reputation accrues on-chain              (wallet-signed)
 // Every step waits for on-chain finality via /api/tx/status before the next.
 
@@ -93,19 +94,27 @@ export async function claimFaucet(
   publicKeyHex: string,
 ): Promise<{ txHash?: string; skipped?: boolean }> {
   const res = await postJson<{ txHash?: string; skipped?: boolean }>("/api/faucet", { publicKeyHex });
-  if (res.skipped) return res; // operator wallet already holds the AGT supply
+  if (res.skipped) return res; // the demo signer already holds the faucet stock
   await waitForTx(res.txHash!);
   return res;
 }
 
-export type HirePhase = "approve" | "create_job" | "work" | "approve_job";
+export type HirePhase = "approve" | "create_job" | "accept" | "work" | "approve_job";
 
 export interface HireResult {
   jobId: string;
   approveTx: string;
   createJobTx: string;
+  acceptTx: string;
   workTx: string;
   approveJobTx: string;
+}
+
+/** One server-signed provider step; the route picks accept or deliver from the job's state. */
+async function agentStep(jobId: string): Promise<string> {
+  const { txHash } = await postJson<{ txHash: string }>("/api/hire/work", { jobId });
+  await waitForTx(txHash);
+  return txHash;
 }
 
 export async function hireAgent(opts: {
@@ -134,10 +143,13 @@ export async function hireAgent(opts: {
   const jobId = created.nextJobId;
   if (jobId === undefined) throw new Error("could not determine job id");
 
+  onPhase?.("accept");
+  const acceptTx = await agentStep(jobId);
+  onPhase?.("accept", acceptTx);
+
   onPhase?.("work");
-  const work = await postJson<{ txHash: string }>("/api/hire/work", { jobId });
-  await waitForTx(work.txHash);
-  onPhase?.("work", work.txHash);
+  const workTx = await agentStep(jobId);
+  onPhase?.("work", workTx);
 
   onPhase?.("approve_job");
   const released = await walletStep(publicKeyHex, { step: "approve_job", jobId });
@@ -147,7 +159,8 @@ export async function hireAgent(opts: {
     jobId,
     approveTx: approve.txHash,
     createJobTx: created.txHash,
-    workTx: work.txHash,
+    acceptTx,
+    workTx,
     approveJobTx: released.txHash,
   };
 }

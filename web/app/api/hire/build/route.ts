@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Args, CLValue, ContractCallBuilder, Key } from "casper-js-sdk";
+import { getJobCount } from "casper-trust";
 import { createReadClient } from "@/lib/casper/read";
-import { getNextJobId } from "@/lib/casper/escrowRead";
 import { errorResponse, parseId, parsePublicKey } from "@/lib/casper/guard";
 
 const U32_MAX = BigInt(4_294_967_295);
@@ -28,7 +28,8 @@ export async function POST(req: Request) {
     const body = (await req.json()) as BuildBody;
     const { step } = body;
     const from = parsePublicKey(body.publicKeyHex);
-    const { cfg } = createReadClient();
+    const client = createReadClient();
+    const { cfg } = client;
 
     let pkg: string;
     let entryPoint: string;
@@ -53,10 +54,10 @@ export async function POST(req: Request) {
         client_id: CLValue.newCLUInt32(Number(parseId(body.clientId, "clientId", U32_MAX))),
         provider: CLValue.newCLUInt32(Number(parseId(body.providerId, "providerId", U32_MAX))),
         amount: CLValue.newCLUInt256(parseId(body.amountMotes, "amountMotes").toString()),
-        // contract expects Unix MILLISECONDS
+        // contract expects Unix MILLISECONDS, 10 min – 30 days out
         deadline: CLValue.newCLUint64(parseId(body.deadlineMs, "deadlineMs").toString()),
       });
-      nextJobId = (await getNextJobId()).toString();
+      nextJobId = (await getJobCount(client)).toString();
     } else if (step === "approve_job") {
       if (body.jobId === undefined) return NextResponse.json({ error: "jobId required" }, { status: 400 });
       pkg = cfg.packages.escrow;

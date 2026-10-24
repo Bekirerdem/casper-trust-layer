@@ -1,6 +1,7 @@
 /**
  * Registry write-path: register (via proxy_caller_with_return.wasm), token approve,
- * escrow create_job / submit_work / approve, and attestSettlement orchestration.
+ * escrow create_job / accept_job / submit_work / approve, and attestSettlement
+ * orchestration.
  *
  * proxy_caller arg names are taken verbatim from odra-core-2.8.1 consts.rs:
  *   PACKAGE_HASH_ARG     = "package_hash"
@@ -86,7 +87,9 @@ export function buildRegister(
   signer: PrivateKey,
   agentUri: string,
   bondMotes: bigint,
-  gasMotes = 3_000_000_000,
+  // proxy_caller's purse handling plus the cross-contract call need headroom;
+  // 15 CSPR is what every live register has used.
+  gasMotes = 15_000_000_000,
 ): Transaction {
   const wasm = loadProxyCallerWasm();
 
@@ -191,6 +194,31 @@ export function buildCreateJob(
       provider: sdk.CLValue.newCLUInt32(p.provider),
       amount: sdk.CLValue.newCLUInt256(p.amount.toString()),
       deadline: sdk.CLValue.newCLUint64(p.deadline),
+    }),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// acceptJob — Escrow accept_job(job_id)
+// ---------------------------------------------------------------------------
+
+/**
+ * The provider takes the job, signed by the provider agent's wallet. Until this
+ * call nothing of the provider's is at stake; from here a missed deadline lets
+ * the client refund and slash part of the provider's bond.
+ */
+export function buildAcceptJob(
+  cfg: NetworkConfig,
+  signer: PrivateKey,
+  jobId: bigint,
+): Transaction {
+  return buildCall(
+    cfg,
+    signer,
+    cfg.packages.escrow,
+    "accept_job",
+    sdk.Args.fromMap({
+      job_id: sdk.CLValue.newCLUint64(jobId.toString()),
     }),
   );
 }
@@ -354,10 +382,11 @@ export interface AttestSettlementParams {
  * Builds the ordered transaction sequence for a full settlement:
  *   1. approveToken  (client approves escrow to spend tokens)
  *   2. createJob     (client locks funds in escrow)
- *   3. submitWork    (provider submits deliverable hash)
- *   4. approveJob    (client approves work, triggers 2% burn + reputation update)
+ *   3. acceptJob     (provider consents — its bond is now at stake)
+ *   4. submitWork    (provider submits deliverable hash)
+ *   5. approveJob    (client approves work: 2% fee retained, reputation update)
  *
- * Returns the four built+signed Transaction objects in sequence order so the
+ * Returns the five built+signed Transaction objects in sequence order so the
  * caller can inspect structure offline, then submit in order with waitForTx
  * between each when a funded key is available.
  *
@@ -369,6 +398,7 @@ export function buildAttestSettlement(
 ): {
   approveTx: Transaction;
   createJobTx: Transaction;
+  acceptJobTx: Transaction;
   submitWorkTx: Transaction;
   approveJobTx: Transaction;
 } {
@@ -384,8 +414,9 @@ export function buildAttestSettlement(
     amount: p.tokenAmount,
     deadline: p.deadline,
   });
+  const acceptJobTx = buildAcceptJob(cfg, p.providerSigner, p.jobId);
   const submitWorkTx = buildSubmitWork(cfg, p.providerSigner, p.jobId, p.resultHash);
   const approveJobTx = buildApproveJob(cfg, p.clientSigner, p.jobId);
 
-  return { approveTx, createJobTx, submitWorkTx, approveJobTx };
+  return { approveTx, createJobTx, acceptJobTx, submitWorkTx, approveJobTx };
 }

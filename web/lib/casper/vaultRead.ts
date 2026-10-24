@@ -5,14 +5,11 @@ import { readOdraValue, resolveContractHash } from "@/lib/casper/odraRead";
 /**
  * Reads customer vaults out of AgentVaults storage.
  *
- * Field indices calibrated live (sdk/scripts/calibrate-vaults.mts): the contract
- * stores `vaults` at mapping index 4 and `count` at 5 — the same +1 offset every
- * other contract here needed. Vault ids are dynamic, so unlike the treasury we
+ * Field indices calibrated live (sdk/scripts/calibrate-vaults.mts): Odra numbers
+ * fields from 1, so `vaults` sits at mapping index 4 and `count` at 5 — v2 only
+ * appended fields after them. Vault ids are dynamic, so unlike the treasury we
  * hash keys at request time instead of pinning constants.
  */
-
-export const VAULTS_PACKAGE =
-  "674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914";
 
 const IDX_VAULTS = 4;
 const IDX_COUNT = 5;
@@ -93,16 +90,16 @@ function decodeVault(vaultId: number, raw: Uint8Array): Vault {
 
 /** How many vaults have been opened. */
 export async function vaultCount(): Promise<number> {
-  const { rpc } = createReadClient();
-  const contractHash = await resolveContractHash(rpc, VAULTS_PACKAGE);
+  const { rpc, cfg } = createReadClient();
+  const contractHash = await resolveContractHash(rpc, cfg.packages.vaults);
   const raw = await readOdraValue(rpc, contractHash, varKey(IDX_COUNT));
   if (!raw || raw.length < 4) return 0;
   return new DataView(raw.buffer, raw.byteOffset, 4).getUint32(0, true);
 }
 
 export async function getVault(vaultId: number): Promise<Vault | null> {
-  const { rpc } = createReadClient();
-  const contractHash = await resolveContractHash(rpc, VAULTS_PACKAGE);
+  const { rpc, cfg } = createReadClient();
+  const contractHash = await resolveContractHash(rpc, cfg.packages.vaults);
   const raw = await readOdraValue(rpc, contractHash, mapKeyU32(IDX_VAULTS, vaultId));
   return raw ? decodeVault(vaultId, raw) : null;
 }

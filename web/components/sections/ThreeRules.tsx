@@ -13,7 +13,7 @@ const RULES = [
     story:
       "A vendor nobody has ever paid can't receive your money — no matter how convincing it looks to your agent. A track record here isn't a profile it wrote about itself; it's work someone already paid for.",
     blocked: "Blocked — no track record",
-    tx: "19ddb53be543487fe8d6e25eb8278231e59ec90ee0cd00d550294cd77d8c4d13",
+    tx: "60d9bef5bcbb64b4993b329f46e2d3dc5ea8e7cad33899f3b3d4b8824baf0d3e",
   },
   {
     rule: "How much",
@@ -21,7 +21,7 @@ const RULES = [
     story:
       "Limits are counted per job and per day. If your agent finds a reason to send more than you allowed, the payment doesn't go through — it isn't flagged for review later, it simply never happens.",
     blocked: "Blocked — over the limit",
-    tx: "c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8",
+    tx: "7fa2aff00477b2fa7ca473d57004d81cbd17ab6745558549218b52e0e2ef1205",
   },
   {
     rule: "Whether at all",
@@ -29,7 +29,7 @@ const RULES = [
     story:
       "One switch stops every payment, instantly. Nothing moves out of the account and nothing has to be undone — whatever your agent was talked into doing, it stops there.",
     blocked: "Blocked — spending frozen",
-    tx: "c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8",
+    tx: "95f94f2f5731649d17db139159f5933a9a8b6cec6839b3b4c91e73514350b2c8",
   },
 ] as const;
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CONTRACTS } from "@/lib/casper/contracts";
 
 export const metadata: Metadata = {
   title: "Docs — Casper Trust Layer",
@@ -7,22 +8,23 @@ export const metadata: Metadata = {
     "Concepts, build guide and verification path for the settled-payment trust layer on Casper.",
 };
 
-const TREASURY = "95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a";
-const CONTRACTS = [
-  { name: "IdentityRegistry", pkg: "3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc", role: "ERC-8004 identity · CSPR bond · slash" },
-  { name: "Escrow", pkg: "fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c", role: "fund → deliver → settle · 2% fee locked" },
-  { name: "ReputationEngine", pkg: "d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb", role: "score derived from settlements" },
-  { name: "AgentTreasury (v2)", pkg: TREASURY, role: "spend caps · counterparty gate · owner's brake" },
-  { name: "Cep18 (AGT)", pkg: "f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6", role: "demo payment token" },
-];
+const ROLES: Record<string, string> = {
+  AgentVaults: "a vault per customer · their caps, their freeze",
+  IdentityRegistry: "ERC-8004 identity · CSPR bond · 7-day unbonding · slash",
+  ReputationEngine: "score derived from settlements · same-owner earns 0",
+  Escrow: "fund → accept → deliver → settle · 2% fee retained",
+  AgentTreasury: "spend caps · counterparty gate · owner's brake",
+  "Cep18 (AGT)": "demo payment token",
+};
 
 const PROOFS = [
-  { what: "Unproven payee refused before the balance is checked", tx: "19ddb53be543487fe8d6e25eb8278231e59ec90ee0cd00d550294cd77d8c4d13" },
-  { what: "Proven payee clears the same gate and settles", tx: "64783cce031a0516f0acf9658b4685fd3396c6fd66ba481413ebd88078562374" },
-  { what: "Owner pulls the brake — pause()", tx: "d9e87d8a0bfb1dc4d5580b8e40917bfce82d2c95790531e38fe56afaad2003c7" },
-  { what: "The same payment now reverts — Paused", tx: "c96cf67dabaeb2eb3462278fc2ccc60cd6a14aa604be0dc2775bccf108ffdff8" },
-  { what: "Reputation moved by a browser visitor's own wallet", tx: "04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce" },
-  { what: "x402 payment refused below the bar, settled above it", tx: "b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3" },
+  { what: "Unproven payee refused before the balance is checked", tx: "60d9bef5bcbb64b4993b329f46e2d3dc5ea8e7cad33899f3b3d4b8824baf0d3e" },
+  { what: "Proven payee clears the same gate and settles", tx: "f1dc429a22d976b575d70cc52828e836bd7f65b4dfd1e6026a95f816968e9ca5" },
+  { what: "Over the per-task cap — refused", tx: "7fa2aff00477b2fa7ca473d57004d81cbd17ab6745558549218b52e0e2ef1205" },
+  { what: "Owner pulls the brake — pause()", tx: "e1d283b9595080a559a66f061f512480a95f0b5fd6c98a1185171c41a6a49d6b" },
+  { what: "The same payment now reverts — Paused", tx: "95f94f2f5731649d17db139159f5933a9a8b6cec6839b3b4c91e73514350b2c8" },
+  { what: "A job settled across owners — the provider's score moves", tx: "1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8" },
+  { what: "x402 payment refused below the bar, settled above it (v1)", tx: "b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3" },
 ];
 
 function Code({ children }: { children: string }) {
@@ -83,7 +85,7 @@ export default function DocsPage() {
               {[
                 {
                   t: "The envelope",
-                  d: "What the agent may spend: a per-task ceiling, a UTC daily ceiling, and the unlocked balance. Accounted per task id, enforced inside AgentTreasury.pay() before a token moves.",
+                  d: "What the agent may spend: a per-task ceiling, a ceiling over any rolling 24 hours, and the unlocked balance. Enforced inside AgentTreasury.pay() before a token moves.",
                 },
                 {
                   t: "The counterparty rule",
@@ -91,7 +93,7 @@ export default function DocsPage() {
                 },
                 {
                   t: "Track record",
-                  d: "Where a score comes from: settled escrow jobs, nothing else. No LLM jury, no validator committee, no self-reports. A score moves only when a real CEP-18 payment settles and the paying client approves it.",
+                  d: "Where a score comes from: settled escrow jobs, nothing else. No LLM jury, no validator committee, no self-reports. A score moves only when a real CEP-18 payment settles between two different owners and the paying client approves it.",
                 },
                 {
                   t: "The brake",
@@ -126,8 +128,8 @@ export default function DocsPage() {
             <Code>{`import { createTrustClient, checkTrust } from "casper-trust";
 
 const result = await checkTrust(createTrustClient(), 0, { minScore: 100n });
-// { agentId: 0, exists: true, trusted: true, score: 508n,
-//   jobsCompleted: 7n, status: 'Active', bond: 10000000000n }`}</Code>
+// { agentId: 0, exists: true, trusted: true, score: 790n, jobsCompleted: 3n,
+//   status: 'Active', bond: 10000000000n, unbonding: false }`}</Code>
 
             <h3 className="font-mono text-xs uppercase tracking-widest text-ink mt-2">Gate a payment</h3>
             <p className="font-sans text-sm text-muted leading-relaxed max-w-[70ch]">
@@ -144,7 +146,8 @@ const client = { ...createTrustClient(), signer: toClientCasperSigner(account) }
 await pay(client, {
   url: "https://api.example.com/premium",
   providerAgentId: 0,
-  minScore: 5000n,   // require 50% earned trust
+  minScore: 100n,          // require 100 bps of earned trust
+  maxAmount: 10_000_000n,  // never sign more than 0.01 AGT, whatever the 402 asks
 });`}</Code>
 
             <h3 className="font-mono text-xs uppercase tracking-widest text-ink mt-2">Give it to your agent</h3>
@@ -161,7 +164,7 @@ await pay(client, {
               treasury is its own install.
             </p>
             <Code>{`cd contracts
-cargo odra test                          # 52 OdraVM tests
+cargo odra test                          # 100 OdraVM tests
 cargo odra build                         # needs wabt + binaryen >= 130
 cargo run --bin contracts_cli -- deploy  # see contracts/.env.example`}</Code>
           </Section>
@@ -173,7 +176,7 @@ cargo run --bin contracts_cli -- deploy  # see contracts/.env.example`}</Code>
               single command — no wallet, no key, no install:
             </p>
             <Code>{`curl https://casper-trust-layer.vercel.app/api/trust/0
-# {"agentId":0,"scoreBps":508,"jobsCompleted":7,"exists":true}
+# {"agentId":0,"scoreBps":790,"jobsCompleted":3,"exists":true}
 
 curl https://casper-trust-layer.vercel.app/api/treasury
 # {"perTaskLimit":"100000000000","dailyLimit":"500000000000",
@@ -190,7 +193,7 @@ curl https://casper-trust-layer.vercel.app/api/treasury
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-3 font-mono text-xs transition-colors hover:border-ink/20 hover:bg-subtle"
                 >
                   <span className="text-ink">{c.name}</span>
-                  <span className="text-muted normal-case">{c.role}</span>
+                  <span className="text-muted normal-case">{ROLES[c.name]}</span>
                   <span className="text-muted">{c.pkg.slice(0, 8)}… <span className="text-accent-red">↗</span></span>
                 </a>
               ))}

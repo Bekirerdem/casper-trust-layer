@@ -45,7 +45,13 @@ const facilitator = new HTTPFacilitatorClient({
 } as any);
 
 // --- server scheme: register WCSPR as a payable asset (9 decimals) ---
-const serverScheme = new ServerExactScheme().registerAsset(NETWORK, WCSPR, 9);
+// casper-x402 1.0.0 predates @x402/core's payment-flow table, which the resource
+// server now requires. Casper "exact" is the classic flow — verify before the
+// handler, settle after — so declare exactly that.
+const serverScheme = Object.assign(new ServerExactScheme().registerAsset(NETWORK, WCSPR, 9), {
+  defaultAssetTransferMethod: "default",
+  paymentFlows: { default: { supported: ["authorization"], default: "authorization" } },
+});
 
 // --- protected route ---
 const routes = {

@@ -18,8 +18,8 @@ const CALL_GAS = 5_000_000_000; // wasm lane 5 — exact gas for a small contrac
 const FAUCET_AMOUNT = BigInt(10_000_000); // 0.01 AGT (9 decimals) ≈ 10 demo jobs
 const HOUR = 60 * 60 * 1000;
 
-// Sends test AGT from the operator supply to the caller's account so they can
-// fund a hire. Gas + tokens are testnet-only.
+// Sends test AGT from the demo signer's stock to the caller's account so they
+// can fund a hire. Gas + tokens are testnet-only.
 //
 // Only accounts that already exist on chain can claim: a freshly generated key
 // has no account until someone pays to create it, so the drain loop "new random
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const { rpc, cfg } = createReadClient();
     const signer = loadServerSigner();
 
-    // The operator wallet holds the AGT supply — a transfer to itself would
+    // The demo signer holds the faucet stock — a transfer to itself would
     // revert (CEP-18 rejects self-transfer). It is already funded; skip.
     if (recipient.accountHash().toPrefixedString() === signer.publicKey.accountHash().toPrefixedString()) {
       return NextResponse.json({ skipped: true });

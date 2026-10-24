@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { Args, CLValue, ContractCallBuilder, Key } from "casper-js-sdk";
 import { createReadClient } from "@/lib/casper/read";
-import { VAULTS_PACKAGE } from "@/lib/casper/vaultRead";
 import { errorResponse, parseAmount, parseId, parsePublicKey } from "@/lib/casper/guard";
 
 export const runtime = "nodejs";
@@ -45,7 +44,8 @@ export async function POST(req: Request) {
     let entryPoint: string;
     let args: Args;
     let gas: number = GAS.simple;
-    let pkg = VAULTS_PACKAGE;
+    const vaults = cfg.packages.vaults;
+    let pkg = vaults;
 
     switch (body.action) {
       case "open": {
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         pkg = cfg.packages.cep18;
         entryPoint = "approve";
         args = Args.fromMap({
-          spender: CLValue.newCLKey(Key.newKey("hash-" + VAULTS_PACKAGE)),
+          spender: CLValue.newCLKey(Key.newKey("hash-" + vaults)),
           amount: CLValue.newCLUInt256(toMotes(body.amount)),
         });
         gas = GAS.approve;

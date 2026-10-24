@@ -6,8 +6,9 @@ account `02035b3ea46df7a08c778d0ebfbe21f7ab2442030d038a7a55cd3058a452ba40f0c7`.
 ## v2 contracts (2026-10-23)
 
 The audited rewrite (`contracts/CHANGELOG.md` [0.2.0]) is a fresh install — Odra has
-no upgrade path. It reuses the v1 AGT token. The web app and SDK still read v1 until
-their field indices are calibrated against these packages.
+no upgrade path. It reuses the v1 AGT token. The web app (since 2026-10-24) and
+`casper-trust` ≥ 0.2.0 read these packages; every field index was read back from
+live storage, and v2 only appended fields, so the v1 indices carried over.
 
 | Contract | Package hash | Install tx |
 |---|---|---|
@@ -24,7 +25,58 @@ their field indices are calibrated against these packages.
 | `ReputationEngine.set_escrow(Escrow)` | [`0a51fab2…`](https://testnet.cspr.live/transaction/0a51fab207bceb79c72294a398b3edf4a527bd55558f75c339772ea3ebf256b7) |
 | `AgentTreasury.set_reputation_policy(ReputationEngine, 1)` | [`8f225869…`](https://testnet.cspr.live/transaction/8f2258694de59ca9e867afd491ffa94a8dd3c7260e492178f14c33ac224ed016) |
 
-## v1 contracts (live in the web app)
+## v2 demo network (2026-10-24)
+
+Seeded by [`sdk/scripts/seed-v2.mts`](sdk/scripts/seed-v2.mts). v2 pays no reputation
+for same-owner settlements, so the network uses three owners:
+
+| Account | Public key | Role |
+|---|---|---|
+| Deployer | `02035b3e…52ba40f0c7` | admin of every contract; owns demo providers #0–#2; never leaves the operator's machine |
+| Demo signer | `011244c4…360ba1e38` | wallet of #0–#2, the treasury's delegated agent, the faucet's AGT stock; the only key the web app holds (`DEMO_SIGNER_PEM`), funded with a few hundred CSPR |
+| Client A | `01dd09ad…24743d5414` | owns #3 |
+| Client B | `01a9a286…5edfff43` | owns #4 |
+
+Every job went `create_job` → `accept_job` → `submit_work` → `approve`; the release
+transactions:
+
+| Settlement | Score | Transaction |
+|---|---|---|
+| #3 → #0 | `0 → 316` | [`1fa8296f…`](https://testnet.cspr.live/transaction/1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8) |
+| #4 → #0 (a second client, fresh edge) | `316 → 632` | [`2e09f49f…`](https://testnet.cspr.live/transaction/2e09f49fb67eac420342d7bb52b01a04dd8cfaefd44b53e96a79f76f49316550) |
+| #3 → #1 | `0 → 316` | [`39151da9…`](https://testnet.cspr.live/transaction/39151da9211bfd7e1dbb71f093250eb29c973de1f5cc3c9d6e13b9018d3eaa34) |
+| #4 → #2 | `0 → 316` | [`36c8e43f…`](https://testnet.cspr.live/transaction/36c8e43f2bf618357d9c6070f7a725ff6c1f4839006812fc24ba81bb369ea580) |
+| #0 → #3 (a provider paying a client) | `0 → 316` | [`36805dc4…`](https://testnet.cspr.live/transaction/36805dc4e83b05ad4c761de116f4524c0186bce72a19f1614ad40be2efcbd2a8) |
+| #3 → #0 again (repeat, dampened) | `632 → 790` | [`19d6466f…`](https://testnet.cspr.live/transaction/19d6466fbcc42ec289b74b36a9277f0668c4e48dd717b3e5619d2fee53f5b3a0) |
+
+The treasury (funded with 1,000 AGT, [`587e26b8…`](https://testnet.cspr.live/transaction/587e26b82723ffacf1c0ed4e54be56acb9eaede09fb7b9d180a38c5d9cb3a362)), same payment, only the rule changes:
+
+| What it proves | Transaction |
+|---|---|
+| Proven payee (#0) settles | [`f1dc429a…`](https://testnet.cspr.live/transaction/f1dc429a22d976b575d70cc52828e836bd7f65b4dfd1e6026a95f816968e9ca5) |
+| Unproven payee (#4, 0 bps) — `BelowReputationThreshold` (User error 5) | [`60d9bef5…`](https://testnet.cspr.live/transaction/60d9bef5bcbb64b4993b329f46e2d3dc5ea8e7cad33899f3b3d4b8824baf0d3e) |
+| 150 AGT against the 100 AGT per-task cap — `ExceedsTaskLimit` (6) | [`7fa2aff0…`](https://testnet.cspr.live/transaction/7fa2aff00477b2fa7ca473d57004d81cbd17ab6745558549218b52e0e2ef1205) |
+| Owner pulls the brake — `pause()` | [`e1d283b9…`](https://testnet.cspr.live/transaction/e1d283b9595080a559a66f061f512480a95f0b5fd6c98a1185171c41a6a49d6b) |
+| The same payment now reverts — `Paused` (12) | [`95f94f2f…`](https://testnet.cspr.live/transaction/95f94f2f5731649d17db139159f5933a9a8b6cec6839b3b4c91e73514350b2c8) |
+| `unpause()` | [`e0bc0ee3…`](https://testnet.cspr.live/transaction/e0bc0ee3c0de919eab3ae665ebe6a120dee19189322ddd7d4e16caefdeea1f70) |
+| `set_agent(demo signer)` — the deployer stops being the spending key | [`6189bc50…`](https://testnet.cspr.live/transaction/6189bc504af3b53824e98a3e262f371c8dbad5b7ad722a90359aca37b91c2f5e) |
+
+A customer vault (vault #0, the deployer's own), same payment throughout:
+
+| What it proves | Transaction |
+|---|---|
+| Open with per job 100 AGT, per 24 h 500 AGT, payee needs a track record | [`ca02c150…`](https://testnet.cspr.live/transaction/ca02c15032ab558777fa5f528fd9d287b8b3d2bf152488f16c5b582b4d79bb6b) |
+| Approve + deposit 50 AGT | [`4ec8c1b9…`](https://testnet.cspr.live/transaction/4ec8c1b9663a6ab8da7ba1e93aa61913141e88364bab6fe18de3d2b035e458ad) · [`16cef2ee…`](https://testnet.cspr.live/transaction/16cef2eeff7b894b3068ee49e7dbe2789b6a57573f9e2785064b0efeae0db1c1) |
+| Pay #0 (has a track record) — settles | [`417e6f81…`](https://testnet.cspr.live/transaction/417e6f816e9d46b7534f7e6e13f34484c8680d8a0ad3cf58e01ef7bc30850050) |
+| Pay #4 (none) — `PayeeNotAllowed` (5) | [`4cca0d25…`](https://testnet.cspr.live/transaction/4cca0d25ed076e74e128d6f0da5f753407411228cae70cd541392639f647493b) |
+| Freeze, pay #0 again — `Frozen` (9) | [`7577b156…`](https://testnet.cspr.live/transaction/7577b1560dba6756a5add96ca0d0550de14615568edcf317b575701be8df76bf) · [`804b3e18…`](https://testnet.cspr.live/transaction/804b3e184cc5a91ccb0e9d0b019b0c117a03427a1df438a65a590ab1c0dc8920) |
+| Unfreeze | [`7965196d…`](https://testnet.cspr.live/transaction/7965196dba6df06964282abcbbcacc09ff610ff69dd5b64e9b0406920fd448d0) |
+
+The web hire flow was then driven end to end through its own API
+(`sdk/scripts/test-hire-api.mts`: client #4 hires #1, the demo signer accepts and
+delivers, #1 goes `316 → 416`).
+
+## v1 contracts (retired 2026-10-24)
 
 | Contract | Package hash | Install tx |
 |---|---|---|
@@ -47,7 +99,7 @@ their field indices are calibrated against these packages.
 > install [`df27440d…`](https://testnet.cspr.live/deploy/df27440d5e0294aa03258103ae585f1aac41b403e1d9a34a741b00b78154dd2f))
 > stays on-chain, unused.
 
-## Wiring (post-deploy)
+## v1 wiring (post-deploy)
 
 | Action | tx |
 |---|---|
@@ -59,7 +111,7 @@ The treasury enforces per-task (100 AGT) + daily (500 AGT) caps and a contract-l
 reputation gate (whitelist OR `ReputationEngine.score(payee) >= 1`), and the owner
 can halt every outflow with `pause()`.
 
-## A customer's own vault, proven on-chain
+## v1 — a customer's own vault, proven on-chain
 
 One owner, one vault, one set of rules they wrote themselves — exercised end to end
 on `casper-test` (2026-07-26). Same payment throughout; only the rule changes.
@@ -75,9 +127,9 @@ on `casper-test` (2026-07-26). Same payment throughout; only the rule changes.
 | The **previously accepted** payment now reverts, `Frozen` (User error 9) | [`c63383cc…`](https://testnet.cspr.live/transaction/c63383cc8246ca04e28be24b583331512f9f149346c434213d90f2a41cfdfc2f) |
 | Owner releases it | [`893cd1f2…`](https://testnet.cspr.live/transaction/893cd1f21934e55c54d3d90d190669ceaa23bed8185781cf404dc6a64afb0831) |
 
-Reproduce it: `npx vite-node sdk/scripts/vault-probe.mts`.
+The same sequence on v2 is in the demo-network section above (`sdk/scripts/seed-v2.mts`).
 
-## The single-tenant envelope, proven on-chain
+## v1 — the single-tenant envelope, proven on-chain
 
 Same treasury, same payment — only the rule or the owner's decision changes.
 
@@ -127,9 +179,10 @@ Odra 2.8.1 → Casper 2.2.1 (Condor) testnet deploy:
    to `try_set_escrow`, so re-running the deploy loads the existing contracts from
    the container, swallows already-set wirings, and installs only what's new.
 
-The contract code itself is unmodified and fully tested (**62 green OdraVM tests**,
-including the AgentTreasury and AgentVaults suites). **AgentVaults** — the 6th
-contract and the one the dashboard is built on — was deployed 2026-07-26.
+The contract code itself is unmodified and fully tested (**100 green OdraVM tests**
+in v2, including the AgentTreasury and AgentVaults suites and a negative test per
+audit finding). **AgentVaults** — the 6th contract and the one the dashboard is
+built on — was first deployed 2026-07-26.
 
 6. **No upgrade path in Odra** — changing a contract means a new install and a new
    package hash. Remove that contract's entry from

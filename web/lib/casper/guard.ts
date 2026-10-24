@@ -12,8 +12,11 @@ import { PublicKey, PurseIdentifier, type PrivateKey, type RpcClient } from "cas
  * what actually bound the spend.
  */
 
-/** Below this the demo stops signing, so a drain can never empty the operator. */
-const OPERATOR_RESERVE_MOTES = BigInt(300) * BigInt(1_000_000_000); // 300 CSPR
+/**
+ * Below this the demo stops signing. The demo signer is funded with a few
+ * hundred CSPR on purpose, so the most a drain can burn is that float.
+ */
+const OPERATOR_RESERVE_MOTES = BigInt(50) * BigInt(1_000_000_000); // 50 CSPR
 
 /** An error whose message is safe to show the caller. */
 export class GuardError extends Error {

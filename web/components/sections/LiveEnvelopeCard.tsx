@@ -23,6 +23,7 @@ const BLOCKED_BECAUSE: Record<string, string> = {
   "7": "it's over your daily limit",
   "8": "there isn't enough left in the account",
   "12": "you've frozen spending",
+  "15": "this vendor is no longer active",
 };
 
 const money = (raw: string) => `$${Math.round(Number(raw) / 1e9).toLocaleString("en-US")}`;

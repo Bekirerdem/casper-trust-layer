@@ -9,8 +9,8 @@ An owner opens an on-chain vault and writes the rules; the contract enforces two
 
 [![live demo](https://img.shields.io/badge/live%20demo-online-2ea44f)](https://casper-trust-layer.vercel.app)
 [![npm](https://img.shields.io/npm/v/casper-trust?label=casper-trust&color=cb3837)](https://www.npmjs.com/package/casper-trust)
-[![contracts](https://img.shields.io/badge/OdraVM%20tests-62%20passing-2ea44f)](contracts/src)
-[![sdk](https://img.shields.io/badge/SDK%20tests-66%20passing-2ea44f)](sdk/test)
+[![contracts](https://img.shields.io/badge/OdraVM%20tests-100%20passing-2ea44f)](contracts/src)
+[![sdk](https://img.shields.io/badge/SDK%20tests-73%20passing-2ea44f)](sdk/test)
 [![network](https://img.shields.io/badge/casper--test-deployed-blue)](DEPLOYMENT.md)
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
@@ -35,7 +35,7 @@ We invert the source of truth. Here a score **only moves when a real CEP-18 paym
 | | Canonical ERC-8004 | **Casper Trust Layer** |
 |---|---|---|
 | Score source | Self-reported feedback | Settled escrow payments |
-| Cost to fake a score | Zero — post any number | Real capital: 2% fee locked per settlement, bond at risk |
+| Cost to fake a score | Zero — post any number | Real capital: 2% protocol fee per settlement, bond at risk; settling with yourself earns nothing |
 | Sybil / wash resistance | None (plain mean) | `isqrt` concavity · per-edge caps · trust conservation ([math](docs/reputation-formula.md)) |
 | Acting on trust | Read-only registry | **Payment gate** — `pay({ minScore })` refuses before a cent moves |
 
@@ -45,7 +45,7 @@ We invert the source of truth. Here a score **only moves when a real CEP-18 paym
 
 ```bash
 curl https://casper-trust-layer.vercel.app/api/trust/0
-# {"agentId":0,"scoreBps":508,"jobsCompleted":7,"exists":true}   ← decoded straight from contract storage
+# {"agentId":0,"scoreBps":790,"jobsCompleted":3,"exists":true}   ← decoded straight from contract storage
 # (live values — they grow with every settled job, so yours may read higher)
 ```
 
@@ -69,8 +69,8 @@ const { trusted, score } = await checkTrust(createTrustClient(), 0, { minScore: 
 
 ```mermaid
 flowchart TD
-    IR["IdentityRegistry<br/>ERC-8004 identity · CSPR bond · slash"]
-    ES["Escrow<br/>fund → deliver → approve<br/>2% protocol fee locked"]
+    IR["IdentityRegistry<br/>ERC-8004 identity · CSPR bond · slash<br/>7-day unbonding"]
+    ES["Escrow<br/>fund → accept → deliver → approve<br/>2% protocol fee"]
     RE["ReputationEngine<br/>objective score · anti-gaming math"]
     AV["AgentVaults<br/>a vault per customer · owner's rules<br/>per-job · per-day · freeze"]
     AT["AgentTreasury<br/>single-tenant envelope · owner's brake<br/>contract-level reputation gate"]
@@ -83,7 +83,7 @@ flowchart TD
     RE -. "wallet-free RPC read" .-> SDK
 ```
 
-**The trust loop:** register an agent (bonded) → a client agent hires it, locking CEP-18 funds in escrow → the provider delivers → the client approves → funds settle to the provider and reputation accrues to its *identity* (a transferable u32, not a bare wallet). Settlement, fee lock, and score update happen in a single transaction via cross-contract calls. A deadline default refunds the client and **slashes the provider's bond**.
+**The trust loop:** register an agent (bonded) → a client agent hires it, locking CEP-18 funds in escrow → the provider **accepts** — only now is its bond at stake → it delivers → the client approves → funds settle to the provider and reputation accrues to its *identity* (a transferable u32, not a bare wallet). Settlement, fee and score update happen in a single transaction via cross-contract calls. An accepted job that misses its deadline refunds the client and **slashes 20% of the provider's bond to it**; a delivery the client rejects inside 24 hours is refunded minus the fee. Two identities with the same owner can settle with each other, but earn nothing.
 
 ## The payment layer — trust-gated x402
 
@@ -103,8 +103,9 @@ const client = { ...createTrustClient(), signer: toClientCasperSigner(account) }
 
 await pay(client, {
   url: "https://api.example.com/premium",
-  providerAgentId: 0,   // on-chain identity of the seller
-  minScore: 5000n,      // require ≥ 50% earned trust (basis points)
+  providerAgentId: 0,      // on-chain identity of the seller
+  minScore: 100n,          // require ≥ 100 bps of earned trust
+  maxAmount: 10_000_000n,  // hard ceiling, in token base units, on what may be signed
 });
 // → checks on-chain reputation → 402 → EIP-712 sign → facilitator /verify + /settle → 200
 ```
@@ -123,11 +124,12 @@ Every term is **unsigned-integer / basis-point math, O(1) per settlement** — n
 | **per-edge lifetime cap** | **bought-edge / star laundering** (the attack a naive 3-factor formula fails) |
 | **trust conservation** | a payer can't confer more reputation than it earned |
 | bonded-newcomer **cold-start floor** (gated + capped) | the multiply-by-zero bootstrap deadlock — without letting bonds buy rank |
-| escrow **protocol fee** (2%, permanently locked) + bond **slashing** | making fake reputation cost > benefit |
+| escrow **protocol fee** (2%) + bond **slashing** + 7-day **unbonding** | making fake reputation cost > benefit, and stopping one bond from being recycled across identities |
+| **same-owner** settlements earn 0, sub-minimum (dust) jobs earn 0 | self-dealing between your own identities, dust wash-trading |
 
 ### "Paid ≠ good work?"
 
-The strongest objection to settlement-derived reputation: a payment proves the work was *paid for*, not that it was *good*. Fair — and answered by the design. Settlement here is **approval-gated**: funds only move when the *client* calls `approve`, so every score-moving settlement is a counterparty's costly endorsement — it permanently locks the 2% protocol fee — not a provider's self-report. A dissatisfied client simply doesn't approve, and reclaims the funds after the deadline.
+The strongest objection to settlement-derived reputation: a payment proves the work was *paid for*, not that it was *good*. Fair — and answered by the design. Settlement here is **approval-gated**: funds only move when the *client* calls `approve`, so every score-moving settlement is a counterparty's costly endorsement — it pays the 2% protocol fee — not a provider's self-report. A dissatisfied client disputes within 24 hours of delivery and gets its money back minus the fee, with no score for the provider; a provider that accepted and never delivered is refunded against and slashed.
 
 - **The alternatives reintroduce a trusted writer.** LLM-jury verdicts and "trusted verifier" roles let whoever controls the judge mint subjective scores for free. Here, score can only be minted by pushing real value through escrow and giving up the fee.
 - **A dishonest pair is bounded, not trusted.** Even a counterparty that *always* approves can only fabricate a capped, capital-linear amount of score — per-edge lifetime caps, trust conservation, and `isqrt` value concavity bound every edge ([full math](docs/reputation-formula.md)).
@@ -154,35 +156,35 @@ Everything below is live on `casper-test` — see [`DEPLOYMENT.md`](DEPLOYMENT.m
 
 | Contract | Package hash |
 |---|---|
-| AgentVaults (a vault per customer) | [`674cc233…`](https://testnet.cspr.live/contract-package/674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914) |
-| IdentityRegistry | [`3a51cc5f…`](https://testnet.cspr.live/contract-package/3a51cc5f4c524f806b3b8899039030bbad141005f81ab99895615d8f050c7adc) |
-| ReputationEngine | [`d73fb111…`](https://testnet.cspr.live/contract-package/d73fb11144c07ec05071cf986ad65b407f2da91bd871b0c10f67a974832ee7eb) |
-| Escrow | [`fe6b0ddb…`](https://testnet.cspr.live/contract-package/fe6b0ddb307549cc9101659abcfaf114e37a8d99461c0632cbce582ebdc4902c) |
-| AgentTreasury (v2, pausable) | [`95a5cde8…`](https://testnet.cspr.live/contract-package/95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a) |
+| AgentVaults (a vault per customer) | [`4172ebf4…`](https://testnet.cspr.live/contract-package/4172ebf4438b14ac02dea598d62a95ec05bd6ea717426dc525209ae33b62eafd) |
+| IdentityRegistry | [`941380ec…`](https://testnet.cspr.live/contract-package/941380ecfa5771630eae4bf38f81c0801cfba085799932f55c094f43c0f44953) |
+| ReputationEngine | [`276ae7d8…`](https://testnet.cspr.live/contract-package/276ae7d8d73b1c0c7e993b068d5cea50508b0a00848b06286530ed27fbe943fa) |
+| Escrow | [`644486bf…`](https://testnet.cspr.live/contract-package/644486bf5b57376b3855157db10da977e61ab300867248c58dd15f33eb45ec27) |
+| AgentTreasury | [`ef14ceac…`](https://testnet.cspr.live/contract-package/ef14ceacbb8cc6d20cf55225295a4f3d6e5ac5a996c94ad5fc56108337acda24) |
 | Cep18 (demo token) | [`f962076e…`](https://testnet.cspr.live/contract-package/f962076e6c2ba423aaade9f75935ff37ef4aa4cde6077bac9a259af141c3d5c6) |
+
+These are the **v2 contracts** (October 2026 audit, [`contracts/CHANGELOG.md`](contracts/CHANGELOG.md)): providers consent before a job binds them, slashing is proportional, withdrawals unbond for 7 days, same-owner settlements earn nothing. Odra has no upgrade path, so v2 is a fresh install with its own, younger network; the buildathon-era v1 packages and their history stay on-chain, listed in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 > **AgentVaults** is where an owner's money actually lives: one contract, **a vault per customer**, each carrying its own owner, agent, per-job ceiling, per-day ceiling, required track record, balance and freeze switch. Ownership is checked on every state-changing call, so nobody can read or move anyone else's money — `a_stranger_cannot_touch_your_vault` is a test, not a promise. **AgentTreasury** is the single-tenant envelope that came first, plus an owner-only `pause()`. Both enforce the same two rules in the contract, not the SDK: the owner's ceiling **and** the payee's earned track record.
 
-A live **8-agent trust network** runs on `casper-test` across **14 settlements**: reputation flows from *multiple* counterparties, not a single loop. Agent #0 has earned **508 bps over 7 settled jobs from 4 distinct clients** (and counting — the network is live); every row below is independently verifiable.
+The v2 network runs on `casper-test` with **three owners**, because v2 pays nothing for self-dealing: demo providers #0–#2 belong to the deployer, clients #3 and #4 to two other accounts. Every settlement crosses owners and went the full v2 way — create, provider accept, deliver, release. Agent #0 has earned **790 bps over 3 jobs from 2 distinct clients** (and counting — the network is live); every row below is independently verifiable.
 
 <div align="center">
 <a href="https://casper-trust-layer.vercel.app/app"><img src="docs/assets/dashboard-vendors.png" alt="The vendors tab — every agent's earned score, each row marked payable or below your bar, with the full settlement history beside it" width="820" /></a>
 </div>
 
-Each row is judged against *your* bar: agent #7 reads **below your bar** because it has never been paid. Everything here is a wallet-free read — no key, no gas, no account.
-
-Seven of the eight agents have earned a score; agent #7 sits at **0 bps** because it was registered from a wallet we do not control and has never been paid — the honest state of an unproven agent, and exactly what the trust gate is for.
+Each row is judged against *your* bar: agent #4 reads **below your bar** because it has only ever paid others and has never been paid itself — the honest state of an unproven agent, and exactly what the trust gate is for. Everything here is a wallet-free read — no key, no gas, no account.
 
 | What it proves | Transaction |
 |---|---|
-| Cross-edge settle — agent #2 → #0 lifts score `208 → 308` | [`6a7d54e8…`](https://testnet.cspr.live/transaction/6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69) |
-| Cross-edge settle — agent #3 → #0 lifts score `308 → 408` | [`9e490f62…`](https://testnet.cspr.live/transaction/9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a) |
-| Bootstrap — agent #0 vouches for new agent #2 (`0 → 100`) | [`b5d6c3b9…`](https://testnet.cspr.live/transaction/b5d6c3b91efdcecf858bcaa55fba0804f7f2ccde1199ba1a5f9affa735edc591) |
-| Browser **hire flow** settlement — agent #2 `100 → 200` | [`04cea776…`](https://testnet.cspr.live/transaction/04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce) |
-| x402 handshake settles on-chain | [`0c58d79a…`](https://testnet.cspr.live/transaction/0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e) |
-| **Trust-gated x402** — paid only when score clears the bar | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
+| First settlement — client #3 → provider #0, `0 → 316` | [`1fa8296f…`](https://testnet.cspr.live/transaction/1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8) |
+| A second, unrelated client — #4 → #0, `316 → 632` (a fresh edge earns in full) | [`2e09f49f…`](https://testnet.cspr.live/transaction/2e09f49fb67eac420342d7bb52b01a04dd8cfaefd44b53e96a79f76f49316550) |
+| The same client again — #3 → #0, `632 → 790` (repeat business dampened to half) | [`19d6466f…`](https://testnet.cspr.live/transaction/19d6466fbcc42ec289b74b36a9277f0668c4e48dd717b3e5619d2fee53f5b3a0) |
+| A provider paying a client — #0 → #3, `0 → 316` (trust runs both ways across owners) | [`36805dc4…`](https://testnet.cspr.live/transaction/36805dc4e83b05ad4c761de116f4524c0186bce72a19f1614ad40be2efcbd2a8) |
+| x402 handshake settles on-chain (v1 era) | [`0c58d79a…`](https://testnet.cspr.live/transaction/0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e) |
+| **Trust-gated x402** — paid only when score clears the bar (v1 era) | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 
-> The trust-gated demo runs the *same* provider and endpoint twice: a bar above its earned score is **refused before any payment**; a bar it meets **settles on-chain**.
+> The trust-gated demo runs the *same* provider and endpoint twice: a bar above its earned score is **refused before any payment**; a bar it meets **settles on-chain**. Re-run against v2 on 2026-10-24, the gate behaved the same — refused at 791 bps against #0's 790, passed at 790 — and the payment cleared the facilitator's `/verify`; the hosted testnet facilitator then rejected its own settle transaction for lack of balance, so the settled receipts above are from the v1 era.
 
 ### Verify it yourself
 
@@ -191,24 +193,24 @@ No claim in this README requires trusting us:
 | Claim | How to check |
 |---|---|
 | Agent #0's score is real and current | `curl https://casper-trust-layer.vercel.app/api/trust/0` — a live, wallet-free storage read |
-| The score came from real settlements, not writes we control | Settlement txs [`6a7d54e8…`](https://testnet.cspr.live/transaction/6a7d54e8f257b54b85e1a68940115d2190f9c54c2b865c49821c7d183b190b69) and [`9e490f62…`](https://testnet.cspr.live/transaction/9e490f62c0efcd32acdbb813f601047b6c5d3468e36738d14af7cf15481da13a) route through the deployed Escrow |
-| Anyone can move a score with their own wallet | Run the [hire flow](https://casper-trust-layer.vercel.app/app) — or inspect the browser-driven settlement [`04cea776…`](https://testnet.cspr.live/transaction/04cea776e694eb6aa33ec117c9572a9574979999e62340122b159f976a3490ce) |
-| x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) — the same endpoint is refused below the bar, settled above it |
+| The score came from real settlements, not writes we control | Settlement txs [`1fa8296f…`](https://testnet.cspr.live/transaction/1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8) and [`2e09f49f…`](https://testnet.cspr.live/transaction/2e09f49fb67eac420342d7bb52b01a04dd8cfaefd44b53e96a79f76f49316550) route through the deployed Escrow |
+| Anyone can move a score with their own wallet | Run the [hire flow](https://casper-trust-layer.vercel.app/app) — or `sdk/scripts/test-hire-api.mts`, which drives the same API end to end |
+| x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) (v1 era) — the same endpoint is refused below the bar, settled above it |
 | All 6 contracts are live and wired | Package hashes above; every install + wiring transaction linked in [`DEPLOYMENT.md`](DEPLOYMENT.md) |
 | The SDK is public and installable today | [`npm install casper-trust`](https://www.npmjs.com/package/casper-trust) |
-| The code does what we say | `cargo odra test` in `contracts/` (62 tests) · `npx vitest run` in `sdk/` (66 tests incl. live read assertions) |
+| The code does what we say | `cargo odra test` in `contracts/` (100 tests) · `npx vitest run` in `sdk/` (73 tests; `CASPER_LIVE=1` adds live read assertions) |
 
 ## Judging criteria at a glance
 
 | Criterion | What ships | Evidence |
 |---|---|---|
-| **Technical quality** | 6 contracts live and wired on `casper-test`; 62 OdraVM tests (incl. the adversarial reputation suite, the owner's brake, and per-customer vault isolation) + 66 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
+| **Technical quality** | 6 contracts live and wired on `casper-test`; 100 OdraVM tests (incl. the adversarial reputation suite, a negative test per audit finding, the owner's brake, and per-customer vault isolation) + 73 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
 | **Innovation** | Reputation derived *objectively* from settled escrow payments — no judge anywhere in the scoring path — hardened with anti-gaming math (per-edge caps, trust conservation, value concavity), and shipped as a package that installs and runs outside this repo | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
 | **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
-| **DeFi / RWA applicability** | A vault per customer: per-job + daily ceilings and a protocol-level counterparty gate, enforced in the contract; CEP-18 escrow rails | [AgentVaults](https://testnet.cspr.live/contract-package/674cc233514a5e478f84ea37d657cc6b58d41984b788778d6ca554e6615d6914) · [AgentTreasury](https://testnet.cspr.live/contract-package/95a5cde87caeeee469f6708b4cdbb8ee6b74bf9a50bab429287cc1400ef32f1a) · [`contracts/src`](contracts/src) |
+| **DeFi / RWA applicability** | A vault per customer: per-job + daily ceilings and a protocol-level counterparty gate, enforced in the contract; CEP-18 escrow rails | [AgentVaults](https://testnet.cspr.live/contract-package/4172ebf4438b14ac02dea598d62a95ec05bd6ea717426dc525209ae33b62eafd) · [AgentTreasury](https://testnet.cspr.live/contract-package/ef14ceacbb8cc6d20cf55225295a4f3d6e5ac5a996c94ad5fc56108337acda24) · [`contracts/src`](contracts/src) |
 | **UX** | Wallet-free, gas-free score reads; an account you open and sign yourself; in-browser wallet-signed registration **and** a full hire flow with a faucet | [live demo](https://casper-trust-layer.vercel.app) · [dashboard](https://casper-trust-layer.vercel.app/app) |
 | **Working contracts** | All 6 deployed, wired, and exercised end-to-end: settlements, slashing, treasury pay, a customer vault opened → funded → paid → refused → frozen | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
-| **Ecosystem impact** | A published npm package + MCP server any Casper agent project can adopt; the Odra 2.8.1 → Condor deploy workarounds are documented for other teams | [npm](https://www.npmjs.com/package/casper-trust) · [`mcp/`](mcp/) · [`tasks/lessons.md`](tasks/lessons.md) |
+| **Ecosystem impact** | A published npm package + MCP server any Casper agent project can adopt; the Odra → Condor deploy workarounds are documented for other teams | [npm](https://www.npmjs.com/package/casper-trust) · [`mcp/`](mcp/) · [`tasks/lessons.md`](tasks/lessons.md) |
 
 ## Developer guide
 
@@ -226,7 +228,7 @@ Casper contract tooling runs on Linux; on Windows use WSL2 (see [`tasks/lessons.
 
 ```bash
 cd contracts
-cargo odra test                 # 62 passing on the OdraVM (no node needed)
+cargo odra test                 # 100 passing on the OdraVM (no node needed)
 
 export PATH=~/binaryen-latest/bin:$PATH
 cargo odra build                # -> Casper-VM-compatible wasm/*.wasm (needs wabt + binaryen v130+)
@@ -254,33 +256,34 @@ DEPLOYMENT.md                live addresses + tx proofs
 
 ### Tech stack
 
-- **Contracts:** [Odra 2.8](https://odra.dev) (Rust → `wasm32-unknown-unknown` → Casper 2.0)
+- **Contracts:** [Odra 2.9](https://odra.dev) (Rust → `wasm32-unknown-unknown` → Casper 2.0)
 - **Token:** CEP-18 (`odra-modules`); payments in WCSPR (CEP-3009 `transfer_with_authorization`)
 - **SDK:** TypeScript · `casper-js-sdk` 5 · `@make-software/casper-x402` · `@x402/fetch` — published as [`casper-trust`](https://www.npmjs.com/package/casper-trust)
 - **Payments:** x402 v2 over the hosted [CSPR.cloud facilitator](https://x402-facilitator.cspr.cloud) (gasless for the payer)
-- **Testing:** OdraVM (62 contract tests incl. adversarial reputation cases and per-customer vault isolation) + Vitest (66 SDK tests)
+- **Testing:** OdraVM (100 contract tests incl. adversarial reputation cases, a negative test per audit finding and per-customer vault isolation) + Vitest (73 SDK tests)
 - **Deploy:** `cargo-odra` + cspr.cloud (via a small auth proxy), patched for the Condor account model
 
 ## Launch plan
 
-**Already shipped** — distribution is live, not hypothetical: [`casper-trust`](https://www.npmjs.com/package/casper-trust) is installable from npm today; the [dashboard](https://casper-trust-layer.vercel.app/app) lets anyone open their own on-chain account and exposes the registry without a wallet; the in-browser hire flow lets any visitor fund → deliver → approve and watch a score move on-chain; and [`casper-trust-mcp`](mcp/) plugs on-chain trust into Claude/Cursor.
+**Already shipped** — distribution is live, not hypothetical: [`casper-trust`](https://www.npmjs.com/package/casper-trust) is installable from npm today; the [dashboard](https://casper-trust-layer.vercel.app/app) lets anyone open their own on-chain account and exposes the registry without a wallet; the in-browser hire flow lets any visitor fund → have the agent accept and deliver → approve and watch a score move on-chain; and [`casper-trust-mcp`](mcp/) (`npx -y casper-trust-mcp`) plugs on-chain trust into Claude/Cursor. The v2 contracts — provider consent, proportional slashing, unbonding, same-owner and dust settlements earning nothing, rolling 24-hour caps — are live and are what the site and SDK read.
 
-**Qualification → final**
+**Next**
 
-- Publish `casper-trust-mcp` to npm (`npx casper-trust-mcp`)
 - AgentTreasury support in the SDK (bounded spend + reservations)
 
 **Mainnet path** — three blockers, in order:
 
-1. **Agent-side key management hardening** — operational wallets currently hold raw signing keys
+1. **An independent audit of v2** — the contracts hold user funds; the October audit was internal
 2. **A stable payment token** — settlement runs on WCSPR / a demo CEP-18 today; production needs a stable, liquid token so reputation weight isn't coupled to price volatility
-3. **v2 contract hardening** — the accepted-risk fixes documented in the [threat model](docs/reputation-formula.md) (§7): provider consent on job creation, proportional slashing, treasury status gate, reputation decay, dynamic bonds
+3. **Agent-side key management hardening** — operational wallets currently hold raw signing keys
+
+After that: reputation decay, job-proportional bonds and an arbiter for disputes ([threat model](docs/reputation-formula.md) §7).
 
 **Community** — building in public on [X (@l3ekirerdem)](https://x.com/l3ekirerdem) and [CSPR.fans](https://cspr.fans); the deploy workarounds in [`tasks/lessons.md`](tasks/lessons.md) are already reusable by other Casper teams.
 
 ## Notes
 
-The contract code is unmodified vanilla Odra. Three workarounds were needed for an Odra 2.8.1 → Casper 2.2.1 (Condor) **testnet deploy** (a cspr.cloud auth proxy, a patched contract-address resolver, and a resilient SSE watcher) — all documented in [`tasks/lessons.md`](tasks/lessons.md) and [`DEPLOYMENT.md`](DEPLOYMENT.md).
+The contract code is unmodified vanilla Odra. Three workarounds were needed for the original Odra 2.8.1 → Casper 2.2.1 (Condor) **testnet deploy** (a cspr.cloud auth proxy, a patched contract-address resolver, and a resilient SSE watcher) — all documented in [`tasks/lessons.md`](tasks/lessons.md) and [`DEPLOYMENT.md`](DEPLOYMENT.md). On Odra 2.9.1 (v2) the proxy is no longer needed and the gas-tolerance fix is upstream; the resolver and watcher patches remain.
 
 ## License
 

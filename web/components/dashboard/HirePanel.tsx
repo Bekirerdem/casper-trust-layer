@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { claimFaucet, hireAgent, type HirePhase } from "@/lib/wallet/hireAgent";
-import type { AgentSnapshot } from "@/lib/casper/types";
+import { DEMO_AGENT_IDS, type AgentSnapshot } from "@/lib/casper/types";
 
 const explorer = (h: string) => `https://testnet.cspr.live/transaction/${h}`;
 
@@ -18,6 +18,7 @@ type Phase = "idle" | HirePhase | "done" | "error";
 const STEPS: { key: HirePhase; label: string; signer: "you" | "agent" }[] = [
   { key: "approve", label: "Allow escrow to spend AGT", signer: "you" },
   { key: "create_job", label: "Create job — funds lock in escrow", signer: "you" },
+  { key: "accept", label: "Hired agent takes the job — its bond is now at stake", signer: "agent" },
   { key: "work", label: "Hired agent delivers the work", signer: "agent" },
   { key: "approve_job", label: "Release — settlement + reputation", signer: "you" },
 ];
@@ -70,8 +71,11 @@ export function HirePanel({
   }, [publicKey, rescanKey]);
 
   const myAgentId = clientId ?? myAgentIds?.[0];
+  // Only the demo agents can take a job here: their wallet is the server's demo
+  // signer, which signs their accept + delivery. Any other agent's owner would
+  // have to do that from their own wallet.
   const providers = useMemo(
-    () => agents.filter((a) => a.agentId !== myAgentId),
+    () => agents.filter((a) => a.agentId !== myAgentId && DEMO_AGENT_IDS.includes(a.agentId)),
     [agents, myAgentId],
   );
   const provider = providers.find((a) => a.agentId === providerId) ?? providers[0];

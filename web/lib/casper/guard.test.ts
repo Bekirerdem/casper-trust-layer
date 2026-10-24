@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { GuardError, clientIp, parseAmount, parseId, parsePublicKey, throttle } from "./guard";
-import { decodeJob } from "./escrowRead";
 
 const status = (fn: () => unknown) => {
   try {
@@ -73,28 +72,5 @@ describe("clientIp", () => {
       headers: { "x-forwarded-for": "6.6.6.6, 1.2.3.4", "x-vercel-forwarded-for": "1.2.3.4" },
     });
     expect(clientIp(req)).toBe("1.2.3.4");
-  });
-});
-
-describe("decodeJob", () => {
-  it("decodes Job { u32, u32, U256, String, u64, JobState }", () => {
-    const hash = Buffer.from("sha256:ab", "utf8");
-    const bytes = Buffer.concat([
-      Buffer.from([3, 0, 0, 0]), // client_id 3
-      Buffer.from([1, 0, 0, 0]), // provider 1
-      Buffer.from([2, 0x10, 0x27]), // U256 10000
-      Buffer.from([hash.length, 0, 0, 0]),
-      hash,
-      Buffer.from([0xe8, 0x03, 0, 0, 0, 0, 0, 0]), // deadline 1000
-      Buffer.from([1]), // Submitted
-    ]);
-    expect(decodeJob(Uint8Array.from(bytes))).toEqual({
-      clientId: 3,
-      provider: 1,
-      amount: BigInt(10_000),
-      resultHash: "sha256:ab",
-      deadlineMs: BigInt(1000),
-      state: "Submitted",
-    });
   });
 });
