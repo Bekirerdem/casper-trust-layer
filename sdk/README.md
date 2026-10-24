@@ -83,7 +83,7 @@ Live on `casper-test`. Contract package hashes are in `CASPER_TEST` (see `src/co
 
 0.2.0 reads the v2 contracts (October 2026 audit): providers must accept a job before it can be delivered, same-owner settlements earn nothing, and withdrawals unbond for 7 days. The v1 packages stay on-chain but are no longer read; pin `casper-trust@0.1.2` to keep reading them.
 
-> Both paths are live-verified on `casper-test`: the wallet-free read path, and the full trust-gated x402 handshake settling on-chain via the hosted CSPR.cloud facilitator (settle tx [`0c58d79a`](https://testnet.cspr.live/transaction/0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e), trust-gated [`b4a4635f`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3)). Reproducible demos in [`scripts/`](scripts).
+> Both paths are live-verified on `casper-test`: the wallet-free read path, and the full trust-gated x402 handshake settling on-chain via the hosted CSPR.cloud facilitator (trust-gated settle on the v2 contracts [`4b2ab2c2`](https://testnet.cspr.live/transaction/4b2ab2c28df59792903ab17fe16f6c9a74c477fc204e46941b739d30f1296e25)). Reproducible demos in [`scripts/`](scripts).
 
 ## License
 

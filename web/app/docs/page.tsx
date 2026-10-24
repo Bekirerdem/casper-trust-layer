@@ -24,7 +24,7 @@ const PROOFS = [
   { what: "Owner pulls the brake — pause()", tx: "e1d283b9595080a559a66f061f512480a95f0b5fd6c98a1185171c41a6a49d6b" },
   { what: "The same payment now reverts — Paused", tx: "95f94f2f5731649d17db139159f5933a9a8b6cec6839b3b4c91e73514350b2c8" },
   { what: "A job settled across owners — the provider's score moves", tx: "1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8" },
-  { what: "x402 payment refused below the bar, settled above it (v1)", tx: "b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3" },
+  { what: "x402 payment refused below the bar, settled above it", tx: "4b2ab2c28df59792903ab17fe16f6c9a74c477fc204e46941b739d30f1296e25" },
 ];
 
 function Code({ children }: { children: string }) {

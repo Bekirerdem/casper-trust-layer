@@ -72,6 +72,13 @@ A customer vault (vault #0, the deployer's own), same payment throughout:
 | Freeze, pay #0 again — `Frozen` (9) | [`7577b156…`](https://testnet.cspr.live/transaction/7577b1560dba6756a5add96ca0d0550de14615568edcf317b575701be8df76bf) · [`804b3e18…`](https://testnet.cspr.live/transaction/804b3e184cc5a91ccb0e9d0b019b0c117a03427a1df438a65a590ab1c0dc8920) |
 | Unfreeze | [`7965196d…`](https://testnet.cspr.live/transaction/7965196dba6df06964282abcbbcacc09ff610ff69dd5b64e9b0406920fd448d0) |
 
+Trust-gated x402 on v2 (`sdk/scripts/trust-gated-x402.mts`): a 791 bps bar refused
+#0 (790) before anything was signed; a 790 bar paid it through the hosted
+facilitator — settle [`4b2ab2c2…`](https://testnet.cspr.live/transaction/4b2ab2c28df59792903ab17fe16f6c9a74c477fc204e46941b739d30f1296e25).
+The first attempt had failed on the facilitator's side: its casper-test fee payer
+(`account-hash-81d557c9…`) held 1.14 CSPR; we sent it 30
+([`ec55dc01…`](https://testnet.cspr.live/transaction/ec55dc018a15b8f305d2ae6e48a51f289c3e8b03629e1524e4103e1ae0f74b10)).
+
 The web hire flow was then driven end to end through its own API
 (`sdk/scripts/test-hire-api.mts`: client #4 hires #1, the demo signer accepts and
 delivers, #1 goes `316 → 416`).

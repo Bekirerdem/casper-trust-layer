@@ -40,7 +40,7 @@ first. Open any of these and read the transaction yourself:
 | First settlement — client #3 → provider #0 lifts `0 → 316` | [`1fa8296f…`](https://testnet.cspr.live/transaction/1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8) |
 | A second, unrelated client — #4 → #0 lifts `316 → 632` | [`2e09f49f…`](https://testnet.cspr.live/transaction/2e09f49fb67eac420342d7bb52b01a04dd8cfaefd44b53e96a79f76f49316550) |
 | The same client again — dampened to half, `632 → 790` | [`19d6466f…`](https://testnet.cspr.live/transaction/19d6466fbcc42ec289b74b36a9277f0668c4e48dd717b3e5619d2fee53f5b3a0) |
-| x402 payment **refused below the bar, settled above it** (v1 contracts) | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
+| x402 payment **refused below the bar, settled above it** — #0 at 790 bps | [`4b2ab2c2…`](https://testnet.cspr.live/transaction/4b2ab2c28df59792903ab17fe16f6c9a74c477fc204e46941b739d30f1296e25) |
 
 All six contract packages and every wiring transaction: [`DEPLOYMENT.md`](DEPLOYMENT.md).
 

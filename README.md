@@ -181,10 +181,10 @@ Each row is judged against *your* bar: agent #4 reads **below your bar** because
 | A second, unrelated client — #4 → #0, `316 → 632` (a fresh edge earns in full) | [`2e09f49f…`](https://testnet.cspr.live/transaction/2e09f49fb67eac420342d7bb52b01a04dd8cfaefd44b53e96a79f76f49316550) |
 | The same client again — #3 → #0, `632 → 790` (repeat business dampened to half) | [`19d6466f…`](https://testnet.cspr.live/transaction/19d6466fbcc42ec289b74b36a9277f0668c4e48dd717b3e5619d2fee53f5b3a0) |
 | A provider paying a client — #0 → #3, `0 → 316` (trust runs both ways across owners) | [`36805dc4…`](https://testnet.cspr.live/transaction/36805dc4e83b05ad4c761de116f4524c0186bce72a19f1614ad40be2efcbd2a8) |
+| **Trust-gated x402 on v2** — refused at 791 bps, paid at #0's 790 | [`4b2ab2c2…`](https://testnet.cspr.live/transaction/4b2ab2c28df59792903ab17fe16f6c9a74c477fc204e46941b739d30f1296e25) |
 | x402 handshake settles on-chain (v1 era) | [`0c58d79a…`](https://testnet.cspr.live/transaction/0c58d79ae9c595b4f9615bb505512bfaaf745c0e3da4f0808d6b197bcaec3c6e) |
-| **Trust-gated x402** — paid only when score clears the bar (v1 era) | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
 
-> The trust-gated demo runs the *same* provider and endpoint twice: a bar above its earned score is **refused before any payment**; a bar it meets **settles on-chain**. Re-run against v2 on 2026-10-24, the gate behaved the same — refused at 791 bps against #0's 790, passed at 790 — and the payment cleared the facilitator's `/verify`; the hosted testnet facilitator then rejected its own settle transaction for lack of balance, so the settled receipts above are from the v1 era.
+> The trust-gated demo runs the *same* provider and endpoint twice: a bar above its earned score is **refused before any payment**; a bar it meets **settles on-chain** through the hosted CSPR.cloud facilitator (`sdk/scripts/trust-gated-x402.mts`).
 
 ### Verify it yourself
 
@@ -195,7 +195,7 @@ No claim in this README requires trusting us:
 | Agent #0's score is real and current | `curl https://casper-trust-layer.vercel.app/api/trust/0` — a live, wallet-free storage read |
 | The score came from real settlements, not writes we control | Settlement txs [`1fa8296f…`](https://testnet.cspr.live/transaction/1fa8296f1ffb538eb9969dcba74a046a69f15e36bf0173e03efd11afd92c25d8) and [`2e09f49f…`](https://testnet.cspr.live/transaction/2e09f49fb67eac420342d7bb52b01a04dd8cfaefd44b53e96a79f76f49316550) route through the deployed Escrow |
 | Anyone can move a score with their own wallet | Run the [hire flow](https://casper-trust-layer.vercel.app/app) — or `sdk/scripts/test-hire-api.mts`, which drives the same API end to end |
-| x402 payment is actually trust-gated | [`b4a4635f…`](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) (v1 era) — the same endpoint is refused below the bar, settled above it |
+| x402 payment is actually trust-gated | [`4b2ab2c2…`](https://testnet.cspr.live/transaction/4b2ab2c28df59792903ab17fe16f6c9a74c477fc204e46941b739d30f1296e25) — the same endpoint is refused below the bar, settled above it |
 | All 6 contracts are live and wired | Package hashes above; every install + wiring transaction linked in [`DEPLOYMENT.md`](DEPLOYMENT.md) |
 | The SDK is public and installable today | [`npm install casper-trust`](https://www.npmjs.com/package/casper-trust) |
 | The code does what we say | `cargo odra test` in `contracts/` (100 tests) · `npx vitest run` in `sdk/` (73 tests; `CASPER_LIVE=1` adds live read assertions) |
@@ -206,7 +206,7 @@ No claim in this README requires trusting us:
 |---|---|---|
 | **Technical quality** | 6 contracts live and wired on `casper-test`; 100 OdraVM tests (incl. the adversarial reputation suite, a negative test per audit finding, the owner's brake, and per-customer vault isolation) + 73 SDK tests | [`DEPLOYMENT.md`](DEPLOYMENT.md) · [`contracts/src`](contracts/src) · [`sdk/test`](sdk/test) |
 | **Innovation** | Reputation derived *objectively* from settled escrow payments — no judge anywhere in the scoring path — hardened with anti-gaming math (per-edge caps, trust conservation, value concavity), and shipped as a package that installs and runs outside this repo | [`docs/reputation-formula.md`](docs/reputation-formula.md) · [npm](https://www.npmjs.com/package/casper-trust) |
-| **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/b4a4635fd7611396c152d904c402ef9c6fcaa876c83fbf8b1429e1d9fb0225e3) |
+| **AI agent integration** | Trust-gated x402 `pay()` — an agent checks a counterparty's on-chain trust before spending a cent — plus the [`casper-trust-mcp`](mcp/) server so Claude/Cursor query trust natively | [payment layer](#the-payment-layer--trust-gated-x402) · [gated-settle tx](https://testnet.cspr.live/transaction/4b2ab2c28df59792903ab17fe16f6c9a74c477fc204e46941b739d30f1296e25) |
 | **DeFi / RWA applicability** | A vault per customer: per-job + daily ceilings and a protocol-level counterparty gate, enforced in the contract; CEP-18 escrow rails | [AgentVaults](https://testnet.cspr.live/contract-package/4172ebf4438b14ac02dea598d62a95ec05bd6ea717426dc525209ae33b62eafd) · [AgentTreasury](https://testnet.cspr.live/contract-package/ef14ceacbb8cc6d20cf55225295a4f3d6e5ac5a996c94ad5fc56108337acda24) · [`contracts/src`](contracts/src) |
 | **UX** | Wallet-free, gas-free score reads; an account you open and sign yourself; in-browser wallet-signed registration **and** a full hire flow with a faucet | [live demo](https://casper-trust-layer.vercel.app) · [dashboard](https://casper-trust-layer.vercel.app/app) |
 | **Working contracts** | All 6 deployed, wired, and exercised end-to-end: settlements, slashing, treasury pay, a customer vault opened → funded → paid → refused → frozen | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
