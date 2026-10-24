@@ -25,7 +25,7 @@ const asText = (value) => ({
   ],
 });
 
-const server = new McpServer({ name: "casper-trust", version: "0.2.0" });
+const server = new McpServer({ name: "casper-trust", version: "0.2.1" });
 
 server.registerTool(
   "check_trust",

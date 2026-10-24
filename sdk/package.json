@@ -51,7 +51,8 @@
   },
   "overrides": {
     "casper-js-sdk": "$casper-js-sdk",
-    "@x402/core": "$@x402/core"
+    "@x402/core": "$@x402/core",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

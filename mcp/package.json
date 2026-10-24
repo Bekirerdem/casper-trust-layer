@@ -1,6 +1,6 @@
 {
   "name": "casper-trust-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server exposing on-chain Casper agent trust (casper-trust) to AI agents — check a counterparty's earned reputation before paying it",
   "license": "MIT",
   "author": "Bekir Erdem",
@@ -34,9 +34,12 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
     "casper-trust": "^0.2.0",
-    "zod": "^3.24.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "esbuild": "^0.28.1"
+  },
+  "overrides": {
+    "zod": "$zod"
   }
 }
